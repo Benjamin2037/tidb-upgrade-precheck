@@ -46,13 +46,22 @@ func LoadCatalog(path string) (*Catalog, error) {
 	}
 	defer file.Close()
 
-	bytes, err := io.ReadAll(file)
+	return LoadCatalogFromReader(file)
+}
+
+// LoadCatalogFromReader parses the upgrade metadata document from an io.Reader.
+func LoadCatalogFromReader(r io.Reader) (*Catalog, error) {
+	bytes, err := io.ReadAll(r)
 	if err != nil {
 		return nil, fmt.Errorf("read upgrade metadata: %w", err)
 	}
+	return LoadCatalogFromBytes(bytes)
+}
 
+// LoadCatalogFromBytes parses the upgrade metadata document from a byte slice.
+func LoadCatalogFromBytes(data []byte) (*Catalog, error) {
 	var doc document
-	if err := json.Unmarshal(bytes, &doc); err != nil {
+	if err := json.Unmarshal(data, &doc); err != nil {
 		return nil, fmt.Errorf("parse upgrade metadata: %w", err)
 	}
 

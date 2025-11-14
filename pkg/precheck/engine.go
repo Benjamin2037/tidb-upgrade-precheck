@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// Severity 描述预检项的严重程度。
+// Severity describes the seriousness of a precheck finding.
 type Severity string
 
 const (
@@ -18,7 +18,7 @@ const (
 	SeverityError   Severity = "error"
 )
 
-// Snapshot 汇总了当前集群与目标版本的关键信息。
+// Snapshot captures key details about the current cluster and desired target.
 type Snapshot struct {
 	SourceVersion  string                       `json:"source_version"`
 	TargetVersion  string                       `json:"target_version"`
@@ -30,14 +30,14 @@ type Snapshot struct {
 	AdditionalInfo map[string]map[string]any    `json:"additional_info,omitempty"`
 }
 
-// ComponentSnapshot 描述集群中某个组件的现状。
+// ComponentSnapshot represents the state of a single component.
 type ComponentSnapshot struct {
 	Version    string            `json:"version"`
 	Config     map[string]any    `json:"config,omitempty"`
 	Attributes map[string]string `json:"attributes,omitempty"`
 }
 
-// ReportItem 表示单条检查结论。
+// ReportItem represents a single rule outcome.
 type ReportItem struct {
 	Rule        string   `json:"rule"`
 	Severity    Severity `json:"severity"`
@@ -47,7 +47,7 @@ type ReportItem struct {
 	Metadata    any      `json:"metadata,omitempty"`
 }
 
-// Summary 汇总统计信息。
+// Summary aggregates counts by severity.
 type Summary struct {
 	Total      int              `json:"total"`
 	BySeverity map[Severity]int `json:"by_severity"`
@@ -56,7 +56,7 @@ type Summary struct {
 	Infos      int              `json:"infos"`
 }
 
-// Report 是 Engine 运行后的完整结果。
+// Report is the aggregated output produced by the Engine run.
 type Report struct {
 	StartedAt  time.Time    `json:"started_at"`
 	FinishedAt time.Time    `json:"finished_at"`
@@ -65,24 +65,24 @@ type Report struct {
 	Errors     []string     `json:"errors,omitempty"`
 }
 
-// HasBlocking 返回报告中是否存在阻断项。
+// HasBlocking reports whether any blocking issues were detected.
 func (r *Report) HasBlocking() bool {
 	return r.Summary.Blocking > 0
 }
 
-// Rule 定义了单个检查规则。
+// Rule defines a single check.
 type Rule interface {
 	Name() string
 	Evaluate(context.Context, Snapshot) ([]ReportItem, error)
 }
 
-// RuleFunc 是 Rule 的便捷适配器。
+// RuleFunc adapts a plain function into a Rule.
 type RuleFunc struct {
 	name string
 	fn   func(context.Context, Snapshot) ([]ReportItem, error)
 }
 
-// NewRuleFunc 创建一个基于函数的规则。
+// NewRuleFunc builds a Rule from a function.
 func NewRuleFunc(name string, fn func(context.Context, Snapshot) ([]ReportItem, error)) Rule {
 	sanitized := strings.TrimSpace(name)
 	if sanitized == "" {
@@ -94,25 +94,25 @@ func NewRuleFunc(name string, fn func(context.Context, Snapshot) ([]ReportItem, 
 	return &RuleFunc{name: sanitized, fn: fn}
 }
 
-// Name 返回规则名称。
+// Name returns the rule name.
 func (r *RuleFunc) Name() string { return r.name }
 
-// Evaluate 执行规则逻辑。
+// Evaluate runs the wrapped function.
 func (r *RuleFunc) Evaluate(ctx context.Context, snapshot Snapshot) ([]ReportItem, error) {
 	return r.fn(ctx, snapshot)
 }
 
-// Engine 负责串行运行所有规则并聚合结果。
+// Engine runs every registered rule and collects the results.
 type Engine struct {
 	rules []Rule
 }
 
-// NewEngine 构造一个新的 Engine。
+// NewEngine constructs a new Engine instance.
 func NewEngine(rules ...Rule) *Engine {
 	return &Engine{rules: append([]Rule(nil), rules...)}
 }
 
-// Register 向 Engine 动态添加规则。
+// Register appends a rule to the engine.
 func (e *Engine) Register(rule Rule) {
 	if rule == nil {
 		panic("rule cannot be nil")
@@ -120,12 +120,12 @@ func (e *Engine) Register(rule Rule) {
 	e.rules = append(e.rules, rule)
 }
 
-// Rules 返回当前注册的规则列表副本。
+// Rules returns a copy of the registered rules.
 func (e *Engine) Rules() []Rule {
 	return append([]Rule(nil), e.rules...)
 }
 
-// Run 执行所有规则并返回汇总报告。
+// Run executes the rules and returns the aggregated report.
 func (e *Engine) Run(ctx context.Context, snapshot Snapshot) Report {
 	start := time.Now()
 	items := make([]ReportItem, 0, len(e.rules))
@@ -183,7 +183,7 @@ func incrementSummary(summary *Summary, sev Severity) {
 	}
 }
 
-// ValidateSnapshot 做一些基础合法性检查，供外部使用。
+// ValidateSnapshot performs basic sanity checks on a snapshot.
 func ValidateSnapshot(snapshot Snapshot) error {
 	if strings.TrimSpace(snapshot.TargetVersion) == "" {
 		return errors.New("target version is required")

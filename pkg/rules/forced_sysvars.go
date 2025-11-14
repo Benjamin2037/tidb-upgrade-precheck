@@ -38,18 +38,18 @@ func (r *ForcedGlobalSysvarsRule) Evaluate(_ context.Context, snapshot precheck.
 	targetVersion := strings.TrimSpace(snapshot.TargetVersion)
 	if targetVersion == "" {
 		return []precheck.ReportItem{newItem(forcedSysvarRuleName, precheck.SeverityWarning,
-			"目标版本缺失，无法评估强制全局变量变更",
-			"为 snapshot.TargetVersion 提供正确的目标版本", nil)}, nil
+			"Target version is missing; unable to evaluate forced global variable changes",
+			"Provide a valid target version for snapshot.TargetVersion", nil)}, nil
 	}
 
 	targetBootstrap, ok, err := knowledge.BootstrapVersion(targetVersion)
 	if err != nil {
-		return nil, fmt.Errorf("加载知识库失败: %w", err)
+		return nil, fmt.Errorf("failed to load knowledge base: %w", err)
 	}
 	if !ok {
 		return []precheck.ReportItem{newItem(forcedSysvarRuleName, precheck.SeverityInfo,
-			fmt.Sprintf("未找到目标版本 %s 对应的 bootstrap 版本，跳过全局变量检查", targetVersion),
-			"更新知识库或指定完整的目标版本", nil)}, nil
+			fmt.Sprintf("No bootstrap version found for target %s; skipping global variable checks", targetVersion),
+			"Update the knowledge base or specify a fully qualified target version", nil)}, nil
 	}
 
 	var sourceBootstrap int64
@@ -57,12 +57,12 @@ func (r *ForcedGlobalSysvarsRule) Evaluate(_ context.Context, snapshot precheck.
 	if sourceVersion != "" {
 		v, ok, err := knowledge.BootstrapVersion(sourceVersion)
 		if err != nil {
-			return nil, fmt.Errorf("加载知识库失败: %w", err)
+			return nil, fmt.Errorf("failed to load knowledge base: %w", err)
 		}
 		if !ok {
 			return []precheck.ReportItem{newItem(forcedSysvarRuleName, precheck.SeverityInfo,
-				fmt.Sprintf("未找到当前版本 %s 对应的 bootstrap 版本，跳过全局变量检查", sourceVersion),
-				"更新知识库或指定完整的当前版本", nil)}, nil
+				fmt.Sprintf("No bootstrap version found for source %s; skipping global variable checks", sourceVersion),
+				"Update the knowledge base or specify a fully qualified source version", nil)}, nil
 		}
 		sourceBootstrap = v
 	}
@@ -79,7 +79,7 @@ func (r *ForcedGlobalSysvarsRule) Evaluate(_ context.Context, snapshot precheck.
 	collapsed := collapseChanges(changes)
 	items := make([]precheck.ReportItem, 0, len(collapsed))
 	for _, change := range collapsed {
-		message := fmt.Sprintf("升级到 bootstrap %d 时 TiDB 将强制把全局变量 %s 设置为 %q", change.ToVersion, change.Target, change.DefaultValue)
+		message := fmt.Sprintf("Upgrading to bootstrap %d forces TiDB to set global variable %s to %q", change.ToVersion, change.Target, change.DefaultValue)
 		metadata := map[string]any{
 			"target":        change.Target,
 			"default_value": change.DefaultValue,

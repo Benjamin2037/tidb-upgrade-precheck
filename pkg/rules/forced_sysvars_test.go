@@ -24,9 +24,9 @@ func writeTempMetadata(t *testing.T) string {
           "target": "tidb_track_aggregate_memory_usage",
           "default_value": "ON",
           "force": true,
-          "summary": "Enable aggregate memory usage tracking",
-          "scope": "global",
-          "optional_hints": ["确认业务是否依赖旧行为"]
+		  "summary": "Enable aggregate memory usage tracking",
+		  "scope": "global",
+		  "optional_hints": ["Confirm whether workloads rely on the legacy behavior"]
         }
       ]
     },
