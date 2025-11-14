@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "bootstrap_version": 146,
+    "build_ts": "None",
+    "edition": "Community",
+    "generated_at": "2025-11-13T03:02:56Z",
+    "git_branch": "None",
+    "git_hash": "None",
+    "target_version": "v7.1.6"
+  },
+  "rules": [
+    {
+      "introduced_in": "bootstrap_66",
+      "statements": [
+        "SET GLOBAL tidb_track_aggregate_memory_usage = \"ON\""
+      ],
+      "summary": "Enable aggregate memory usage tracking to match the new default in v6.6 (forced) - Increases observability for aggregate operators and may add slight CPU overhead."
+    }
+  ]
+}

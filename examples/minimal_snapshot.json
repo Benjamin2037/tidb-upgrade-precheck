@@ -1,0 +1,15 @@
+{
+    "source_version": "v7.5.0",
+    "target_version": "v7.6.0",
+    "components": {
+        "tidb": {
+            "version": "v7.5.0"
+        },
+        "tikv": {
+            "version": "v7.5.0"
+        }
+    },
+    "global_sysvars": {
+        "tidb_track_aggregate_memory_usage": "ON"
+    }
+}
