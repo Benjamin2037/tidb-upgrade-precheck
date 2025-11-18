@@ -66,6 +66,9 @@ func TestForcedGlobalSysvarsRule(t *testing.T) {
 	snapshot := precheck.Snapshot{
 		SourceVersion: "",
 		TargetVersion: "v6.5.0",
+		GlobalSysVars: map[string]string{
+			"tidb_track_aggregate_memory_usage": "OFF",
+		},
 	}
 
 	items, err := rule.Evaluate(context.Background(), snapshot)
@@ -77,6 +80,8 @@ func TestForcedGlobalSysvarsRule(t *testing.T) {
 	require.Contains(t, item.Message, "tidb_track_aggregate_memory_usage")
 	require.NotEmpty(t, item.Suggestions)
 	require.NotNil(t, item.Metadata)
+	meta := item.Metadata.(map[string]any)
+	require.Equal(t, "OFF", meta["current_value"])
 }
 
 func TestForcedGlobalSysvarsRuleMissingTarget(t *testing.T) {

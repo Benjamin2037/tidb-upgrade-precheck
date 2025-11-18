@@ -3,18 +3,417 @@
     "bootstrap_version": 110,
     "build_ts": "None",
     "edition": "Community",
-    "generated_at": "2025-11-14T01:40:17Z",
+    "generated_at": "2025-11-18T08:46:19Z",
     "git_branch": "None",
     "git_hash": "None",
     "target_version": "v6.5.1"
   },
   "rules": [
     {
+      "introduced_in": "bootstrap_3",
+      "statements": [
+        "SET GLOBAL tx_read_only = \"0\""
+      ],
+      "summary": "Reset tx_read_only to 0 to match TiDB semantics (forced) - Older clusters could leave the MySQL compatibility variable enabled; this upgrade clears it."
+    },
+    {
+      "introduced_in": "bootstrap_25",
+      "statements": [
+        "SET GLOBAL tidb_max_chunk_size = \"32\""
+      ],
+      "summary": "Raise tidb_max_chunk_size to the new minimum chunk size (forced) - Values below the new floor of 32 are bumped so execution keeps working with larger chunks."
+    },
+    {
+      "introduced_in": "bootstrap_35",
+      "statements": [
+        "SET GLOBAL tidb_backoff_weight = \"\""
+      ],
+      "summary": "Rename tidb_back_off_weight entries to tidb_backoff_weight (forced) - Aligns stored sysvar names with the renamed identifier introduced in v3.0."
+    },
+    {
+      "introduced_in": "bootstrap_43",
+      "statements": [
+        "SET GLOBAL tidb_enable_stmt_summary = \"ON\""
+      ],
+      "summary": "Backfill blank tidb_enable_stmt_summary values with the ON/OFF default (forced) - Some upgrades left the variable as an empty string; this normalizes it so statement summary works."
+    },
+    {
+      "introduced_in": "bootstrap_43",
+      "statements": [
+        "SET GLOBAL tidb_stmt_summary_internal_query = \"OFF\""
+      ],
+      "summary": "Backfill blank tidb_stmt_summary_internal_query values (forced)"
+    },
+    {
+      "introduced_in": "bootstrap_43",
+      "statements": [
+        "SET GLOBAL tidb_stmt_summary_refresh_interval = \"1800\""
+      ],
+      "summary": "Backfill blank tidb_stmt_summary_refresh_interval values (forced)"
+    },
+    {
+      "introduced_in": "bootstrap_43",
+      "statements": [
+        "SET GLOBAL tidb_stmt_summary_history_size = \"24\""
+      ],
+      "summary": "Backfill blank tidb_stmt_summary_history_size values (forced)"
+    },
+    {
+      "introduced_in": "bootstrap_43",
+      "statements": [
+        "SET GLOBAL tidb_stmt_summary_max_stmt_count = \"3000\""
+      ],
+      "summary": "Backfill blank tidb_stmt_summary_max_stmt_count values (forced)"
+    },
+    {
+      "introduced_in": "bootstrap_43",
+      "statements": [
+        "SET GLOBAL tidb_stmt_summary_max_sql_length = \"32768\""
+      ],
+      "summary": "Backfill blank tidb_stmt_summary_max_sql_length values (forced)"
+    },
+    {
+      "introduced_in": "bootstrap_44",
+      "statements": [
+        "SET GLOBAL tidb_isolation_read_engines = \"\""
+      ],
+      "summary": "Remove deprecated tidb_isolation_read_engines entries (forced) - The legacy variable is deleted to avoid masking the new replica read settings."
+    },
+    {
+      "introduced_in": "bootstrap_53",
+      "statements": [
+        "SET GLOBAL tidb_enable_strict_double_type_check = \"0\""
+      ],
+      "summary": "Insert tidb_enable_strict_double_type_check with its default - Introduces the compatibility guard without overriding user-configured values."
+    },
+    {
+      "introduced_in": "bootstrap_55",
+      "statements": [
+        "SET GLOBAL tidb_index_lookup_concurrency = \"-1\""
+      ],
+      "summary": "Normalize deprecated execution concurrency variables (forced) - When every related variable still held its legacy default, TiDB rewrites it to -1 to defer to auto-tuning."
+    },
+    {
+      "introduced_in": "bootstrap_55",
+      "statements": [
+        "SET GLOBAL tidb_index_lookup_join_concurrency = \"-1\""
+      ],
+      "summary": "Normalize deprecated execution concurrency variables (forced) - When every related variable still held its legacy default, TiDB rewrites it to -1 to defer to auto-tuning."
+    },
+    {
+      "introduced_in": "bootstrap_55",
+      "statements": [
+        "SET GLOBAL tidb_hashagg_final_concurrency = \"-1\""
+      ],
+      "summary": "Normalize deprecated execution concurrency variables (forced) - When every related variable still held its legacy default, TiDB rewrites it to -1 to defer to auto-tuning."
+    },
+    {
+      "introduced_in": "bootstrap_55",
+      "statements": [
+        "SET GLOBAL tidb_hashagg_partial_concurrency = \"-1\""
+      ],
+      "summary": "Normalize deprecated execution concurrency variables (forced) - When every related variable still held its legacy default, TiDB rewrites it to -1 to defer to auto-tuning."
+    },
+    {
+      "introduced_in": "bootstrap_55",
+      "statements": [
+        "SET GLOBAL tidb_window_concurrency = \"-1\""
+      ],
+      "summary": "Normalize deprecated execution concurrency variables (forced) - When every related variable still held its legacy default, TiDB rewrites it to -1 to defer to auto-tuning."
+    },
+    {
+      "introduced_in": "bootstrap_55",
+      "statements": [
+        "SET GLOBAL tidb_projection_concurrency = \"-1\""
+      ],
+      "summary": "Normalize deprecated execution concurrency variables (forced) - When every related variable still held its legacy default, TiDB rewrites it to -1 to defer to auto-tuning."
+    },
+    {
+      "introduced_in": "bootstrap_55",
+      "statements": [
+        "SET GLOBAL tidb_hash_join_concurrency = \"-1\""
+      ],
+      "summary": "Normalize deprecated execution concurrency variables (forced) - When every related variable still held its legacy default, TiDB rewrites it to -1 to defer to auto-tuning."
+    },
+    {
       "introduced_in": "bootstrap_66",
       "statements": [
         "SET GLOBAL tidb_track_aggregate_memory_usage = \"ON\""
       ],
       "summary": "Enable aggregate memory usage tracking to match the new default in v6.6 (forced) - Increases observability for aggregate operators and may add slight CPU overhead."
+    },
+    {
+      "introduced_in": "bootstrap_68",
+      "statements": [
+        "SET GLOBAL tidb_enable_clustered_index = \"\""
+      ],
+      "summary": "Drop tidb_enable_clustered_index records forced to OFF - Deleting lingering OFF entries allows the upgraded cluster to adopt the clustered-index default."
+    },
+    {
+      "introduced_in": "bootstrap_71",
+      "statements": [
+        "SET GLOBAL tidb_multi_statement_mode = \"OFF\""
+      ],
+      "summary": "Retire WARN mode for tidb_multi_statement_mode (forced) - Clusters running with WARN fall back to OFF to reflect the simplified multi-statement policy."
+    },
+    {
+      "introduced_in": "bootstrap_74",
+      "statements": [
+        "SET GLOBAL tidb_stmt_summary_max_stmt_count = \"3000\""
+      ],
+      "summary": "Increase tidb_stmt_summary_max_stmt_count to the new default (forced) - Bumps the cap for statement summary entries when it was still the legacy 200 limit."
+    },
+    {
+      "introduced_in": "bootstrap_80",
+      "statements": [
+        "SET GLOBAL tidb_analyze_version = \"1\""
+      ],
+      "summary": "Record tidb_analyze_version for clusters predating the variable - Initializes the sysvar with version 1 so analyze semantics stay consistent after upgrade."
+    },
+    {
+      "introduced_in": "bootstrap_81",
+      "statements": [
+        "SET GLOBAL tidb_enable_index_merge = \"OFF\""
+      ],
+      "summary": "Default tidb_enable_index_merge to OFF for pre-4.0 clusters - Keeps existing plans stable by storing the previous behavior when the variable did not exist."
+    },
+    {
+      "introduced_in": "bootstrap_90",
+      "statements": [
+        "SET GLOBAL tidb_enable_batch_dml = \"\""
+      ],
+      "summary": "Import enable-batch-dml config into tidb_enable_batch_dml - A missing sysvar inherits the tidb.toml value so behavior matches the old configuration."
+    },
+    {
+      "introduced_in": "bootstrap_90",
+      "statements": [
+        "SET GLOBAL tidb_mem_quota_query = \"\""
+      ],
+      "summary": "Import mem-quota-query config into tidb_mem_quota_query - A missing sysvar inherits the tidb.toml value so behavior matches the old configuration."
+    },
+    {
+      "introduced_in": "bootstrap_90",
+      "statements": [
+        "SET GLOBAL tidb_query_log_max_len = \"\""
+      ],
+      "summary": "Import query-log-max-len config into tidb_query_log_max_len - A missing sysvar inherits the tidb.toml value so behavior matches the old configuration."
+    },
+    {
+      "introduced_in": "bootstrap_90",
+      "statements": [
+        "SET GLOBAL tidb_committer_concurrency = \"\""
+      ],
+      "summary": "Import committer-concurrency config into tidb_committer_concurrency - A missing sysvar inherits the tidb.toml value so behavior matches the old configuration."
+    },
+    {
+      "introduced_in": "bootstrap_90",
+      "statements": [
+        "SET GLOBAL tidb_enable_auto_analyze = \"\""
+      ],
+      "summary": "Import run-auto-analyze config into tidb_enable_auto_analyze - A missing sysvar inherits the tidb.toml value so behavior matches the old configuration."
+    },
+    {
+      "introduced_in": "bootstrap_90",
+      "statements": [
+        "SET GLOBAL tidb_mem_oom_action = \"\""
+      ],
+      "summary": "Import oom-action config into tidb_mem_oom_action - A missing sysvar inherits the tidb.toml value so behavior matches the old configuration."
+    },
+    {
+      "introduced_in": "bootstrap_91",
+      "statements": [
+        "SET GLOBAL tidb_enable_prepared_plan_cache = \"\""
+      ],
+      "summary": "Import prepared-plan-cache.enable config into tidb_enable_prepared_plan_cache - A missing sysvar inherits the tidb.toml value so behavior matches the old configuration."
+    },
+    {
+      "introduced_in": "bootstrap_91",
+      "statements": [
+        "SET GLOBAL tidb_prepared_plan_cache_size = \"\""
+      ],
+      "summary": "Import prepared-plan-cache.capacity config into tidb_prepared_plan_cache_size - A missing sysvar inherits the tidb.toml value so behavior matches the old configuration."
+    },
+    {
+      "introduced_in": "bootstrap_91",
+      "statements": [
+        "SET GLOBAL tidb_prepared_plan_cache_memory_guard_ratio = \"\""
+      ],
+      "summary": "Import prepared-plan-cache.memory-guard-ratio config - A missing sysvar inherits the tidb.toml value so behavior matches the old configuration."
+    },
+    {
+      "introduced_in": "bootstrap_93",
+      "statements": [
+        "SET GLOBAL tidb_enable_tmp_storage_on_oom = \"\""
+      ],
+      "summary": "Import oom-use-tmp-storage config into tidb_enable_tmp_storage_on_oom - A missing sysvar inherits the tidb.toml value so behavior matches the old configuration."
+    },
+    {
+      "introduced_in": "bootstrap_97",
+      "statements": [
+        "SET GLOBAL tidb_opt_range_max_size = \"0\""
+      ],
+      "summary": "Backfill tidb_opt_range_max_size for legacy clusters - Stores the pre-existing behavior so optimizer heuristics stay unchanged when the sysvar was absent."
+    },
+    {
+      "introduced_in": "bootstrap_100",
+      "statements": [
+        "SET GLOBAL tidb_server_memory_limit = \"\""
+      ],
+      "summary": "Import performance.server-memory-quota config into tidb_server_memory_limit - A missing sysvar inherits the tidb.toml value so behavior matches the old configuration."
+    },
+    {
+      "introduced_in": "bootstrap_105",
+      "statements": [
+        "SET GLOBAL tidb_cost_model_version = \"1\""
+      ],
+      "summary": "Seed tidb_cost_model_version with the legacy cost model - Ensures upgraded clusters stay on cost model v1 unless users opt in to newer behavior."
+    },
+    {
+      "introduced_in": "bootstrap_109",
+      "statements": [
+        "SET GLOBAL tidb_enable_gc_aware_memory_track = \"0\""
+      ],
+      "summary": "Force-disable tidb_enable_gc_aware_memory_track for 6.2-6.4 upgrades - Sets the variable to OFF to match the v6.5 behavior and avoid unexpected memory tracking costs."
+    },
+    {
+      "introduced_in": "bootstrap_110",
+      "statements": [
+        "SET GLOBAL tidb_stats_load_pseudo_timeout = \"1\""
+      ],
+      "summary": "Enable tidb_stats_load_pseudo_timeout by default (forced) - For clusters predating the variable we force the new default timeout to keep statistics loading predictable."
+    },
+    {
+      "introduced_in": "bootstrap_133",
+      "statements": [
+        "SET GLOBAL tidb_server_memory_limit = \"80%\""
+      ],
+      "summary": "Replace 0 values for tidb_server_memory_limit with the computed default (forced) - Old upgrades stored 0 to mean unlimited; we rewrite it so memory protection remains active."
+    },
+    {
+      "introduced_in": "bootstrap_134",
+      "statements": [
+        "SET GLOBAL foreign_key_checks = \"ON\""
+      ],
+      "summary": "Enable foreign_key_checks globally after GA (forced) - Replaces legacy OFF values to align with the new foreign key enforcement behavior."
+    },
+    {
+      "introduced_in": "bootstrap_134",
+      "statements": [
+        "SET GLOBAL tidb_enable_foreign_key = \"ON\""
+      ],
+      "summary": "Enable tidb_enable_foreign_key globally after GA (forced) - Replaces legacy OFF values to align with the new foreign key enforcement behavior."
+    },
+    {
+      "introduced_in": "bootstrap_134",
+      "statements": [
+        "SET GLOBAL tidb_enable_historical_stats = \"ON\""
+      ],
+      "summary": "Enable tidb_enable_historical_stats by default (forced) - Ensures historical statistics capture is active immediately after upgrade."
+    },
+    {
+      "introduced_in": "bootstrap_134",
+      "statements": [
+        "SET GLOBAL tidb_enable_plan_replayer_capture = \"ON\""
+      ],
+      "summary": "Enable tidb_enable_plan_replayer_capture by default (forced) - Ensures plan replayer capture collects diagnostics unless administrators disable it."
+    },
+    {
+      "introduced_in": "bootstrap_134",
+      "statements": [
+        "SET GLOBAL tidb_store_batch_size = \"4\""
+      ],
+      "summary": "Normalize tidb_store_batch_size from 0 to the new default (forced) - A stored 0 now maps to the auto-tuned default batch size of 4."
+    },
+    {
+      "introduced_in": "bootstrap_135",
+      "statements": [
+        "SET GLOBAL tidb_opt_advanced_join_hint = \"OFF\""
+      ],
+      "summary": "Backfill tidb_opt_advanced_join_hint with OFF - Keeps pre-7.0 clusters using the legacy join hint behavior until they opt in."
+    },
+    {
+      "introduced_in": "bootstrap_138",
+      "statements": [
+        "SET GLOBAL tidb_enable_null_aware_anti_join = \"ON\""
+      ],
+      "summary": "Enable tidb_enable_null_aware_anti_join globally (forced) - Makes the optimizer use null-aware anti-joins by default after upgrade."
+    },
+    {
+      "introduced_in": "bootstrap_141",
+      "statements": [
+        "SET GLOBAL tidb_load_based_replica_read_threshold = \"1s\""
+      ],
+      "summary": "Reset tidb_load_based_replica_read_threshold to the new default (forced) - The variable now uses a literal threshold of 4 instead of 0 to reduce noisy replica selection."
+    },
+    {
+      "introduced_in": "bootstrap_142",
+      "statements": [
+        "SET GLOBAL tidb_enable_non_prepared_plan_cache = \"OFF\""
+      ],
+      "summary": "Backfill tidb_enable_non_prepared_plan_cache with OFF - Matches the opt-in rollout plan for the non-prepared plan cache feature."
+    },
+    {
+      "introduced_in": "bootstrap_144",
+      "statements": [
+        "SET GLOBAL tidb_plan_cache_invalidation_on_fresh_stats = \"OFF\""
+      ],
+      "summary": "Backfill tidb_plan_cache_invalidation_on_fresh_stats with OFF - Keeps plan cache behavior stable for clusters that predate the knob."
+    },
+    {
+      "introduced_in": "bootstrap_177",
+      "statements": [
+        "SET GLOBAL tidb_enable_async_merge_global_stats = \"OFF\""
+      ],
+      "summary": "Force-disable tidb_enable_async_merge_global_stats after framework redesign - Upgrades from v7.4 may leave this enabled; TiDB switches it off to avoid inconsistent statistics."
+    },
+    {
+      "introduced_in": "bootstrap_191",
+      "statements": [
+        "SET GLOBAL tidb_txn_mode = \"optimistic\""
+      ],
+      "summary": "Insert tidb_txn_mode with the optimistic default - Ensures clusters without an explicit txn mode keep operating in optimistic mode after upgrade."
+    },
+    {
+      "introduced_in": "bootstrap_209",
+      "statements": [
+        "SET GLOBAL tidb_resource_control_strict_mode = \"OFF\""
+      ],
+      "summary": "Backfill tidb_resource_control_strict_mode with OFF - Leaves strict mode disabled until administrators opt in."
+    },
+    {
+      "introduced_in": "bootstrap_210",
+      "statements": [
+        "SET GLOBAL tidb_analyze_column_options = \"ALL\""
+      ],
+      "summary": "Default tidb_analyze_column_options to ALL - Preserves the legacy behavior where analyze operated on all columns."
+    },
+    {
+      "introduced_in": "bootstrap_210",
+      "statements": [
+        "SET GLOBAL tidb_opt_projection_push_down = \"OFF\""
+      ],
+      "summary": "Backfill tidb_opt_projection_push_down with OFF - Maintains compatibility for clusters that predate projection push-down tuning."
+    },
+    {
+      "introduced_in": "bootstrap_215",
+      "statements": [
+        "SET GLOBAL tidb_enable_inl_join_inner_multi_pattern = \"OFF\""
+      ],
+      "summary": "Backfill tidb_enable_inl_join_inner_multi_pattern with OFF - Keeps index nested loop join heuristics unchanged for upgraded clusters."
+    },
+    {
+      "introduced_in": "bootstrap_216",
+      "statements": [
+        "SET GLOBAL tidb_scatter_region = \"\""
+      ],
+      "summary": "Normalize tidb_scatter_region values (forced) - Converts deprecated ON/OFF strings to the new semantics (table or empty string)."
+    },
+    {
+      "introduced_in": "bootstrap_217",
+      "statements": [
+        "SET GLOBAL tidb_schema_cache_size = \"0\""
+      ],
+      "summary": "Backfill tidb_schema_cache_size with the default - Stores the previous behavior so schema cache sizing stays consistent post-upgrade."
     }
   ]
 }

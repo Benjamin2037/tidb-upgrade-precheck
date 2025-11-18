@@ -76,10 +76,22 @@ func (r *ForcedGlobalSysvarsRule) Evaluate(_ context.Context, snapshot precheck.
 		return nil, nil
 	}
 
+	actualValues := make(map[string]string, len(snapshot.GlobalSysVars))
+	for k, v := range snapshot.GlobalSysVars {
+		actualValues[strings.ToLower(strings.TrimSpace(k))] = strings.TrimSpace(v)
+	}
+
 	collapsed := collapseChanges(changes)
 	items := make([]precheck.ReportItem, 0, len(collapsed))
 	for _, change := range collapsed {
-		message := fmt.Sprintf("Upgrading to bootstrap %d forces TiDB to set global variable %s to %q", change.ToVersion, change.Target, change.DefaultValue)
+		key := strings.ToLower(change.Target)
+		currentValue, hasCurrent := actualValues[key]
+		var message string
+		if hasCurrent && currentValue != "" {
+			message = fmt.Sprintf("Upgrading to bootstrap %d forces TiDB to change global variable %s from %q to %q", change.ToVersion, change.Target, currentValue, change.DefaultValue)
+		} else {
+			message = fmt.Sprintf("Upgrading to bootstrap %d forces TiDB to set global variable %s to %q", change.ToVersion, change.Target, change.DefaultValue)
+		}
 		metadata := map[string]any{
 			"target":        change.Target,
 			"default_value": change.DefaultValue,
@@ -87,6 +99,9 @@ func (r *ForcedGlobalSysvarsRule) Evaluate(_ context.Context, snapshot precheck.
 			"summary":       change.Summary,
 			"details":       change.Details,
 			"force":         change.Force,
+		}
+		if hasCurrent {
+			metadata["current_value"] = currentValue
 		}
 		details := change.Details
 		if details == "" {

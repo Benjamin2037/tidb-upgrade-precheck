@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"sort"
+	"strings"
 )
 
 // Change represents a single upgrade action extracted from TiDB's upgrade catalog.
@@ -100,15 +101,48 @@ func (c *Catalog) ForcedSysvarChanges(fromVersion, toVersion int64) []Change {
 			if change.Scope != "" && change.Scope != "global" {
 				continue
 			}
-			copy := change
-			if copy.ToVersion == 0 {
-				copy.ToVersion = version
-			}
-			if copy.FromVersion == 0 {
-				copy.FromVersion = version - 1
-			}
-			result = append(result, copy)
+			result = append(result, normalizeChange(change, version))
 		}
 	}
 	return result
+}
+
+// LatestGlobalSysvarValues returns the latest known global sysvar values up to the specified bootstrap version.
+func (c *Catalog) LatestGlobalSysvarValues(upToVersion int64) map[string]Change {
+	if c == nil || upToVersion <= 0 {
+		return nil
+	}
+
+	result := make(map[string]Change)
+	for _, version := range c.order {
+		if version > upToVersion {
+			break
+		}
+		for _, change := range c.versions[version] {
+			if change.Kind != "sysvar" {
+				continue
+			}
+			if change.Scope != "" && !strings.EqualFold(change.Scope, "global") {
+				continue
+			}
+			normalized := normalizeChange(change, version)
+			key := strings.ToLower(normalized.Target)
+			result[key] = normalized
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
+func normalizeChange(change Change, version int64) Change {
+	copy := change
+	if copy.ToVersion == 0 {
+		copy.ToVersion = version
+	}
+	if copy.FromVersion == 0 {
+		copy.FromVersion = version - 1
+	}
+	return copy
 }

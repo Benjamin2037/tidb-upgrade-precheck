@@ -258,7 +258,7 @@
     "bootstrap_version": 198,
     "build_ts": "None",
     "edition": "Community",
-    "generated_at": "2025-11-14T01:43:13Z",
+    "generated_at": "2025-11-18T08:46:36Z",
     "git_branch": "None",
     "git_hash": "None",
     "target_version": "v8.1.0"
@@ -4343,12 +4343,6 @@
       "type": "bool"
     },
     {
-      "default": "OFF",
-      "name": "tidb_enable_ddl_analyze",
-      "scope": "SESSION,GLOBAL",
-      "type": "bool"
-    },
-    {
       "default": "ON",
       "name": "tidb_enable_dist_task",
       "scope": "GLOBAL",
@@ -6255,6 +6249,14 @@
       "type": "bool"
     },
     {
+      "default": "0",
+      "max_value": 1000000,
+      "min_value": 0,
+      "name": "tidb_slow_log_max_per_sec",
+      "scope": "GLOBAL",
+      "type": "int"
+    },
+    {
       "default": "",
       "name": "tidb_slow_log_rules",
       "scope": "SESSION,GLOBAL",
@@ -6318,6 +6320,12 @@
       "name": "tidb_stats_load_sync_wait",
       "scope": "SESSION,GLOBAL",
       "type": "int"
+    },
+    {
+      "default": "OFF",
+      "name": "tidb_stats_update_during_ddl",
+      "scope": "SESSION,GLOBAL",
+      "type": "bool"
     },
     {
       "default": "",
@@ -6475,7 +6483,7 @@
       "type": "int"
     },
     {
-      "default": "OFF",
+      "default": "",
       "hidden": true,
       "name": "tidb_trace_event",
       "scope": "INSTANCE",
