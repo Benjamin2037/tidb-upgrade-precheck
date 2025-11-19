@@ -36,6 +36,7 @@ func TestConfiguredRuleReportsCustomizedValues(t *testing.T) {
 	rule := NewConfiguredGlobalSysvarsRule(catalog)
 	snapshot := precheck.Snapshot{
 		SourceVersion: "v6.5.0",
+		TargetVersion: "v6.5.1",
 		GlobalSysVars: map[string]string{
 			"tidb_allow_something": "OFF",
 		},
@@ -65,6 +66,7 @@ func TestConfiguredRuleIgnoresMatchingValues(t *testing.T) {
 	rule := NewConfiguredGlobalSysvarsRule(catalog)
 	snapshot := precheck.Snapshot{
 		SourceVersion: "v7.0.0",
+		TargetVersion: "v7.0.0",
 		GlobalSysVars: map[string]string{
 			"tidb_case": "1",
 		},
