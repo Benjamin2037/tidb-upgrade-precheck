@@ -2,8 +2,8 @@ package report
 
 import (
 	"bytes"
-	"html/template"
-	"text/template"
+	htmltemplate "html/template"
+	texttemplate "text/template"
 )
 
 // MarkdownReportTemplate is the template for Markdown report rendering.
@@ -14,9 +14,9 @@ const MarkdownReportTemplate = `# TiDB Upgrade Precheck Report
 ## 1. Executive Summary
 | Risk Level | Count | Description |
 | :--- | :---: | :--- |
-| 🟥 **HIGH** | {{index .Summary "HIGH"}} | **Action Required.** Upgrade may fail or behavior will change drastically. |
-| 🟨 **MEDIUM** | {{index .Summary "MEDIUM"}} | **Recommendation.** Performance may lag or feature not optimal. |
-| 🟦 **INFO** | {{index .Summary "INFO"}} | **Audit Notice.** User-modified configurations (Safe deviations). |
+| 🟥 **HIGH** | {{index .Summary .RiskHighKey}} | **Action Required.** Upgrade may fail or behavior will change drastically. |
+| 🟨 **MEDIUM** | {{index .Summary .RiskMediumKey}} | **Recommendation.** Performance may lag or feature not optimal. |
+| 🟦 **INFO** | {{index .Summary .RiskInfoKey}} | **Audit Notice.** User-modified configurations (Safe deviations). |
 
 ---
 
@@ -78,9 +78,9 @@ th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
 <h2>1. Executive Summary</h2>
 <table>
 <tr><th>Risk Level</th><th>Count</th><th>Description</th></tr>
-<tr><td class="risk-high">HIGH</td><td>{{index .Summary "HIGH"}}</td><td>Action Required. Upgrade may fail or behavior will change drastically.</td></tr>
-<tr><td class="risk-medium">MEDIUM</td><td>{{index .Summary "MEDIUM"}}</td><td>Recommendation. Performance may lag or feature not optimal.</td></tr>
-<tr><td class="risk-info">INFO</td><td>{{index .Summary "INFO"}}</td><td>Audit Notice. User-modified configurations (Safe deviations).</td></tr>
+<tr><td class="risk-high">HIGH</td><td>{{index .Summary .RiskHighKey}}</td><td>Action Required. Upgrade may fail or behavior will change drastically.</td></tr>
+<tr><td class="risk-medium">MEDIUM</td><td>{{index .Summary .RiskMediumKey}}</td><td>Recommendation. Performance may lag or feature not optimal.</td></tr>
+<tr><td class="risk-info">INFO</td><td>{{index .Summary .RiskInfoKey}}</td><td>Audit Notice. User-modified configurations (Safe deviations).</td></tr>
 </table>
 <h2>2. Critical Risks (Action Required)</h2>
 {{range .Risks}}{{if eq .Level "HIGH"}}
@@ -131,13 +131,29 @@ for (i = 0; i < coll.length; i++) {
 `
 
 // RenderMarkdownReport renders the report as Markdown.
+type reportTemplateData struct {
+	*Report
+	RiskHighKey   RiskLevel
+	RiskMediumKey RiskLevel
+	RiskInfoKey   RiskLevel
+}
+
+func newReportTemplateData(r *Report) *reportTemplateData {
+	return &reportTemplateData{
+		Report:        r,
+		RiskHighKey:   RiskHigh,
+		RiskMediumKey: RiskMedium,
+		RiskInfoKey:   RiskInfo,
+	}
+}
+
 func RenderMarkdownReport(r *Report) (string, error) {
-	tmpl, err := template.New("md").Parse(MarkdownReportTemplate)
+	tmpl, err := texttemplate.New("md").Parse(MarkdownReportTemplate)
 	if err != nil {
 		return "", err
 	}
 	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, r)
+	err = tmpl.Execute(&buf, newReportTemplateData(r))
 	if err != nil {
 		return "", err
 	}
@@ -151,7 +167,7 @@ func RenderHTMLReport(r *Report) (string, error) {
 		return "", err
 	}
 	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, r)
+	err = tmpl.Execute(&buf, newReportTemplateData(r))
 	if err != nil {
 		return "", err
 	}
