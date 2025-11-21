@@ -1,0 +1,37 @@
+stages:
+  - build
+  - test
+  - scripts
+
+variables:
+  GO_VERSION: "1.21"
+
+before_script:
+  - go version
+
+build:
+  stage: build
+  image: golang:${GO_VERSION}
+  script:
+    - go build -v ./cmd/collect-defaults
+    - go build -v ./cmd/upgrade-logic-collector
+
+lint:
+  stage: test
+  image: golang:${GO_VERSION}
+  script:
+    - go fmt ./...
+    - go vet ./...
+
+unit_test:
+  stage: test
+  image: golang:${GO_VERSION}
+  script:
+    - go test -v ./pkg/...
+
+check_scripts:
+  stage: scripts
+  image: golang:${GO_VERSION}
+  script:
+    - bash scripts/generate-knowledge.sh || echo 'skip if no tidb source'
+    - bash scripts/generate-incremental.sh v8.1.0 || echo 'skip if no tidb source'

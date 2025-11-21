@@ -87,3 +87,44 @@ precheck --snapshot examples/minimal_snapshot.json --report-format html --report
 For rule extension, custom report templates, or integration into your own system, please refer to the source code and README.
 
 Issues and pull requests are welcome.
+
+---
+
+## 升级知识库自动化工具
+
+本仓库内置自动化生成 TiDB 各版本参数默认值（defaults.json）和升级逻辑（upgrade_logic.json）的工具和脚本。
+
+### 目录结构
+
+- `cmd/collect-defaults/`：提取指定 tidb 版本所有系统变量默认值，输出 defaults.json
+- `cmd/upgrade-logic-collector/`：提取 bootstrap.go 升级逻辑，输出 upgrade_logic.json
+- `scripts/generate-knowledge.sh`：全量生成所有 patch 版本的 defaults.json 和 upgrade_logic.json
+- `scripts/generate-incremental.sh`：增量生成指定版本的 defaults.json，并更新 upgrade_logic.json
+- `knowledge/`：存放生成的知识库数据（不建议纳入 git 版本管理）
+
+### 使用方法
+
+#### 依赖
+- Go 1.18+
+- bash
+- 已 clone tidb 源码到 `../tidb`（可通过 TIDB_REPO 环境变量指定）
+
+#### 全量生成
+```bash
+cd scripts
+bash generate-knowledge.sh
+```
+
+#### 增量生成
+```bash
+cd scripts
+bash generate-incremental.sh v8.1.0
+```
+
+#### 说明
+- 生成的 defaults.json 按 tidb tag 归档在 knowledge 目录下
+- upgrade_logic.json 为全局升级逻辑
+- 具体提取逻辑见各工具 main.go
+
+### 贡献
+如需完善提取逻辑，请修改 `cmd/collect-defaults` 或 `cmd/upgrade-logic-collector` 下的代码。

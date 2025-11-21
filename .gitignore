@@ -1,0 +1,15 @@
+# 忽略自动生成的知识库和临时文件
+knowledge/
+*.out
+*.log
+*.tmp
+*.swp
+# Go 构建缓存
+bin/
+*.exe
+*.test
+*.prof
+# IDE/编辑器
+.vscode/
+.idea/
+.DS_Store
