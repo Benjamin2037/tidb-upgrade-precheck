@@ -1,0 +1,16 @@
+{
+    "_meta": {
+        "version": "v8.5.3",
+        "generated": "2025-11-21"
+    },
+    "tidb": {
+        "max_connections": "200",
+        "log_bin": "ON"
+    },
+    "tikv": {
+        "max_threads": "16"
+    },
+    "pd": {
+        "replication_mode": "majority"
+    }
+}
