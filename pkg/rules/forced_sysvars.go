@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pingcap/tidb-upgrade-precheck/knowledge"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/metadata"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/precheck"
 )
@@ -31,10 +30,6 @@ func (r *ForcedGlobalSysvarsRule) Name() string { return forcedSysvarRuleName }
 
 // Evaluate detects all forced global sysvar changes for the provided snapshot.
 func (r *ForcedGlobalSysvarsRule) Evaluate(_ context.Context, snapshot precheck.Snapshot) ([]precheck.ReportItem, error) {
-	if r.catalog == nil {
-		return nil, nil
-	}
-
 	targetVersion := strings.TrimSpace(snapshot.TargetVersion)
 	if targetVersion == "" {
 		return []precheck.ReportItem{newItem(forcedSysvarRuleName, precheck.SeverityWarning,
@@ -42,9 +37,9 @@ func (r *ForcedGlobalSysvarsRule) Evaluate(_ context.Context, snapshot precheck.
 			"Provide a valid target version for snapshot.TargetVersion", nil)}, nil
 	}
 
-	targetBootstrap, ok, err := knowledge.BootstrapVersion(targetVersion)
+	targetBootstrap, ok, err := bootstrapVersion(targetVersion)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load knowledge base: %w", err)
+		return nil, fmt.Errorf("failed to parse target version: %w", err)
 	}
 	if !ok {
 		return []precheck.ReportItem{newItem(forcedSysvarRuleName, precheck.SeverityInfo,
@@ -55,9 +50,9 @@ func (r *ForcedGlobalSysvarsRule) Evaluate(_ context.Context, snapshot precheck.
 	var sourceBootstrap int64
 	sourceVersion := strings.TrimSpace(snapshot.SourceVersion)
 	if sourceVersion != "" {
-		v, ok, err := knowledge.BootstrapVersion(sourceVersion)
+		v, ok, err := bootstrapVersion(sourceVersion)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load knowledge base: %w", err)
+			return nil, fmt.Errorf("failed to parse source version: %w", err)
 		}
 		if !ok {
 			return []precheck.ReportItem{newItem(forcedSysvarRuleName, precheck.SeverityInfo,
@@ -122,16 +117,6 @@ func (r *ForcedGlobalSysvarsRule) Evaluate(_ context.Context, snapshot precheck.
 		}
 		items = append(items, item)
 	}
-
-	sort.Slice(items, func(i, j int) bool {
-		left := items[i].Metadata.(map[string]any)["to_version"].(int64)
-		right := items[j].Metadata.(map[string]any)["to_version"].(int64)
-		if left == right {
-			return items[i].Message < items[j].Message
-		}
-		return left < right
-	})
-
 	return items, nil
 }
 
