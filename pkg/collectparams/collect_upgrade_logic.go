@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// UpgradeVarChange 记录升级过程中强制变更的变量
+// UpgradeVarChange records variables that are forcibly changed during the upgrade process
 // Method: setGlobalSysVar, writeGlobalSysVar, initGlobalVariableIfNotExists, ...
 type UpgradeVarChange struct {
 	Version  string `json:"version"`
@@ -19,7 +19,7 @@ type UpgradeVarChange struct {
 	Comment  string `json:"comment,omitempty"`
 }
 
-// CollectUpgradeLogic 解析 bootstrap.go，提取所有 upgradeToVerXX 函数内的变量强制变更
+// CollectUpgradeLogic parses bootstrap.go to extract all variable forced changes within upgradeToVerXX functions
 
 func CollectUpgradeLogic(bootstrapPath, outputPath string) error {
 	f, err := os.Open(bootstrapPath)
@@ -36,15 +36,15 @@ func CollectUpgradeLogic(bootstrapPath, outputPath string) error {
 		curComment    string
 		results       []UpgradeVarChange
 	)
-	// 匹配 upgradeToVerXX 函数定义
+	// Match upgradeToVerXX function definition
 	funcRe := regexp.MustCompile(`^func (upgradeToVer(\d+))\b`)
-	// 匹配 setGlobalSysVar/写变量的调用
-	setVarRe := regexp.MustCompile(`(setGlobalSysVar|writeGlobalSysVar|initGlobalVariableIfNotExists)\s*\(\s*([^,]+)\s*,\s*([^,\)]+)`) // 方法, 变量名, 值
-	// 匹配 mustExecute/REPLACE INTO/SetGlobalSysVar 语句
+	// Match setGlobalSysVar/variable writing calls
+	setVarRe := regexp.MustCompile(`(setGlobalSysVar|writeGlobalSysVar|initGlobalVariableIfNotExists)\s*\(\s*([^,]+)\s*,\s*([^,\)]+)`) // method, variable name, value
+	// Match mustExecute/REPLACE INTO/SetGlobalSysVar statements
 	mustExecRe := regexp.MustCompile(`mustExecute\(.*(REPLACE|UPDATE|INSERT).*?([a-zA-Z0-9_]+).*?([a-zA-Z0-9_]+).*?([a-zA-Z0-9_]+).*?([0-9a-zA-Z_"']+)`)
-	// 匹配 SetGlobalSysVar 调用
+	// Match SetGlobalSysVar calls
 	setGlobalRe := regexp.MustCompile(`SetGlobalSysVar\(.*?([a-zA-Z0-9_]+).*?,\s*([a-zA-Z0-9_"']+)`)
-	// 匹配函数注释
+	// Match function comments
 	commentRe := regexp.MustCompile(`^//\s*(.*)`)
 
 	for scanner.Scan() {
@@ -57,7 +57,7 @@ func CollectUpgradeLogic(bootstrapPath, outputPath string) error {
 			continue
 		}
 		if inUpgradeFunc {
-			if strings.HasPrefix(line, "}") { // 函数结束
+			if strings.HasPrefix(line, "}") { // Function end
 				inUpgradeFunc = false
 				continue
 			}
@@ -105,7 +105,7 @@ func CollectUpgradeLogic(bootstrapPath, outputPath string) error {
 	if err := scanner.Err(); err != nil {
 		return err
 	}
-	// 输出到 JSON
+	// Output to JSON
 	outF, err := os.Create(outputPath)
 	if err != nil {
 		return err
@@ -116,7 +116,7 @@ func CollectUpgradeLogic(bootstrapPath, outputPath string) error {
 	return enc.Encode(results)
 }
 
-// main 示例
+// main example
 // func main() {
 // 	err := CollectUpgradeLogic("/path/to/bootstrap.go", "./upgrade_logic.json")
 // 	if err != nil {
