@@ -114,7 +114,9 @@ The collected upgrade logic will be used by the precheck system to:
 
 ## 1. Introduction
 
-This document describes the design and implementation of the TiDB parameter collection system, which is part of the tidb-upgrade-precheck project. The system automatically collects TiDB system variable defaults across different versions to support pre-upgrade validation and risk assessment.
+This document describes the design and implementation of the TiDB parameter collection system, which is a submodule of the tidb-upgrade-precheck project. This system automatically collects TiDB system variable defaults across different versions to support pre-upgrade validation and risk assessment.
+
+For an overview of the entire configuration and system variable collection system, please refer to the [TiDB Configuration and System Variable Collection Design](./tidb_config_var_collection_design.md) document.
 
 ## 2. Design Goals
 
@@ -303,4 +305,5 @@ The system is designed to be extensible:
 
 ## 9. Related Documentation
 
-For information about upgrade logic collection (tracking mandatory system variable changes during TiDB upgrades), please refer to the [Upgrade Logic Collection Design](./upgrade_logic_collection_design.md) document.
+- [TiDB Configuration and System Variable Collection Design](./tidb_config_var_collection_design.md) - Overview of the entire system
+- [Upgrade Logic Collection Design](./upgrade_logic_collection_design.md) - Collection of mandatory changes during upgrades
