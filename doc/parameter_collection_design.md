@@ -114,9 +114,9 @@ The collected upgrade logic will be used by the precheck system to:
 
 ## 1. Introduction
 
-This document describes the design and implementation of the TiDB parameter collection system, which is a submodule of the tidb-upgrade-precheck project. This system automatically collects TiDB system variable defaults across different versions to support pre-upgrade validation and risk assessment.
+This document describes the design and implementation of the TiDB parameter collection system, which is a submodule of the [TiDB Upgrade Precheck](./tidb_upgrade_precheck.md) project. This system automatically collects TiDB system variable defaults across different versions to support pre-upgrade validation and risk assessment.
 
-For an overview of the entire configuration and system variable collection system, please refer to the [TiDB Configuration and System Variable Collection Design](./tidb_config_var_collection_design.md) document.
+For an overview of the entire upgrade precheck system, please refer to the [TiDB Upgrade Precheck Design](./tidb_upgrade_precheck.md) document.
 
 ## 2. Design Goals
 
@@ -137,6 +137,8 @@ To handle differences in TiDB code structure across versions, we maintain versio
 - **[export_defaults_v6.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb/tools/export_defaults_v6.go)** - For v6.x versions
 - **[export_defaults_v71.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/tools/upgrade-precheck/export_defaults_v71.go)** - For v7.1 LTS versions
 - **[export_defaults_v75plus.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/tools/upgrade-precheck/export_defaults_v75plus.go)** - For v7.5+ and v8.x versions
+
+For detailed information about collecting default parameters for each LTS version, please refer to the [LTS Version Default Collection Design](./LTS_version_default_design.md) document.
 
 ### 3.2 Collection Orchestration ([pkg/scan/scan.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/pkg/scan/scan.go))
 
@@ -305,5 +307,6 @@ The system is designed to be extensible:
 
 ## 9. Related Documentation
 
-- [TiDB Configuration and System Variable Collection Design](./tidb_config_var_collection_design.md) - Overview of the entire system
+- [TiDB Upgrade Precheck Design](./tidb_upgrade_precheck.md) - Overview of the entire system
+- [LTS Version Default Collection Design](./LTS_version_default_design.md) - Detailed design for collecting defaults from LTS versions
 - [Upgrade Logic Collection Design](./upgrade_logic_collection_design.md) - Collection of mandatory changes during upgrades
