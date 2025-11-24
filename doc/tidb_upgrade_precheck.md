@@ -10,28 +10,20 @@ The current design and implementation primarily focuses on collecting configurat
 
 The TiDB Upgrade Precheck system consists of several modules that work together to collect and analyze data needed for upgrade validation:
 
-1. **Parameter Collection Module** - Collects default values of TiDB system variables and configuration parameters across different LTS versions
-2. **Upgrade Logic Collection Module** - Extracts mandatory system variable changes that occur during TiDB version upgrades
-3. **(Future) Component Upgrade Check Modules** - Will include upgrade checks for TiKV, PD, TiFlash and other components
-4. **(Future) Additional Upgrade Check Modules** - Will include other types of upgrade checks beyond configuration and system variables
+1. **Parameter Collection Module** - Collects default values of TiDB system variables and configuration parameters across different LTS versions, as well as upgrade logic. For details, see [Parameter Collection Design](./parameter_collection_design.md).
+2. **(Future) Component Upgrade Check Modules** - Will include upgrade checks for TiKV, PD, TiFlash and other components
+3. **(Future) Additional Upgrade Check Modules** - Will include other types of upgrade checks beyond configuration and system variables
 
 ## 3. Core Components
 
 ### 3.1 Parameter Collection
-Focuses on collecting default values of TiDB system variables and configuration parameters across different versions. For details, see [Parameter Collection Design](./parameter_collection_design.md).
+Focuses on collecting default values of TiDB system variables and configuration parameters across different versions, as well as upgrade logic. For details, see [Parameter Collection Design](./parameter_collection_design.md).
 
 Key aspects:
 - Version-specific collection tools to handle code structure differences
 - Temporary environment setup for accurate data collection
 - Result aggregation and historical tracking
-
-### 3.2 Upgrade Logic Collection
-Focuses on identifying and extracting mandatory system variable changes that occur during TiDB upgrades. For details, see [Upgrade Logic Collection Design](./upgrade_logic_collection_design.md).
-
-Key aspects:
 - AST parsing of upgrade.go to extract upgradeToVerXX functions
-- Pattern matching for SQL statements that modify system variables
-- Version tracking for upgrade changes
 
 ## 4. Data Collection Architecture
 

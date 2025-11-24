@@ -2,9 +2,9 @@
 
 ## 1. Introduction
 
-This document describes the detailed design and implementation of collecting default parameter values from TiDB LTS (Long Term Support) versions. As part of the [TiDB Parameter Collection](./parameter_collection_design.md) system, this component focuses specifically on accurately extracting system variable and configuration defaults from various LTS releases.
+This document describes the detailed design and implementation of collecting default parameter values from TiDB LTS (Long Term Support) versions. As part of the [TiDB Parameter Collection](../parameter_collection_design.md) system, this component focuses specifically on accurately extracting system variable and configuration defaults from various LTS releases.
 
-For an overview of the entire parameter collection system, please refer to the [Parameter Collection Design](./parameter_collection_design.md) document.
+For an overview of the entire parameter collection system, please refer to the [Parameter Collection Design](../parameter_collection_design.md) document.
 
 ## 2. LTS Version Identification
 
@@ -151,5 +151,5 @@ Processed versions are tracked to avoid redundant collection:
 
 ## 10. Related Documentation
 
-- [Parameter Collection Design](./parameter_collection_design.md) - Overall parameter collection system
-- [TiDB Upgrade Precheck Design](./tidb_upgrade_precheck.md) - Complete upgrade precheck system
+- [Parameter Collection Design](../parameter_collection_design.md) - Overall parameter collection system
+- [TiDB Upgrade Precheck Design](../tidb_upgrade_precheck.md) - Complete upgrade precheck system

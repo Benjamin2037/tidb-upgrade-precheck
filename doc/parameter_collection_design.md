@@ -114,7 +114,7 @@ The collected upgrade logic will be used by the precheck system to:
 
 ## 1. Introduction
 
-This document describes the design and implementation of the TiDB parameter collection system, which is a submodule of the [TiDB Upgrade Precheck](./tidb_upgrade_precheck.md) project. This system automatically collects TiDB system variable defaults across different versions to support pre-upgrade validation and risk assessment.
+This document describes the design and implementation of the TiDB parameter collection system, which is a submodule of the [TiDB Upgrade Precheck](./tidb_upgrade_precheck.md) project. This system automatically collects TiDB system variable defaults and upgrade logic across different versions to support pre-upgrade validation and risk assessment.
 
 For an overview of the entire upgrade precheck system, please refer to the [TiDB Upgrade Precheck Design](./tidb_upgrade_precheck.md) document.
 
@@ -122,13 +122,29 @@ For an overview of the entire upgrade precheck system, please refer to the [TiDB
 
 1. **Multi-version Compatibility**: Support parameter collection from various TiDB versions
 2. **Non-intrusive**: Collect data without modifying the TiDB source code
-3. **Accuracy**: Ensure collected data precisely reflects actual parameter defaults
+3. **Accuracy**: Ensure collected data precisely reflects actual parameter defaults and upgrade changes
 4. **Extensibility**: Allow easy addition of new versions and collection methods
 5. **Efficiency**: Minimize resource consumption during collection
 
 ## 3. Core Components
 
-### 3.1 Version-Specific Collection Tools
+### 3.1 LTS Version Default Collection
+Focuses on collecting default values of TiDB system variables and configuration parameters across different LTS versions. For detailed information, see [LTS Version Default Collection Design](./parameter_collection/LTS_version_default_design.md).
+
+Key aspects:
+- Version-specific collection tools to handle code structure differences
+- Temporary environment setup for accurate data collection
+- Result aggregation and historical tracking
+
+### 3.2 Upgrade Logic Collection
+Focuses on identifying and extracting mandatory system variable changes that occur during TiDB upgrades. For detailed information, see [Upgrade Logic Collection Design](./parameter_collection/upgrade_logic_collection_design.md).
+
+Key aspects:
+- AST parsing of upgrade.go to extract upgradeToVerXX functions
+- Pattern matching for SQL statements that modify system variables
+- Version tracking for upgrade changes
+
+## 4. Version-Specific Collection Tools
 
 To handle differences in TiDB code structure across versions, we maintain version-specific collection tools:
 
@@ -138,9 +154,7 @@ To handle differences in TiDB code structure across versions, we maintain versio
 - **[export_defaults_v71.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/tools/upgrade-precheck/export_defaults_v71.go)** - For v7.1 LTS versions
 - **[export_defaults_v75plus.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/tools/upgrade-precheck/export_defaults_v75plus.go)** - For v7.5+ and v8.x versions
 
-For detailed information about collecting default parameters for each LTS version, please refer to the [LTS Version Default Collection Design](./LTS_version_default_design.md) document.
-
-### 3.2 Collection Orchestration ([pkg/scan/scan.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/pkg/scan/scan.go))
+## 5. Collection Orchestration ([pkg/scan/scan.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/pkg/scan/scan.go))
 
 This component manages the overall collection process:
 - Version detection and tool selection
@@ -148,16 +162,16 @@ This component manages the overall collection process:
 - Execution of collection tools
 - Result aggregation and output
 
-### 3.3 Version Management ([pkg/scan/version_manager.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/pkg/scan/version_manager.go))
+## 6. Version Management ([pkg/scan/version_manager.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/pkg/scan/version_manager.go))
 
 Tracks which versions have been processed to avoid redundant work:
 - Records processed versions and their commit hashes
 - Provides skip/check functionality
 - Manages version metadata
 
-## 4. Collection Process
+## 7. Collection Process
 
-### 4.1 Single Version Collection
+### 7.1 Single Version Collection
 
 For collecting parameters from a specific version:
 1. User specifies a Git tag
@@ -166,7 +180,7 @@ For collecting parameters from a specific version:
 4. Tool is executed in the context of the cloned repository
 5. Results are saved to `knowledge/<version>/defaults.json`
 
-### 4.2 Full Collection
+### 7.2 Full Collection
 
 For collecting parameters from all LTS versions:
 1. System identifies all LTS tags in the TiDB repository
@@ -175,16 +189,16 @@ For collecting parameters from all LTS versions:
    - If not, perform single version collection
 3. Aggregate all collected parameters into `knowledge/tidb/parameters-history.json`
 
-### 4.3 Incremental Collection
+### 7.3 Incremental Collection
 
 For collecting parameters from a range of versions:
 1. User specifies from-tag and to-tag
 2. System identifies tags in that range
 3. Process each tag following the single version collection process
 
-## 5. Output Formats
+## 8. Output Formats
 
-### 5.1 Version-Specific Parameters ([defaults.json](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/pkg/scan/defaults.go#L79-L79))
+### 8.1 Version-Specific Parameters ([defaults.json](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/pkg/scan/defaults.go#L79-L79))
 
 Each version's parameters are stored in:
 ```
@@ -206,7 +220,7 @@ Structure:
 }
 ```
 
-### 5.2 Parameter History Aggregation
+### 8.2 Parameter History Aggregation
 
 All parameters across versions are aggregated into:
 ```
@@ -237,9 +251,33 @@ Structure:
 }
 ```
 
-## 6. Technical Implementation Details
+### 8.3 Upgrade Logic
 
-### 6.1 Temporary Clone Mechanism
+Upgrade logic changes are stored in:
+```
+knowledge/tidb/upgrade_logic.json
+```
+
+Structure:
+```json
+[
+  {
+    "version": 71,
+    "function": "upgradeToVer71",
+    "changes": [
+      {
+        "type": "SQL",
+        "sql": "\"UPDATE mysql.global_variables SET VARIABLE_VALUE='OFF' WHERE VARIABLE_NAME = 'tidb_multi_statement_mode' AND VARIABLE_VALUE = 'WARN'\"",
+        "location": "../tidb/pkg/session/upgrade.go:1302:17"
+      }
+    ]
+  }
+]
+```
+
+## 9. Technical Implementation Details
+
+### 9.1 Temporary Clone Mechanism
 
 To ensure accurate parameter collection without affecting the original repository:
 1. Create a temporary directory
@@ -254,7 +292,7 @@ This approach guarantees that:
 - No interference with the original repository
 - Isolated execution environment
 
-### 6.2 Dynamic Import Mechanism
+### 9.2 Dynamic Import Mechanism
 
 Different TiDB versions have different code structures:
 - Older versions: sysvar and config packages in root directory
@@ -266,16 +304,16 @@ To handle this, we maintain version-specific tools that:
 - Call the appropriate functions
 - Export data in a consistent format
 
-## 7. Usage Instructions
+## 10. Usage Instructions
 
-### 7.1 Environment Setup
+### 10.1 Environment Setup
 
 1. Ensure both tidb-upgrade-precheck and tidb repositories are cloned
 2. Place them in sibling directories
 3. Ensure Go 1.18+ is installed
 4. Verify Git access to the repositories
 
-### 7.2 Collection Commands
+### 10.2 Collection Commands
 
 1. **Full Collection**:
    ```bash
@@ -297,7 +335,7 @@ To handle this, we maintain version-specific tools that:
    go run cmd/kb-generator/main.go --aggregate
    ```
 
-## 8. Extensibility
+## 11. Extensibility
 
 The system is designed to be extensible:
 - Adding new version-specific tools for future TiDB versions
@@ -305,8 +343,8 @@ The system is designed to be extensible:
 - Adding new output formats
 - Integrating with CI/CD systems for automatic updates
 
-## 9. Related Documentation
+## 12. Related Documentation
 
 - [TiDB Upgrade Precheck Design](./tidb_upgrade_precheck.md) - Overview of the entire system
-- [LTS Version Default Collection Design](./LTS_version_default_design.md) - Detailed design for collecting defaults from LTS versions
-- [Upgrade Logic Collection Design](./upgrade_logic_collection_design.md) - Collection of mandatory changes during upgrades
+- [LTS Version Default Collection Design](./parameter_collection/LTS_version_default_design.md) - Detailed design for collecting defaults from LTS versions
+- [Upgrade Logic Collection Design](./parameter_collection/upgrade_logic_collection_design.md) - Collection of mandatory changes during upgrades
