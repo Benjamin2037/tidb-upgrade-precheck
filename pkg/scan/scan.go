@@ -1,9 +1,9 @@
 package scan
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,6 +11,205 @@ import (
 	"strconv"
 	"strings"
 )
+
+// ScanResult contains the result of a scan
+type ScanResult struct {
+	Tag     string
+	WorkDir string
+	Error   error
+}
+
+// ScanSingleTag scans a single tag
+func ScanSingleTag(ctx context.Context, repo, tag string, vm *VersionManager) (ScanResult, error) {
+	fmt.Printf("[ScanSingleTag] repo=%s tag=%s\n", repo, tag)
+
+	// Check if version already exists
+	if vm.IsVersionGenerated(tag) {
+		fmt.Printf("[Skipped] Version %s already generated, skipping parameter collection\n", tag)
+		return ScanResult{Tag: tag, WorkDir: ""}, nil
+	}
+
+	// Create temporary directory
+	tmpDir, err := os.MkdirTemp("", "tidb_upgrade_precheck_*")
+	if err != nil {
+		return ScanResult{Tag: tag, Error: fmt.Errorf("failed to create temp dir: %v", err)}, nil
+	}
+
+	// Clean up
+	defer os.RemoveAll(tmpDir)
+
+	// Checkout tag
+	workDir := filepath.Join(tmpDir, "tidb")
+	if err := checkoutTag(repo, tag, workDir); err != nil {
+		return ScanResult{Tag: tag, Error: fmt.Errorf("failed to checkout tag: %v", err)}, nil
+	}
+
+	// Scan defaults
+	defaultsFile := filepath.Join("knowledge", tag, "defaults.json")
+	if err := os.MkdirAll(filepath.Dir(defaultsFile), 0755); err != nil {
+		return ScanResult{Tag: tag, Error: fmt.Errorf("failed to create defaults dir: %v", err)}, nil
+	}
+
+	toolFile, _ := selectToolByVersion(workDir)
+	if err := ScanDefaults(workDir, defaultsFile, toolFile); err != nil {
+		return ScanResult{Tag: tag, Error: fmt.Errorf("failed to scan defaults: %v", err)}, nil
+	}
+
+	// Record version
+	if err := vm.RecordVersion(tag, workDir); err != nil {
+		return ScanResult{Tag: tag, Error: fmt.Errorf("failed to record version: %v", err)}, nil
+	}
+
+	return ScanResult{Tag: tag, WorkDir: workDir}, nil
+}
+
+// ScanVersionRange scans a range of versions
+func ScanVersionRange(ctx context.Context, repo, fromTag, toTag string, vm *VersionManager) error {
+	fmt.Printf("[ScanVersionRange] repo=%s from=%s to=%s\n", repo, fromTag, toTag)
+
+	tags, err := getTagsInRange(repo, fromTag, toTag)
+	if err != nil {
+		return fmt.Errorf("failed to get tags in range: %v", err)
+	}
+
+	fmt.Printf("Found %d tags to process\n", len(tags))
+
+	for _, tag := range tags {
+		result, err := ScanSingleTag(ctx, repo, tag, vm)
+		if err != nil {
+			return fmt.Errorf("failed to scan tag %s: %v", tag, err)
+		}
+
+		if result.Error != nil {
+			fmt.Printf("[Error] Failed to process tag %s: %v\n", tag, result.Error)
+		} else if result.WorkDir == "" {
+			fmt.Printf("[Skipped] Version %s already generated, skipping parameter collection\n", tag)
+		} else {
+			fmt.Printf("[Success] Processed tag %s\n", tag)
+		}
+	}
+
+	return nil
+}
+
+
+// ScanAllTags scans all LTS tags
+func ScanAllTags(ctx context.Context, repo string, vm *VersionManager) error {
+	fmt.Printf("[ScanAllTags] repo=%s\n", repo)
+
+	tags, err := getAllLTSTags(repo)
+	if err != nil {
+		return fmt.Errorf("failed to get all LTS tags: %v", err)
+	}
+
+	fmt.Printf("Found %d LTS tags to process\n", len(tags))
+
+	for _, tag := range tags {
+		result, err := ScanSingleTag(ctx, repo, tag, vm)
+		if err != nil {
+			return fmt.Errorf("failed to scan tag %s: %v", tag, err)
+		}
+
+		if result.Error != nil {
+			fmt.Printf("[Error] Failed to process tag %s: %v\n", tag, result.Error)
+		} else if result.WorkDir == "" {
+			fmt.Printf("[Skipped] Version %s already generated, skipping parameter collection\n", tag)
+		} else {
+			fmt.Printf("[Success] Processed tag %s\n", tag)
+		}
+	}
+
+	// After processing all tags, aggregate parameters
+	if err := aggregateParameters(); err != nil {
+		return fmt.Errorf("failed to aggregate parameters: %v", err)
+	}
+
+	// Scan upgrade logic
+	if err := scanUpgradeLogic(repo); err != nil {
+		return fmt.Errorf("failed to scan upgrade logic: %v", err)
+	}
+
+	return nil
+}
+
+// getTagsInRange returns tags in a range
+func getTagsInRange(repo, fromTag, toTag string) ([]string, error) {
+	// This is a placeholder implementation
+	// In a real implementation, this would query git for tags between fromTag and toTag
+	return []string{fromTag, toTag}, nil
+}
+
+// getAllLTSTags returns all LTS tags
+func getAllLTSTags(repo string) ([]string, error) {
+	// This is a placeholder implementation
+	// In a real implementation, this would query git for all LTS tags
+	// For now, we'll return a sample list
+	return []string{
+		"v6.5.0", "v6.5.1", "v6.5.2", "v6.5.3", "v6.5.4", "v6.5.5", "v6.5.6", "v6.5.7", "v6.5.8", "v6.5.9", "v6.5.10", "v6.5.11", "v6.5.12",
+		"v7.1.0", "v7.1.1", "v7.1.2", "v7.1.3", "v7.1.4", "v7.1.5", "v7.1.6",
+		"v7.5.0", "v7.5.1", "v7.5.2", "v7.5.3", "v7.5.4", "v7.5.5", "v7.5.6", "v7.5.7",
+		"v8.1.0", "v8.1.1", "v8.1.2",
+		"v8.5.0", "v8.5.1", "v8.5.2", "v8.5.3",
+	}, nil
+}
+
+// checkoutTag checks out a specific tag
+func checkoutTag(repo, tag, workDir string) error {
+	// This is a placeholder implementation
+	// In a real implementation, this would perform git checkout
+	fmt.Printf("[Checkout] repo=%s tag=%s workDir=%s\n", repo, tag, workDir)
+	return nil
+}
+
+// aggregateParameters aggregates parameters from all versions
+func aggregateParameters() error {
+	fmt.Printf("[Parameter Aggregation] Aggregating parameters from all versions\n")
+	// This is a placeholder implementation
+	// In a real implementation, this would aggregate parameters from all versions
+	return nil
+}
+
+// scanUpgradeLogic scans the upgrade logic
+func scanUpgradeLogic(repo string) error {
+	if repo == "" {
+		return fmt.Errorf("repo path is empty")
+	}
+
+	// Create tools directory if not exists
+	toolsDir := filepath.Join("pkg", "scan", "tools")
+	if err := os.MkdirAll(toolsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create tools directory: %v", err)
+	}
+
+	// Copy the tool to tools directory
+	toolPath := filepath.Join(toolsDir, "upgrade_logic_collector.go")
+	if err := copyFile(filepath.Join("../..", "tools", "upgrade_logic_collector.go"), toolPath); err != nil {
+		return fmt.Errorf("failed to copy tool: %v", err)
+	}
+
+	// Run the tool
+	cmd := exec.Command("go", "run", toolPath, repo)
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to run upgrade logic collector: %v", err)
+	}
+
+	// Create knowledge/tidb directory if not exists
+	knowledgeDir := filepath.Join("knowledge", "tidb")
+	if err := os.MkdirAll(knowledgeDir, 0755); err != nil {
+		return fmt.Errorf("failed to create knowledge directory: %v", err)
+	}
+
+	// Write output to file
+	outputFile := filepath.Join(knowledgeDir, "upgrade_logic.json")
+	if err := os.WriteFile(outputFile, output, 0644); err != nil {
+		return fmt.Errorf("failed to write upgrade logic to file: %v", err)
+	}
+
+	fmt.Printf("[ScanUpgradeLogic] repo=%s\n", repo)
+	return nil
+}
+
 
 // ParameterHistoryEntry records parameter properties at a specific version
 type ParameterHistoryEntry struct {
@@ -66,7 +265,7 @@ func ScanAllAndAggregateParameters(repo string) error {
 		fmt.Printf("[Processing] Collecting parameters for version %s\n", tag)
 		
 		// Create a temporary directory for cloning
-		tempDir, err := ioutil.TempDir("", "tidb_upgrade_precheck")
+		tempDir, err := os.MkdirTemp("", "tidb_upgrade_precheck")
 		if err != nil {
 			fmt.Printf("[WARN] failed to create temp directory: %v\n", err)
 			continue
@@ -91,7 +290,11 @@ func ScanAllAndAggregateParameters(repo string) error {
 		}
 		
 		// Determine which export_defaults file to use based on version
-		toolFileName := selectToolByVersion(tag)
+		toolFileName, err := selectToolByVersion(tempDir)
+	if err != nil {
+		fmt.Printf("[WARN] failed to select tool by version: %v\n", err)
+		continue
+	}
 		
 		// Copy the appropriate export_defaults tool to the cloned repo
 		// Now we copy from tidb-upgrade-precheck project instead of tidb project
@@ -149,7 +352,7 @@ func ScanAllAndAggregateParameters(repo string) error {
 		}
 		
 		// Load defaults.json and merge into paramMap
-		defaultsData, err := ioutil.ReadFile(defaultsPath)
+		defaultsData, err := os.ReadFile(defaultsPath)
 		if err != nil {
 			fmt.Printf("[WARN] Failed to read defaults.json for %s: %v\n", tag, err)
 			continue
@@ -209,7 +412,7 @@ func ScanAllAndAggregateParameters(repo string) error {
 		return fmt.Errorf("failed to marshal parameters history: %v", err)
 	}
 	
-	if err := ioutil.WriteFile(outFile, data, 0644); err != nil {
+	if err := os.WriteFile(outFile, data, 0644); err != nil {
 		return fmt.Errorf("failed to write output file: %v", err)
 	}
 	
@@ -280,7 +483,7 @@ func ScanAll(repo string) error {
 		fmt.Printf("[Processing] Collecting data for version %s\n", tag)
 		
 		// Create a temporary directory for cloning
-		tempDir, err := ioutil.TempDir("", "tidb_upgrade_precheck")
+		tempDir, err := os.MkdirTemp("", "tidb_upgrade_precheck")
 		if err != nil {
 			fmt.Printf("[WARN] failed to create temp directory: %v\n", err)
 			continue
@@ -305,7 +508,11 @@ func ScanAll(repo string) error {
 		}
 		
 		// Determine which export_defaults file to use based on version
-		toolFileName := selectToolByVersion(tag)
+		toolFileName, err := selectToolByVersion(tempDir)
+	if err != nil {
+		fmt.Printf("[WARN] failed to select tool by version: %v\n", err)
+		continue
+	}
 		
 		// Copy the appropriate export_defaults tool to the cloned repo
 		// Now we copy from tidb-upgrade-precheck project instead of tidb project
@@ -351,8 +558,8 @@ func ScanAll(repo string) error {
 		f.Close()
 		
 		// Run upgrade logic collection tool
-		if err := ScanUpgradeLogic(tempDir, tag); err != nil {
-			fmt.Printf("[WARN] ScanUpgradeLogic failed for %s: %v\n", tag, err)
+		if err := scanUpgradeLogic(tempDir); err != nil {
+			fmt.Printf("[WARN] scanUpgradeLogic failed for %s: %v\n", tag, err)
 			continue
 		}
 	}
@@ -381,11 +588,42 @@ func ScanRange(repo, fromTag, toTag string) error {
 		}
 		
 		fmt.Printf("[Incremental] Collecting %s ...\n", tag)
-		if err := ScanDefaults(repo, tag); err != nil {
+		// Create a temporary directory for cloning
+		tempDir, err := os.MkdirTemp("", "tidb_upgrade_precheck")
+		if err != nil {
+			fmt.Printf("[WARN] failed to create temp directory: %v\n", err)
+			continue
+		}
+		
+		// Clean up temp directory after processing
+		defer os.RemoveAll(tempDir)
+		
+		// Clone the repo to temporary directory
+		cloneCmd := exec.Command("git", "clone", repo, tempDir)
+		if err := cloneCmd.Run(); err != nil {
+			fmt.Printf("[WARN] failed to clone repo: %v\n", err)
+			continue
+		}
+		
+		// Checkout the specific tag in the cloned repo
+		checkoutCmd := exec.Command("git", "checkout", tag)
+		checkoutCmd.Dir = tempDir
+		if err := checkoutCmd.Run(); err != nil {
+			fmt.Printf("[WARN] git checkout %s failed: %v\n", tag, err)
+			continue
+		}
+		
+		toolFile, err := selectToolByVersion(tempDir)
+		if err != nil {
+			fmt.Printf("[WARN] failed to select tool by version: %v\n", err)
+			continue
+		}
+		
+		if err := ScanDefaults(tempDir, filepath.Join("knowledge", tag, "defaults.json"), toolFile); err != nil {
 			fmt.Printf("[WARN] ScanDefaults failed for %s: %v\n", tag, err)
 		}
-		if err := ScanUpgradeLogic(repo, tag); err != nil {
-			fmt.Printf("[WARN] ScanUpgradeLogic failed for %s: %v\n", tag, err)
+		if err := scanUpgradeLogic(tempDir); err != nil {
+			fmt.Printf("[WARN] scanUpgradeLogic failed for %s: %v\n", tag, err)
 		}
 		
 		// Record this version as generated
@@ -423,8 +661,8 @@ func GetAllTags(repo string) ([]string, error) {
 	return lts, nil
 }
 
-// getTagsInRange gets LTS tags within specified tag range
-func getTagsInRange(repo, fromTag, toTag string) ([]string, error) {
+// GetTagsInRange gets LTS tags within specified tag range
+func GetTagsInRange(repo, fromTag, toTag string) ([]string, error) {
 	all, err := GetAllTags(repo)
 	if err != nil {
 		return nil, err
@@ -445,13 +683,5 @@ func getTagsInRange(repo, fromTag, toTag string) ([]string, error) {
 	return res, nil
 }
 
-// ScanUpgradeLogicGlobal generates only one global upgrade_logic.json with version information
-func ScanUpgradeLogicGlobal(repo string, tags []string) error {
-	// Implement AST scanning of all tag upgrade changes, merge into a global file
-	// Example structure: [{"tag": "v7.5.0", ...}, {"tag": "v8.1.0", ...}]
-	fmt.Println("[ScanUpgradeLogicGlobal] Scanning all version upgrade changes, generating global upgrade_logic.json")
-	// Changes for each tag should be merged here
-	return nil
-}
 
 

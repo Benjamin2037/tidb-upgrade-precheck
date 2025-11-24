@@ -60,6 +60,16 @@ func TestForcedGlobalSysvarsRule(t *testing.T) {
 	catalog, err := metadata.LoadCatalog(metadataPath)
 	require.NoError(t, err)
 
+	// Save original function and restore after test
+	originalBootstrap := bootstrapVersionFuncForced
+	bootstrapVersionFuncForced = func(version string) (int64, bool, error) {
+		if version == "v6.5.0" {
+			return 66, true, nil
+		}
+		return 0, false, nil
+	}
+	t.Cleanup(func() { bootstrapVersionFuncForced = originalBootstrap })
+
 	rule := NewForcedGlobalSysvarsRule(catalog)
 	require.NotNil(t, rule)
 

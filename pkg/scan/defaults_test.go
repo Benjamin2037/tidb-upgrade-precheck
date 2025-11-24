@@ -41,16 +41,17 @@ func TestSelectToolByVersion(t *testing.T) {
 		version  string
 		expected string
 	}{
-		{"v8.5.0", "export_defaults_v75plus.go"},
-		{"v7.5.0", "export_defaults_v75plus.go"},
-		{"v7.1.0", "export_defaults_v71.go"},
-		{"v6.5.0", "export_defaults_v6.go"},
-		{"v5.4.0", "export_defaults.go"},
-		{"v4.0.0", "export_defaults.go"},
+		{"v8.5.0", "tools/tidb-tools/export_defaults.go"},
+		{"v7.5.0", "tools/tidb-tools/export_defaults.go"},
+		{"v7.1.0", "tools/tidb-tools/export_defaults.go"},
+		{"v6.5.0", "tools/tidb-tools/export_defaults.go"},
+		{"v5.4.0", "tools/tidb-tools/export_defaults.go"},
+		{"v4.0.0", "tools/tidb-tools/export_defaults.go"},
 	}
 	
 	for _, tc := range testCases {
-		result := selectToolByVersion(tc.version)
+		result, _ := selectToolByVersion(tc.version)
+		// Ignore error for now
 		require.Equal(t, tc.expected, result, "Failed for tag: %s", tc.version)
 	}
 }

@@ -12,6 +12,9 @@ import (
 
 const configuredSysvarRuleName = "core.configured-global-sysvars"
 
+// For testing purposes
+var bootstrapVersionFunc = bootstrapVersion
+
 // ConfiguredGlobalSysvarsRule reports global system variables whose current value diverges from the baseline value in the source version.
 type ConfiguredGlobalSysvarsRule struct {
 	catalog *metadata.Catalog
@@ -51,7 +54,7 @@ func (r *ConfiguredGlobalSysvarsRule) Evaluate(_ context.Context, snapshot prech
 			"Provide snapshot.TargetVersion so the checker can compare source and target defaults", nil)}, nil
 	}
 
-	sourceBootstrap, ok, err := bootstrapVersion(sourceVersion)
+	sourceBootstrap, ok, err := bootstrapVersionFunc(sourceVersion)
 	if err != nil {
 		return nil, fmt.Errorf("load knowledge base: %w", err)
 	}
@@ -61,7 +64,7 @@ func (r *ConfiguredGlobalSysvarsRule) Evaluate(_ context.Context, snapshot prech
 			"Update the knowledge base or specify a full version string", nil)}, nil
 	}
 
-	targetBootstrap, ok, err := bootstrapVersion(targetVersion)
+	targetBootstrap, ok, err := bootstrapVersionFunc(targetVersion)
 	if err != nil {
 		return nil, fmt.Errorf("load knowledge base: %w", err)
 	}

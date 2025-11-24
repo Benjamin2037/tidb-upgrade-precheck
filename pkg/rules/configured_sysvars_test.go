@@ -28,10 +28,18 @@ func TestConfiguredRuleReportsCustomizedValues(t *testing.T) {
         ]
     }`)
 
-	bootstrapLookup = func(version string) (int64, bool, error) {
-		return 100, true, nil
+	// Save original function and restore after test
+	originalBootstrap := bootstrapVersionFunc
+	bootstrapVersionFunc = func(version string) (int64, bool, error) {
+		switch version {
+		case "v6.5.0":
+			return 100, true, nil
+		case "v6.5.1":
+			return 101, true, nil
+		}
+		return 0, false, nil
 	}
-	t.Cleanup(func() { bootstrapLookup = knowledgeBootstrap })
+	t.Cleanup(func() { bootstrapVersionFunc = originalBootstrap })
 
 	rule := NewConfiguredGlobalSysvarsRule(catalog)
 	snapshot := precheck.Snapshot{
@@ -58,10 +66,15 @@ func TestConfiguredRuleReportsCustomizedValues(t *testing.T) {
 func TestConfiguredRuleIgnoresMatchingValues(t *testing.T) {
 	catalog := mustLoadCatalog(t, `{"versions":[{"version": 200, "changes":[{"kind":"sysvar","target":"tidb_case","default_value":"1","scope":"global"}]}]}`)
 
-	bootstrapLookup = func(version string) (int64, bool, error) {
-		return 200, true, nil
+	// Save original function and restore after test
+	originalBootstrap := bootstrapVersionFunc
+	bootstrapVersionFunc = func(version string) (int64, bool, error) {
+		if version == "v7.0.0" {
+			return 200, true, nil
+		}
+		return 0, false, nil
 	}
-	t.Cleanup(func() { bootstrapLookup = knowledgeBootstrap })
+	t.Cleanup(func() { bootstrapVersionFunc = originalBootstrap })
 
 	rule := NewConfiguredGlobalSysvarsRule(catalog)
 	snapshot := precheck.Snapshot{

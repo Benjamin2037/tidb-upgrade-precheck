@@ -1,47 +1,132 @@
 package scan
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
 )
 
-// ScanUpgradeLogic analyzes upgrade.go file and extracts upgrade logic
-// This function only needs to use the latest code to collect upgrade logic
-// The tag parameter is kept for compatibility but not used
-func ScanUpgradeLogic(repo, tag string) error {
-	fmt.Printf("[ScanUpgradeLogic] repo=%s\n", repo)
-	
-	// Create output directory
-	outDir := filepath.Join("knowledge", "tidb")
-	os.MkdirAll(outDir, 0755)
-	outFile := filepath.Join(outDir, "upgrade_logic.json")
-	
-	// Get current directory
-	currentDir, _ := os.Getwd()
-	srcToolPath := filepath.Join(currentDir, "tools", "upgrade_logic_collector.go")
-	
-	// Run upgrade logic collection tool directly on the repo (using latest code)
-	run := exec.Command("go", "run", srcToolPath, repo)
-	f, err := os.Create(outFile)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	run.Stdout = f
-	run.Stderr = os.Stderr
-	if err := run.Run(); err != nil {
-		return fmt.Errorf("go run upgrade_logic_collector.go failed: %v", err)
-	}
-	
-	return nil
+// UpgradeChange represents a change in upgrade logic
+type UpgradeChange struct {
+	Version  int    `json:"version"`
+	Function string `json:"function"`
+	Changes  []struct {
+		Type     string `json:"type"`
+		SQL      string `json:"sql,omitempty"`
+		Location string `json:"location"`
+	} `json:"changes"`
 }
 
-// GetAllUpgradeChanges scans all versions and extracts upgrade changes
-func GetAllUpgradeChanges(repo string) error {
-	// This would implement scanning all versions for upgrade changes
-	// and generating a global upgrade_logic.json
+// VersionRange represents a range of versions for incremental upgrade analysis
+type VersionRange struct {
+	FromVersion int `json:"from_version"`
+	ToVersion   int `json:"to_version"`
+}
+
+// GetAllUpgradeChanges collects upgrade changes from all versions
+func GetAllUpgradeChanges() ([]UpgradeChange, error) {
 	fmt.Println("[GetAllUpgradeChanges] Collecting upgrade changes from all versions")
+
+	// This would typically read from the generated upgrade_logic.json
+	knowledgeDir := filepath.Join("..", "..", "knowledge", "tidb")
+	outputFile := filepath.Join(knowledgeDir, "upgrade_logic.json")
+
+	if _, err := os.Stat(outputFile); os.IsNotExist(err) {
+		// Try alternative path
+		altKnowledgeDir := filepath.Join("knowledge", "tidb")
+		outputFile = filepath.Join(altKnowledgeDir, "upgrade_logic.json")
+		if _, err := os.Stat(outputFile); os.IsNotExist(err) {
+			return nil, fmt.Errorf("upgrade_logic.json not found, please run ScanUpgradeLogic first")
+		}
+	}
+
+	data, err := os.ReadFile(outputFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read upgrade_logic.json: %v", err)
+	}
+	
+	fmt.Printf("[GetAllUpgradeChanges] Read %d bytes from %s\n", len(data), outputFile)
+
+	var changes []UpgradeChange
+	if err := json.Unmarshal(data, &changes); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal upgrade logic: %v", err)
+	}
+
+	// Sort by version
+	sort.Slice(changes, func(i, j int) bool {
+		return changes[i].Version < changes[j].Version
+	})
+
+	return changes, nil
+}
+
+// GetIncrementalUpgradeChanges collects upgrade changes for a specific version range
+func GetIncrementalUpgradeChanges(fromVersion, toVersion string) ([]UpgradeChange, error) {
+	fmt.Printf("[GetIncrementalUpgradeChanges] Collecting upgrade changes from version %s to %s\n", fromVersion, toVersion)
+
+	allChanges, err := GetAllUpgradeChanges()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all upgrade changes: %v", err)
+	}
+
+	fromVer, err := parseVersionString(fromVersion)
+	if err != nil {
+		return nil, fmt.Errorf("invalid from version %s: %v", fromVersion, err)
+	}
+
+	toVer, err := parseVersionString(toVersion)
+	if err != nil {
+		return nil, fmt.Errorf("invalid to version %s: %v", toVersion, err)
+	}
+
+	var incrementalChanges []UpgradeChange
+	for _, change := range allChanges {
+		// Include changes where version is > fromVer and <= toVer
+		if change.Version > fromVer && change.Version <= toVer {
+			incrementalChanges = append(incrementalChanges, change)
+		}
+	}
+
+	return incrementalChanges, nil
+}
+
+// parseVersionString parses a version string like "v6.5.0" and returns the major.minor version as an integer (e.g., 65)
+func parseVersionString(version string) (int, error) {
+	// Remove 'v' prefix if present
+	version = strings.TrimPrefix(version, "v")
+	
+	// Split by dots
+	parts := strings.Split(version, ".")
+	if len(parts) < 2 {
+		return 0, fmt.Errorf("invalid version format")
+	}
+	
+	// Parse major and minor versions
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, fmt.Errorf("invalid major version: %v", err)
+	}
+	
+	minor, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, fmt.Errorf("invalid minor version: %v", err)
+	}
+	
+	// Return combined version as major*10 + minor
+	return major*10 + minor, nil
+}
+
+// ScanUpgradeLogicGlobal scans upgrade logic globally
+func ScanUpgradeLogicGlobal(repo string, versionRange *VersionRange) error {
+	// This is a placeholder implementation
+	// In a real implementation, this would scan upgrade logic globally
+	fmt.Printf("[ScanUpgradeLogicGlobal] repo=%s\n", repo)
+	if versionRange != nil {
+		fmt.Printf("[ScanUpgradeLogicGlobal] from_version=%d to_version=%d\n", versionRange.FromVersion, versionRange.ToVersion)
+	}
 	return nil
 }

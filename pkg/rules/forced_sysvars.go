@@ -10,6 +10,9 @@ import (
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/precheck"
 )
 
+// For testing purposes
+var bootstrapVersionFuncForced = bootstrapVersion
+
 const forcedSysvarRuleName = "core.forced-global-sysvars"
 
 // ForcedGlobalSysvarsRule reports forced global system variable changes between two bootstrap versions.
@@ -37,7 +40,7 @@ func (r *ForcedGlobalSysvarsRule) Evaluate(_ context.Context, snapshot precheck.
 			"Provide a valid target version for snapshot.TargetVersion", nil)}, nil
 	}
 
-	targetBootstrap, ok, err := bootstrapVersion(targetVersion)
+	targetBootstrap, ok, err := bootstrapVersionFuncForced(targetVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse target version: %w", err)
 	}
@@ -50,7 +53,7 @@ func (r *ForcedGlobalSysvarsRule) Evaluate(_ context.Context, snapshot precheck.
 	var sourceBootstrap int64
 	sourceVersion := strings.TrimSpace(snapshot.SourceVersion)
 	if sourceVersion != "" {
-		v, ok, err := bootstrapVersion(sourceVersion)
+		v, ok, err := bootstrapVersionFuncForced(sourceVersion)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse source version: %w", err)
 		}
@@ -104,45 +107,45 @@ func (r *ForcedGlobalSysvarsRule) Evaluate(_ context.Context, snapshot precheck.
 		}
 
 		item := precheck.ReportItem{
-			Rule:     forcedSysvarRuleName,
-			Severity: precheck.SeverityWarning,
-			Message:  message,
-			Metadata: metadata,
-		}
-		if details != "" {
-			item.Details = []string{details}
-		}
-		if len(change.OptionalHints) > 0 {
-			item.Suggestions = append(item.Suggestions, change.OptionalHints...)
+			Rule:        forcedSysvarRuleName,
+			Severity:    precheck.SeverityWarning,
+			Message:     message,
+			Details:     []string{details},
+			Metadata:    metadata,
+			Suggestions: change.OptionalHints,
 		}
 		items = append(items, item)
 	}
+
+	sort.Slice(items, func(i, j int) bool {
+		left := strings.ToLower(items[i].Metadata.(map[string]any)["target"].(string))
+		right := strings.ToLower(items[j].Metadata.(map[string]any)["target"].(string))
+		return left < right
+	})
+
 	return items, nil
 }
 
 func collapseChanges(changes []metadata.Change) []metadata.Change {
-	if len(changes) == 0 {
-		return nil
+	if len(changes) <= 1 {
+		return changes
 	}
-	dedup := make(map[string]metadata.Change)
+
+	lookup := make(map[string]metadata.Change, len(changes))
 	for _, change := range changes {
-		if change.Target == "" {
-			continue
-		}
-		existing, ok := dedup[change.Target]
-		if !ok || change.ToVersion > existing.ToVersion {
-			dedup[change.Target] = change
+		key := strings.ToLower(change.Target)
+		if existing, ok := lookup[key]; !ok || change.ToVersion > existing.ToVersion {
+			lookup[key] = change
 		}
 	}
-	result := make([]metadata.Change, 0, len(dedup))
-	for _, change := range dedup {
+
+	result := make([]metadata.Change, 0, len(lookup))
+	for _, change := range lookup {
 		result = append(result, change)
 	}
 	sort.Slice(result, func(i, j int) bool {
-		if result[i].ToVersion == result[j].ToVersion {
-			return result[i].Target < result[j].Target
-		}
 		return result[i].ToVersion < result[j].ToVersion
 	})
+
 	return result
 }
