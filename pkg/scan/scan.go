@@ -94,7 +94,9 @@ func ScanAllAndAggregateParameters(repo string) error {
 		toolFileName := selectToolByVersion(tag)
 		
 		// Copy the appropriate export_defaults tool to the cloned repo
-		srcToolPath := filepath.Join(repo, "tools", toolFileName)
+		// Now we copy from tidb-upgrade-precheck project instead of tidb project
+		currentDir, _ := os.Getwd()
+		srcToolPath := filepath.Join(currentDir, "tools/upgrade-precheck", toolFileName)
 		dstToolPath := filepath.Join(tempDir, "tools", "export_defaults.go")
 		
 		// Create tools directory if it doesn't exist
@@ -306,7 +308,8 @@ func ScanAll(repo string) error {
 		toolFileName := selectToolByVersion(tag)
 		
 		// Copy the appropriate export_defaults tool to the cloned repo
-		srcToolPath := filepath.Join(repo, "tools", toolFileName)
+		// Now we copy from tidb-upgrade-precheck project instead of tidb project
+		srcToolPath := filepath.Join("./tools/upgrade-precheck", toolFileName)
 		dstToolPath := filepath.Join(tempDir, "tools", "export_defaults.go")
 		
 		// Create tools directory if it doesn't exist
