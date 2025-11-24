@@ -1,5 +1,4 @@
 # 忽略自动生成的知识库和临时文件
-knowledge/
 *.out
 *.log
 *.tmp

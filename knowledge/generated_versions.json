@@ -1,0 +1,177 @@
+{
+  "v6.5.0": {
+    "tag": "v6.5.0",
+    "generated_at": "2025-11-24T14:57:42.234201+08:00",
+    "commit_hash": "706c3fa3c526cdba5b3e9f066b1a568fb96c56e3\n"
+  },
+  "v6.5.1": {
+    "tag": "v6.5.1",
+    "generated_at": "2025-11-24T15:00:50.024255+08:00",
+    "commit_hash": "4084b077d615f9dc0a41cf2e30bc6e1a02332df2\n"
+  },
+  "v6.5.10": {
+    "tag": "v6.5.10",
+    "generated_at": "2025-11-24T15:01:01.660557+08:00",
+    "commit_hash": "ff2feb6653846b0decd8b1d7cc0a665e128ccf26\n"
+  },
+  "v6.5.11": {
+    "tag": "v6.5.11",
+    "generated_at": "2025-11-24T15:01:13.755328+08:00",
+    "commit_hash": "3f2073261bf9f454c3c677d76d120c6ab40ca05c\n"
+  },
+  "v6.5.12": {
+    "tag": "v6.5.12",
+    "generated_at": "2025-11-24T15:01:25.745629+08:00",
+    "commit_hash": "2ec3e3e04536ee5dafa11663e32632378a1a1be8\n"
+  },
+  "v6.5.2": {
+    "tag": "v6.5.2",
+    "generated_at": "2025-11-24T15:01:37.683718+08:00",
+    "commit_hash": "29116c0256c52b224da2b34d712c1063d171c0ad\n"
+  },
+  "v6.5.3": {
+    "tag": "v6.5.3",
+    "generated_at": "2025-11-24T15:01:50.028259+08:00",
+    "commit_hash": "71e6696f020ccf42408976d4a82cafb95717a2e4\n"
+  },
+  "v6.5.4": {
+    "tag": "v6.5.4",
+    "generated_at": "2025-11-24T15:02:01.252912+08:00",
+    "commit_hash": "d7ce2f2faa1da3177a0f0a7e825f6e8fccd13ec8\n"
+  },
+  "v6.5.5": {
+    "tag": "v6.5.5",
+    "generated_at": "2025-11-24T15:02:11.87096+08:00",
+    "commit_hash": "71bcc44f77a37cfb0a6dc3660e092c78c1e46acb\n"
+  },
+  "v6.5.6": {
+    "tag": "v6.5.6",
+    "generated_at": "2025-11-24T15:02:23.090029+08:00",
+    "commit_hash": "8445821f105477d5e31de9d8451b7fbf35a02cd1\n"
+  },
+  "v6.5.7": {
+    "tag": "v6.5.7",
+    "generated_at": "2025-11-24T15:02:33.742588+08:00",
+    "commit_hash": "cd073ea306e281d2bb5f33b7b02a06bc93361ccc\n"
+  },
+  "v6.5.8": {
+    "tag": "v6.5.8",
+    "generated_at": "2025-11-24T15:02:44.72562+08:00",
+    "commit_hash": "44f39e98a29e19bc00f2d6c1a7ab1609a7a9e822\n"
+  },
+  "v6.5.9": {
+    "tag": "v6.5.9",
+    "generated_at": "2025-11-24T15:02:55.668232+08:00",
+    "commit_hash": "9815b4534e22d5db87ad38347546071d27c58431\n"
+  },
+  "v7.1.0": {
+    "tag": "v7.1.0",
+    "generated_at": "2025-11-24T15:03:08.799724+08:00",
+    "commit_hash": "635a4362235e8a3c0043542e629532e3c7bb2756\n"
+  },
+  "v7.1.1": {
+    "tag": "v7.1.1",
+    "generated_at": "2025-11-24T15:03:21.915856+08:00",
+    "commit_hash": "cf441574864be63938524e7dfcf7cc659edc3dd8\n"
+  },
+  "v7.1.2": {
+    "tag": "v7.1.2",
+    "generated_at": "2025-11-24T15:03:34.396823+08:00",
+    "commit_hash": "aa6ed99ae63191bc98e883fd4c369ae7482cccb7\n"
+  },
+  "v7.1.3": {
+    "tag": "v7.1.3",
+    "generated_at": "2025-11-24T15:03:46.93133+08:00",
+    "commit_hash": "aab2da047904901725e5a3bf745b47b1488eb8c7\n"
+  },
+  "v7.1.4": {
+    "tag": "v7.1.4",
+    "generated_at": "2025-11-24T15:03:58.575066+08:00",
+    "commit_hash": "a8b650f8372ede73b49dcc99289828c676075fb6\n"
+  },
+  "v7.1.5": {
+    "tag": "v7.1.5",
+    "generated_at": "2025-11-24T15:04:10.744893+08:00",
+    "commit_hash": "caa60c0917a886933a525d25e17057faac5b4da2\n"
+  },
+  "v7.1.6": {
+    "tag": "v7.1.6",
+    "generated_at": "2025-11-24T15:04:24.21255+08:00",
+    "commit_hash": "f00a5848631bbf0a8b76bfea9b80f5790cb50286\n"
+  },
+  "v7.5.0": {
+    "tag": "v7.5.0",
+    "generated_at": "2025-11-24T15:04:38.102547+08:00",
+    "commit_hash": "069631e2ecfedc000ffb92c67207bea81380f020\n"
+  },
+  "v7.5.1": {
+    "tag": "v7.5.1",
+    "generated_at": "2025-11-24T15:04:52.030247+08:00",
+    "commit_hash": "7d16cc79e81bbf573124df3fd9351c26963f3e70\n"
+  },
+  "v7.5.2": {
+    "tag": "v7.5.2",
+    "generated_at": "2025-11-24T15:05:07.366099+08:00",
+    "commit_hash": "3c02c2aa1339a078d7a4983409852b01eb23bf9b\n"
+  },
+  "v7.5.3": {
+    "tag": "v7.5.3",
+    "generated_at": "2025-11-24T15:05:22.409652+08:00",
+    "commit_hash": "70bfd90035cc81e80d78b4f1f76ca4baef8a5756\n"
+  },
+  "v7.5.4": {
+    "tag": "v7.5.4",
+    "generated_at": "2025-11-24T15:05:37.297692+08:00",
+    "commit_hash": "15a52d8b9c7eb373fa0b9b71a0ac346f652b7cdf\n"
+  },
+  "v7.5.5": {
+    "tag": "v7.5.5",
+    "generated_at": "2025-11-24T15:05:51.609394+08:00",
+    "commit_hash": "287f27ea0e5b7be6d75bd4c6fc9982f9d80e4cf7\n"
+  },
+  "v7.5.6": {
+    "tag": "v7.5.6",
+    "generated_at": "2025-11-24T15:06:05.929803+08:00",
+    "commit_hash": "1ad553d6de2cb0c9b2f3cfdb760aaae109b2c466\n"
+  },
+  "v7.5.7": {
+    "tag": "v7.5.7",
+    "generated_at": "2025-11-24T15:06:20.073541+08:00",
+    "commit_hash": "972e642ba15f36f6a96c0b9858a6572aba6a8a19\n"
+  },
+  "v8.1.0": {
+    "tag": "v8.1.0",
+    "generated_at": "2025-11-24T15:06:34.169916+08:00",
+    "commit_hash": "945d07c5d5c7a1ae212f6013adfb187f2de24b23\n"
+  },
+  "v8.1.1": {
+    "tag": "v8.1.1",
+    "generated_at": "2025-11-24T15:06:48.172533+08:00",
+    "commit_hash": "a7df4f9845d5d6a590c5d45dad0dcc9f21aa8765\n"
+  },
+  "v8.1.2": {
+    "tag": "v8.1.2",
+    "generated_at": "2025-11-24T15:07:02.518121+08:00",
+    "commit_hash": "80db67052c0b1d89ab5ea94d6efa576a2191432d\n"
+  },
+  "v8.5.0": {
+    "tag": "v8.5.0",
+    "generated_at": "2025-11-24T15:07:17.889311+08:00",
+    "commit_hash": "d13e52ed6e22cc5789bed7c64c861578cd2ed55b\n"
+  },
+  "v8.5.1": {
+    "tag": "v8.5.1",
+    "generated_at": "2025-11-24T15:07:32.227301+08:00",
+    "commit_hash": "fea86c8e35ad4a86a5e1160701f99493c2ee547c\n"
+  },
+  "v8.5.2": {
+    "tag": "v8.5.2",
+    "generated_at": "2025-11-24T15:07:46.328799+08:00",
+    "commit_hash": "f43a13324440f92209e2a9f04c0bbe9cf763978d\n"
+  },
+  "v8.5.3": {
+    "tag": "v8.5.3",
+    "generated_at": "2025-11-24T15:07:59.594666+08:00",
+    "commit_hash": "dc2548aac79a712265e831cff2a3a896bc0a5a38\n"
+  }
+}

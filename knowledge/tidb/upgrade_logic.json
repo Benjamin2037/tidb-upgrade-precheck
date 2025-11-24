@@ -1,0 +1,156 @@
+[
+  {
+    "version": 3,
+    "function": "upgradeToVer3",
+    "changes": [
+      {
+        "type": "UPDATE",
+        "sql": "UPDATE HIGH_PRIORITY %n.%n SET variable_value = '0' WHERE variable_name = 'tx_read_only';",
+        "location": "../tidb/pkg/session/upgrade.go:687:17",
+        "variable": "tx_read_only",
+        "forced_value": "0"
+      }
+    ]
+  },
+  {
+    "version": 44,
+    "function": "upgradeToVer44",
+    "changes": [
+      {
+        "type": "DELETE",
+        "sql": "DELETE FROM mysql.global_variables where variable_name = \"tidb_isolation_read_engines\"",
+        "location": "../tidb/pkg/session/upgrade.go:1020:17",
+        "forced_value": "DELETED"
+      }
+    ]
+  },
+  {
+    "version": 68,
+    "function": "upgradeToVer68",
+    "changes": [
+      {
+        "type": "DELETE",
+        "sql": "DELETE FROM mysql.global_variables where VARIABLE_NAME = 'tidb_enable_clustered_index' and VARIABLE_VALUE = 'OFF'",
+        "location": "../tidb/pkg/session/upgrade.go:1289:17",
+        "variable": "tidb_enable_clustered_index",
+        "forced_value": "DELETED"
+      }
+    ]
+  },
+  {
+    "version": 71,
+    "function": "upgradeToVer71",
+    "changes": [
+      {
+        "type": "UPDATE",
+        "sql": "UPDATE mysql.global_variables SET VARIABLE_VALUE='OFF' WHERE VARIABLE_NAME = 'tidb_multi_statement_mode' AND VARIABLE_VALUE = 'WARN'",
+        "location": "../tidb/pkg/session/upgrade.go:1302:17",
+        "variable": "tidb_multi_statement_mode",
+        "forced_value": "OFF"
+      }
+    ]
+  },
+  {
+    "version": 74,
+    "function": "upgradeToVer74",
+    "changes": [
+      {
+        "type": "UPDATE",
+        "sql": "UPDATE mysql.global_variables SET VARIABLE_VALUE='%[1]v' WHERE VARIABLE_NAME = 'tidb_stmt_summary_max_stmt_count' AND CAST(VARIABLE_VALUE AS SIGNED) = 200",
+        "location": "../tidb/pkg/session/upgrade.go:1315:29",
+        "variable": "tidb_stmt_summary_max_stmt_count",
+        "forced_value": "%[1]v"
+      }
+    ]
+  },
+  {
+    "version": 99,
+    "function": "upgradeToVer99Before",
+    "changes": [
+      {
+        "type": "INSERT",
+        "sql": "INSERT HIGH_PRIORITY IGNORE INTO %n.%n VALUES (%?, %?);",
+        "location": "../tidb/pkg/session/upgrade.go:1456:17"
+      }
+    ]
+  },
+  {
+    "version": 133,
+    "function": "upgradeToVer133",
+    "changes": [
+      {
+        "type": "UPDATE",
+        "sql": "UPDATE HIGH_PRIORITY %n.%n set VARIABLE_VALUE = %? where VARIABLE_NAME = %? and VARIABLE_VALUE = %?;",
+        "location": "../tidb/pkg/session/upgrade.go:1540:17",
+        "forced_value": "%?"
+      }
+    ]
+  },
+  {
+    "version": 134,
+    "function": "upgradeToVer134",
+    "changes": [
+      {
+        "type": "UPDATE",
+        "sql": "UPDATE HIGH_PRIORITY %n.%n SET VARIABLE_VALUE = %? WHERE VARIABLE_NAME = %? AND VARIABLE_VALUE = %?;",
+        "location": "../tidb/pkg/session/upgrade.go:1549:17",
+        "forced_value": "%?"
+      }
+    ]
+  },
+  {
+    "version": 141,
+    "function": "upgradeToVer141",
+    "changes": [
+      {
+        "type": "INSERT",
+        "sql": "INSERT HIGH_PRIORITY IGNORE INTO %n.%n VALUES (%?, %?);",
+        "location": "../tidb/pkg/session/upgrade.go:1597:17"
+      }
+    ]
+  },
+  {
+    "version": 179,
+    "function": "upgradeToVer179",
+    "changes": [
+      {
+        "type": "ALTER",
+        "sql": "ALTER TABLE mysql.global_variables MODIFY COLUMN `VARIABLE_VALUE` varchar(16383)",
+        "location": "../tidb/pkg/session/upgrade.go:1747:20"
+      }
+    ]
+  },
+  {
+    "version": 216,
+    "function": "upgradeToVer216",
+    "changes": [
+      {
+        "type": "UPDATE",
+        "sql": "UPDATE mysql.global_variables SET VARIABLE_VALUE='' WHERE VARIABLE_NAME = 'tidb_scatter_region' AND VARIABLE_VALUE = 'OFF'",
+        "location": "../tidb/pkg/session/upgrade.go:1878:17",
+        "variable": "tidb_scatter_region",
+        "forced_value": "OFF"
+      },
+      {
+        "type": "UPDATE",
+        "sql": "UPDATE mysql.global_variables SET VARIABLE_VALUE='table' WHERE VARIABLE_NAME = 'tidb_scatter_region' AND VARIABLE_VALUE = 'ON'",
+        "location": "../tidb/pkg/session/upgrade.go:1879:17",
+        "variable": "tidb_scatter_region",
+        "forced_value": "table"
+      }
+    ]
+  },
+  {
+    "version": 217,
+    "function": "upgradeToVer217",
+    "changes": [
+      {
+        "type": "INSERT",
+        "sql": "INSERT IGNORE INTO mysql.global_variables VALUES ('tidb_schema_cache_size', 0)",
+        "location": "../tidb/pkg/session/upgrade.go:1885:17",
+        "variable": "tidb_schema_cache_size",
+        "forced_value": "0"
+      }
+    ]
+  }
+]
