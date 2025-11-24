@@ -1,105 +1,193 @@
+# TiDB Upgrade Logic Collection Detailed Design Document
+
+## 1. Introduction
+
+This document describes the design and implementation of the TiDB upgrade logic collection system, which is part of the tidb-upgrade-precheck project. The system automatically extracts and analyzes mandatory system variable changes that occur during TiDB version upgrades to support pre-upgrade validation and risk assessment.
+
+## 2. Purpose
+
+The upgrade logic collection component is designed to automatically extract and analyze mandatory system variable changes that occur during TiDB version upgrades. These changes are typically found in the `upgradeToVerXX` functions within the [pkg/session/upgrade.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb/pkg/session/upgrade.go) file of the TiDB source code.
+
+## 3. Data Collection Scope
+
+The collector focuses on extracting SQL statements that modify system variables during upgrades, specifically:
+- `SET GLOBAL variable_name = value` statements
+- `INSERT INTO mysql.global_variables` statements
+- `UPDATE mysql.global_variables` statements
+- `DELETE FROM mysql.global_variables` statements
+
+These statements are typically found in functions named `upgradeToVerXX` where XX represents the bootstrap version number.
+
+## 4. Technical Implementation
+
+### 4.1 Collection Process
+
+1. **Source Code Parsing**: The tool uses Go's AST (Abstract Syntax Tree) parser to analyze the [pkg/session/upgrade.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb/pkg/session/upgrade.go) file
+2. **Function Identification**: It identifies all functions matching the pattern `upgradeToVerXX` using regex
+3. **Statement Extraction**: For each identified function, it traverses the AST to find SQL string literals
+4. **Pattern Matching**: It applies regex patterns to identify statements that modify system variables
+5. **Data Structuring**: Collected data is structured into JSON format for further processing
+
+### 4.2 Data Structure
+
+The output follows this JSON structure:
+
+```json
+[
+  {
+    "version": 71,
+    "function": "upgradeToVer71",
+    "changes": [
+      {
+        "type": "SQL",
+        "sql": "\"UPDATE mysql.global_variables SET VARIABLE_VALUE='OFF' WHERE VARIABLE_NAME = 'tidb_multi_statement_mode' AND VARIABLE_VALUE = 'WARN'\"",
+        "location": "../tidb/pkg/session/upgrade.go:1302:17"
+      }
+    ]
+  }
+]
+```
+
+Each entry contains:
+- [version](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb/pkg/session/upgrade.go#L481-L481): The bootstrap version number (XX from upgradeToVerXX)
+- [function](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb/pkg/expression/generator/time_vec.go#L905-L908): The full function name
+- `changes`: Array of all system variable changes in that function
+
+For each change:
+- `type`: Type of change (currently only "SQL")
+- [sql](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb/pkg/session/nontransactional.go#L61-L61): The actual SQL statement
+- [location](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb/br/pkg/kms/gcp.go#L28-L28): File path and line number where the statement is found
+
+## 5. Output Location
+
+The collected upgrade logic is stored in:
+```
+knowledge/tidb/upgrade_logic.json
+```
+
+This location ensures it's separate from version-specific parameter data and clearly indicates it contains global upgrade information.
+
+## 6. Usage
+
+### 6.1 Direct Execution
+```bash
+go run tools/upgrade_logic_collector.go ../tidb > knowledge/tidb/upgrade_logic.json
+```
+
+### 6.2 Integration with kb-generator
+The collection is automatically triggered when using the kb-generator tool:
+```bash
+go run cmd/kb-generator/main.go --all
+```
+
+## 7. Versioning Strategy
+
+The tool only needs to be run once using the latest TiDB source code, as all historical upgrade functions are preserved in the codebase. This approach ensures:
+1. All historical upgrade changes are captured
+2. No need to check out specific versions for upgrade logic collection
+3. Consistent data structure across runs
+4. Simplified maintenance
+
+## 8. Future Enhancements
+
+1. **Enhanced Change Classification**: Improve categorization of changes beyond just SQL statements
+2. **Parameter Name Extraction**: Automatically extract parameter names from SQL statements
+3. **Comment Analysis**: Include code comments to provide context for changes
+4. **Cross-reference with Parameter History**: Link upgrade changes with parameter history data
+5. **Performance Optimization**: Improve parsing performance for large codebases
+
+## 9. Integration with Precheck System
+
+The collected upgrade logic will be used by the precheck system to:
+1. Identify mandatory changes that will occur during an upgrade
+2. Validate that these changes won't conflict with current settings
+3. Provide detailed reports on what will change during the upgrade
+4. Enable version range-based filtering for targeted checks
+
+## 10. Maintenance Considerations
+
+1. **Code Structure Dependencies**: The tool depends on the structure of [pkg/session/upgrade.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb/pkg/session/upgrade.go)
+2. **Function Naming Patterns**: Assumes consistent naming of `upgradeToVerXX` functions
+3. **SQL Pattern Matching**: Regex patterns may need updates as SQL statements evolve
+4. **Error Handling**: Robust error handling for file access and parsing issues
 # TiDB Parameter Collection Detailed Design Document
 
-## 1. Overview
+## 1. Introduction
 
-This document describes in detail the design and implementation of the parameter collection module in the TiDB upgrade precheck tool. This module is responsible for extracting default values of system variables and configuration parameters from different versions of TiDB source code, providing basic data for upgrade risk assessment.
+This document describes the design and implementation of the TiDB parameter collection system, which is part of the tidb-upgrade-precheck project. The system automatically collects TiDB system variable defaults across different versions to support pre-upgrade validation and risk assessment.
 
 ## 2. Design Goals
 
-1. **Multi-version Compatibility**: Support parameter collection from TiDB v6.x to the latest version
-2. **Zero Intrusiveness**: Do not modify TiDB source code, collect parameters through external tools
-3. **Accuracy**: Ensure that the collected parameter values are completely consistent with the actual version
-4. **Extensibility**: Easy to add support for new versions
-5. **Efficiency**: Avoid repeated collection of processed versions
+1. **Multi-version Compatibility**: Support parameter collection from various TiDB versions
+2. **Non-intrusive**: Collect data without modifying the TiDB source code
+3. **Accuracy**: Ensure collected data precisely reflects actual parameter defaults
+4. **Extensibility**: Allow easy addition of new versions and collection methods
+5. **Efficiency**: Minimize resource consumption during collection
 
 ## 3. Core Components
 
-### 3.1 Parameter Collection Tool Files
+### 3.1 Version-Specific Collection Tools
 
-To support differences in TiDB source code structure across different versions, we provide multiple version-specific collection tools:
+To handle differences in TiDB code structure across versions, we maintain version-specific collection tools:
 
-- `export_defaults.go` - For the latest version (using pkg directory structure)
-- `export_defaults_v6.go` - For v6.x versions
-- `export_defaults_v71.go` - For v7.0 - v7.4 versions
-- `export_defaults_v75plus.go` - For v7.5+ and v8.x versions
-- `export_defaults_legacy.go` - For earlier versions (without pkg directory)
+- **[export_defaults.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb/tools/export_defaults.go)** - For latest versions (with pkg directory)
+- **[export_defaults_legacy.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb/tools/export_defaults_legacy.go)** - For older versions (without pkg directory)
+- **[export_defaults_v6.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb/tools/export_defaults_v6.go)** - For v6.x versions
+- **[export_defaults_v71.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/tools/upgrade-precheck/export_defaults_v71.go)** - For v7.1 LTS versions
+- **[export_defaults_v75plus.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/tools/upgrade-precheck/export_defaults_v75plus.go)** - For v7.5+ and v8.x versions
 
-These tool files are located in the `tools/upgrade-precheck/` directory.
+### 3.2 Collection Orchestration ([pkg/scan/scan.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/pkg/scan/scan.go))
 
-### 3.2 Version Routing Mechanism
+This component manages the overall collection process:
+- Version detection and tool selection
+- Temporary environment setup
+- Execution of collection tools
+- Result aggregation and output
 
-Automatically select the appropriate collection tool based on the target version:
+### 3.3 Version Management ([pkg/scan/version_manager.go](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/pkg/scan/version_manager.go))
 
-```go
-func selectToolByVersion(tag string) string {
-    version := strings.TrimPrefix(tag, "v")
-    parts := strings.Split(version, ".")
-    
-    if len(parts) < 2 {
-        return "export_defaults.go"
-    }
-    
-    major, _ := strconv.Atoi(parts[0])
-    minor, _ := strconv.Atoi(parts[1])
-    
-    switch {
-    case major == 6:
-        return "export_defaults_v6.go"
-    case major == 7:
-        if minor < 5 {
-            return "export_defaults_v71.go"
-        } else {
-            return "export_defaults_v75plus.go"
-        }
-    case major >= 8:
-        return "export_defaults_v75plus.go"
-    default:
-        return "export_defaults.go"
-    }
-}
-```
-
-### 3.3 Version Management Mechanism
-
-To avoid collecting the same version repeatedly, the system implements a version management mechanism:
-
-- Use the `knowledge/generated_versions.json` file to record collected versions
-- Check if a version already exists before each collection
-- Support forcing re-collection of all versions
+Tracks which versions have been processed to avoid redundant work:
+- Records processed versions and their commit hashes
+- Provides skip/check functionality
+- Manages version metadata
 
 ## 4. Collection Process
 
-### 4.1 Single Version Collection Process
+### 4.1 Single Version Collection
 
-1. Receive target version tag and TiDB source code path
-2. Check if the version has already been collected
-3. Create a temporary directory for cloning source code
-4. Clone TiDB source code to temporary directory
-5. Switch to target version tag
-6. Select appropriate collection tool based on version
-7. Copy collection tool to temporary directory
-8. Run collection tool to export parameters
-9. Save results to `knowledge/<version>/defaults.json`
-10. Record version information to version management file
+For collecting parameters from a specific version:
+1. User specifies a Git tag
+2. System creates a temporary clone of the TiDB repository at that tag
+3. Appropriate export_defaults tool is copied to the cloned repository
+4. Tool is executed in the context of the cloned repository
+5. Results are saved to `knowledge/<version>/defaults.json`
 
-### 4.2 Full Collection Process
+### 4.2 Full Collection
 
-1. Get all LTS version tags
-2. Execute single version collection process for each version
-3. Aggregate parameter history across all versions
-4. Generate global parameter history file `knowledge/tidb/parameters-history.json`
+For collecting parameters from all LTS versions:
+1. System identifies all LTS tags in the TiDB repository
+2. For each tag:
+   - Check if already processed (using VersionManager)
+   - If not, perform single version collection
+3. Aggregate all collected parameters into `knowledge/tidb/parameters-history.json`
 
-### 4.3 Incremental Collection Process
+### 4.3 Incremental Collection
 
-1. Determine version range based on start and end versions
-2. Execute single version collection process for each version in range
+For collecting parameters from a range of versions:
+1. User specifies from-tag and to-tag
+2. System identifies tags in that range
+3. Process each tag following the single version collection process
 
-## 5. Output Format
+## 5. Output Formats
 
-### 5.1 defaults.json
+### 5.1 Version-Specific Parameters ([defaults.json](file:///Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/pkg/scan/defaults.go#L79-L79))
 
-Default parameter values for each version are saved in `knowledge/<version>/defaults.json` file:
+Each version's parameters are stored in:
+```
+knowledge/<version>/defaults.json
+```
 
+Structure:
 ```json
 {
   "sysvars": {
@@ -107,27 +195,31 @@ Default parameter values for each version are saved in `knowledge/<version>/defa
     ...
   },
   "config": {
-    "config_item": "default_value",
+    "config_name": "default_value",
     ...
   },
-  "bootstrap_version": 0
+  "bootstrap_version": 99
 }
 ```
 
-### 5.2 parameters-history.json
+### 5.2 Parameter History Aggregation
 
-Aggregated parameter history across all versions is saved in `knowledge/tidb/parameters-history.json` file:
+All parameters across versions are aggregated into:
+```
+knowledge/tidb/parameters-history.json
+```
 
+Structure:
 ```json
 {
   "component": "tidb",
   "parameters": [
     {
-      "name": "parameter_name",
-      "type": "parameter_type",
+      "name": "variable_name",
+      "type": "string|int|bool|float",
       "history": [
         {
-          "version": 93,
+          "version": 95,
           "default": "value",
           "scope": "unknown",
           "description": "unknown",
@@ -145,120 +237,70 @@ Aggregated parameter history across all versions is saved in `knowledge/tidb/par
 
 ### 6.1 Temporary Clone Mechanism
 
-To avoid workspace state interference, all collection operations are performed in temporarily cloned repositories:
+To ensure accurate parameter collection without affecting the original repository:
+1. Create a temporary directory
+2. Clone the TiDB repository to the temporary directory
+3. Checkout the specific tag
+4. Copy the appropriate collection tool
+5. Execute the tool in the cloned environment
+6. Clean up the temporary directory
 
-```go
-tempDir, err := ioutil.TempDir("", "tidb_upgrade_precheck")
-if err != nil {
-    return fmt.Errorf("failed to create temp directory: %v", err)
-}
-defer os.RemoveAll(tempDir)
-```
+This approach guarantees that:
+- Collection tools match the code structure of the target version
+- No interference with the original repository
+- Isolated execution environment
 
 ### 6.2 Dynamic Import Mechanism
 
-Obtain parameter default values through Go's runtime import mechanism:
+Different TiDB versions have different code structures:
+- Older versions: sysvar and config packages in root directory
+- Newer versions: sysvar and config packages in pkg directory
+- Version-specific import paths and function names
 
-```go
-// Collect config default values
-cfg := config.GetGlobalConfig()
-cfgMap := make(map[string]interface{})
-data, _ := json.Marshal(cfg)
-json.Unmarshal(data, &cfgMap)
+To handle this, we maintain version-specific tools that:
+- Import the correct packages for each version
+- Call the appropriate functions
+- Export data in a consistent format
 
-// Collect all user-visible sysvars
-sysvars := make(map[string]interface{})
-for _, sv := range variable.GetSysVars() {
-    if sv.Hidden || sv.Scope == variable.ScopeNone {
-        continue
-    }
-    sysvars[sv.Name] = sv.Value
-}
-```
+## 7. Usage Instructions
 
-## 7. Usage Guide
+### 7.1 Environment Setup
 
-### 7.1 Environment Preparation
+1. Ensure both tidb-upgrade-precheck and tidb repositories are cloned
+2. Place them in sibling directories
+3. Ensure Go 1.18+ is installed
+4. Verify Git access to the repositories
 
-Ensure the following dependencies are installed:
+### 7.2 Collection Commands
 
-- Go 1.18+
-- Git
-- Access to TiDB source code repository
+1. **Full Collection**:
+   ```bash
+   go run cmd/kb-generator/main.go --all
+   ```
 
-### 7.2 Full Collection
+2. **Single Version**:
+   ```bash
+   go run cmd/kb-generator/main.go --tag v7.1.0
+   ```
 
-```bash
-# Collect all uncollected LTS versions
-make collect
+3. **Version Range**:
+   ```bash
+   go run cmd/kb-generator/main.go --from-tag v7.1.0 --to-tag v7.5.0
+   ```
 
-# Or
-go run cmd/kb-generator/main.go --all
-```
+4. **Aggregation Only**:
+   ```bash
+   go run cmd/kb-generator/main.go --aggregate
+   ```
 
-### 7.3 Collect All Versions (Including Already Collected)
+## 8. Extensibility
 
-```bash
-# Collect all LTS versions, including already collected versions
-make collect-all
+The system is designed to be extensible:
+- Adding new version-specific tools for future TiDB versions
+- Extending collection to other components (TiKV, PD, TiFlash)
+- Adding new output formats
+- Integrating with CI/CD systems for automatic updates
 
-# Or
-go run cmd/kb-generator/main.go --all --skip-generated=false
-```
+## 9. Related Documentation
 
-### 7.4 Incremental Collection
-
-```bash
-# Collect specified version range
-go run cmd/kb-generator/main.go --from-tag=v7.5.0 --to-tag=v8.1.0
-```
-
-### 7.5 Parameter History Aggregation
-
-```bash
-# Aggregate parameter history across all versions
-make aggregate
-
-# Or
-go run cmd/kb-generator/main.go --aggregate
-```
-
-### 7.6 Clean Collection Records
-
-```bash
-# Clean version collection records
-make clean-generated
-
-# Or manually delete
-rm knowledge/generated_versions.json
-```
-
-## 8. Troubleshooting
-
-### 8.1 Version Collection Failure
-
-If a version collection fails, the system will log a warning and continue processing other versions without interrupting the entire collection process.
-
-### 8.2 Duplicate Collection
-
-Avoid duplicate collection through the version management mechanism to improve efficiency.
-
-### 8.3 Path Issues
-
-Ensure the TiDB source code path is correct, and the tool will validate path validity.
-
-## 9. Extensibility Considerations
-
-### 9.1 Adding New Version Support
-
-1. Create a new version-specific collection tool file
-2. Update version routing logic
-3. Test new version collection functionality
-
-### 9.2 Parallel Collection
-
-Consider implementing parallel collection in the future to improve performance.
-
-### 9.3 More Metadata Collection
-
-Tools can be extended to collect more metadata about parameters, such as descriptions, scopes, etc.
+For information about upgrade logic collection (tracking mandatory system variable changes during TiDB upgrades), please refer to the [Upgrade Logic Collection Design](./upgrade_logic_collection_design.md) document.
