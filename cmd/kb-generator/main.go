@@ -29,6 +29,12 @@ func main() {
 			os.Exit(1)
 		}
 		
+		// For upgrade logic, we only need to scan once using the latest code
+		if err := scan.ScanUpgradeLogic(*repo, *singleTag); err != nil {
+			fmt.Fprintf(os.Stderr, "[ERROR] ScanUpgradeLogic failed: %v\n", err)
+			os.Exit(1)
+		}
+		
 		fmt.Println("Single tag processing completed")
 		return
 	}
@@ -47,10 +53,12 @@ func main() {
 		}
 		
 		// After all defaults are collected, generate global upgrade_logic.json
-		if err := scan.ScanUpgradeLogicGlobal(*repo, []string{}); err != nil {
-			fmt.Fprintf(os.Stderr, "[ERROR] ScanUpgradeLogicGlobal failed: %v\n", err)
+		// For upgrade logic, we only need to scan once using the latest code
+		if err := scan.ScanUpgradeLogic(*repo, ""); err != nil {
+			fmt.Fprintf(os.Stderr, "[ERROR] ScanUpgradeLogic failed: %v\n", err)
 			os.Exit(1)
 		}
+		
 		fmt.Println("Full collection completed")
 		return
 	}
