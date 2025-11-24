@@ -98,77 +98,201 @@ Verify the correctness and robustness of the command line interface.
 | TC-CLI-004 | Help Information | 1. Run `go run cmd/kb-generator/main.go --help` | 1. Display help information<br>2. List all parameter options | High |
 | TC-CLI-005 | Invalid Parameters | 1. Run `go run cmd/kb-generator/main.go --invalid-param` | 1. Display error message<br>2. Program exit code non-zero | High |
 
-## 4. Performance Testing
+## 4. Unit Testing
 
 ### 4.1 Test Objective
+Ensure individual functions and components work correctly in isolation. Unit tests validate the smallest testable parts of the application, typically functions or methods.
+
+### 4.2 Test Coverage
+Unit tests cover the following packages and functionalities:
+
+#### 4.2.1 pkg/scan Package
+This package contains core scanning functionality for parameter collection and upgrade logic extraction.
+
+##### Version Manager (version_manager.go)
+- Test version recording functionality
+- Test version existence checking
+- Test loading and saving version records from/to file
+- Test removal of version records
+- Test retrieval of all generated versions
+
+##### Defaults Collection (defaults.go)
+- Test file copying functionality
+- Test tool selection based on version
+- Test parameter collection for different TiDB versions
+
+##### Upgrade Logic (upgrade_logic.go)
+- Test upgrade logic scanning functionality
+- Test global upgrade changes collection
+
+##### Scan Operations (scan.go)
+- Test version parsing functionality
+- Test LTS version identification
+- Test tool selection logic
+
+#### 4.2.2 pkg/rules Package
+This package contains business rules for checking parameters.
+
+##### Configured System Variables (configured_sysvars.go)
+- Test detection of customized system variable values
+- Test rule evaluation for configured variables
+
+##### Forced System Variables (forced_sysvars.go)
+- Test detection of forced system variable changes
+- Test rule evaluation for forced variable changes
+
+#### 4.2.3 pkg/report Package
+This package contains report generation functionality.
+
+##### Report Rendering (render.go)
+- Test markdown report generation
+- Test HTML report generation
+
+### 4.3 Unit Test Implementation Details
+
+#### 4.3.1 Test File Structure
+Unit tests follow Go conventions with `_test.go` suffix and are located alongside the code they test:
+```
+pkg/
+├── scan/
+│   ├── defaults.go
+│   ├── defaults_test.go
+│   ├── scan.go
+│   ├── scan_test.go
+│   ├── upgrade_logic.go
+│   ├── upgrade_logic_test.go
+│   ├── version_manager.go
+│   └── version_manager_test.go
+├── rules/
+│   ├── configured_sysvars.go
+│   ├── configured_sysvars_test.go
+│   ├── forced_sysvars.go
+│   └── forced_sysvars_test.go
+└── report/
+    ├── render.go
+    └── render_test.go
+```
+
+#### 4.3.2 Test Dependencies
+Unit tests use the following testing dependencies:
+- `github.com/stretchr/testify/require` for assertions
+- Standard `testing` package for test structure
+- Mock data for testing business logic without external dependencies
+
+#### 4.3.3 Test Execution
+Unit tests can be executed with:
+```bash
+go test ./pkg/... -v
+```
+
+Or for specific packages:
+```bash
+go test ./pkg/scan/... -v
+go test ./pkg/rules/... -v
+go test ./pkg/report/... -v
+```
+
+### 4.4 Unit Test Cases
+
+#### 4.4.1 Version Manager Tests (version_manager_test.go)
+| Test Case | Description | Expected Outcome |
+|-----------|-------------|------------------|
+| TestVersionManager | Test basic version manager functionality including recording and checking versions | Versions are correctly recorded and checked |
+| TestVersionManagerFileOperations | Test version manager file operations | Files are correctly created and managed |
+| TestVersionManagerGetGeneratedVersions | Test retrieval of all generated versions | All versions are correctly returned |
+| TestVersionManagerRemoveVersion | Test removal of version records | Versions are correctly removed |
+
+#### 4.4.2 Defaults Collection Tests (defaults_test.go)
+| Test Case | Description | Expected Outcome |
+|-----------|-------------|------------------|
+| TestCopyFile | Test file copying functionality | Files are correctly copied |
+| TestSelectToolByVersion | Test tool selection based on version | Correct tool is selected for each version |
+
+#### 4.4.3 Upgrade Logic Tests (upgrade_logic_test.go)
+| Test Case | Description | Expected Outcome |
+|-----------|-------------|------------------|
+| TestScanUpgradeLogic | Test upgrade logic scanning | Function executes without panic |
+| TestGetAllUpgradeChanges | Test collection of all upgrade changes | Function executes without panic |
+| TestScanUpgradeLogicGlobal | Test global upgrade logic scanning | Function executes without panic |
+
+#### 4.4.4 Scan Operations Tests (scan_test.go)
+| Test Case | Description | Expected Outcome |
+|-----------|-------------|------------------|
+| TestSelectToolByVersion | Test tool selection based on version | Correct tool is selected for each version |
+| TestParseVersion | Test version parsing functionality | Versions are correctly parsed |
+| TestIsLTSVersion | Test LTS version identification | LTS versions are correctly identified |
+
+## 5. Performance Testing
+
+### 5.1 Test Objective
 Verify system performance when processing large numbers of versions.
 
-### 4.2 Test Cases
+### 5.2 Test Cases
 
 | Case ID | Test Case Name | Test Steps | Expected Results | Priority |
 |---------|---------------|------------|------------------|----------|
 | TC-PERF-001 | Full Collection Time | 1. Run `go run cmd/kb-generator/main.go --all`<br>2. Record execution time | 1. Complete within reasonable time (depends on network and machine performance)<br>2. No memory overflow | Medium |
 
-## 5. Compatibility Testing
+## 6. Compatibility Testing
 
-### 5.1 Test Objective
+### 6.1 Test Objective
 Verify system compatibility across different environments.
 
-### 5.2 Test Cases
+### 6.2 Test Cases
 
 | Case ID | Test Case Name | Test Steps | Expected Results | Priority |
 |---------|---------------|------------|------------------|----------|
 | TC-COMP-001 | Different Go Versions | 1. Run tool in Go 1.18, 1.19, 1.20 environments | 1. Work normally<br>2. No compilation errors | Medium |
 | TC-COMP-002 | Different Operating Systems | 1. Run tool in Linux, macOS, Windows environments | 1. Work normally<br>2. Path handling correct | Medium |
 
-## 6. Regression Testing
+## 7. Regression Testing
 
-### 6.1 Test Objective
+### 7.1 Test Objective
 Ensure new features don't affect existing functionality.
 
-### 6.2 Test Cases
+### 7.2 Test Cases
 
 | Case ID | Test Case Name | Test Steps | Expected Results | Priority |
 |---------|---------------|------------|------------------|----------|
 | TC-REG-001 | Core Functionality Regression | 1. Execute all high-priority test cases | 1. All tests pass<br>2. No functionality degradation | High |
 
-## 7. Test Execution Plan
+## 8. Test Execution Plan
 
-### 7.1 Test Phases
+### 8.1 Test Phases
 1. **Unit Testing Phase**: Continuously executed during development
 2. **Integration Testing Phase**: Executed after feature development completion
 3. **System Testing Phase**: Executed before release
 4. **Regression Testing Phase**: Executed after each code change
 
-### 7.2 Test Tools
+### 8.2 Test Tools
 - Go built-in testing framework
 - GitHub Actions CI/CD
 - Manual testing verification
 
-### 7.3 Test Data
+### 8.3 Test Data
 - Real TiDB source repository
 - Contains all LTS version tags
 - Simulated error inputs and boundary conditions
 
-## 8. Test Pass Criteria
+## 9. Test Pass Criteria
 
-### 8.1 Functional Test Pass Criteria
+### 9.1 Functional Test Pass Criteria
 - All high-priority test cases must pass
 - Medium-priority test cases pass rate no less than 95%
 - Low-priority test cases pass rate no less than 90%
 
-### 8.2 Performance Test Pass Criteria
+### 9.2 Performance Test Pass Criteria
 - Full collection completes within reasonable time (specific time determined by hardware environment)
 - Memory usage within reasonable range
 - No memory leaks
 
-### 8.3 Compatibility Test Pass Criteria
+### 9.3 Compatibility Test Pass Criteria
 - Work normally on supported Go versions and operating systems
 - Path handling correct, no platform-related issues
 
-## 9. Risks and Mitigation Measures
+## 10. Risks and Mitigation Measures
 
-### 9.1 Major Risks
+### 10.1 Major Risks
 1. **Network Dependency Risk**: Tool needs to access GitHub to get TiDB source code
    - Mitigation: Ensure stable network in test environment, consider using local mirror
    
@@ -178,19 +302,19 @@ Ensure new features don't affect existing functionality.
 3. **Performance Risk**: Performance issues may occur when processing large numbers of versions
    - Mitigation: Optimize code, add concurrent processing capabilities
 
-### 9.2 Contingency Plan
+### 10.2 Contingency Plan
 1. If tests fail, immediately rollback related code changes
 2. For environment issues, prepare backup test environment
 3. For performance issues, conduct performance analysis and optimization
 
-## 10. Appendix
+## 11. Appendix
 
-### 10.1 Glossary
+### 11.1 Glossary
 - **LTS**: Long Term Support, long-term supported versions
 - **Parameters**: TiDB system variables and configuration items
 - **Upgrade Logic**: System variables forcibly modified during TiDB version upgrades
 
-### 10.2 Reference Documents
+### 11.2 Reference Documents
 - [TiDB Upgrade Precheck Design](../tidb_upgrade_precheck.md)
 - [Parameter Collection Design](../parameter_collection_design.md)
 - [LTS Version Default Collection Design](../parameter_collection/LTS_version_default_design.md)
