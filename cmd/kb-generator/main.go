@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/scan"
 )
@@ -12,19 +13,27 @@ import (
 // import "../collectparams" if package needs to be split
 
 func main() {
-	repo := flag.String("repo", "../tidb", "TiDB source code root directory")
-	fromTag := flag.String("from-tag", "", "Starting tag (incremental mode)")
-	toTag := flag.String("to-tag", "", "Target tag (incremental mode)")
-	singleTag := flag.String("tag", "", "Single tag to process")
-	all := flag.Bool("all", false, "Full rebuild mode")
-	aggregate := flag.Bool("aggregate", false, "Aggregate parameter history")
+	repo := flag.String("repo", "", "TiDB repository path")
+	fromTag := flag.String("from-tag", "", "From tag (inclusive)")
+	toTag := flag.String("to-tag", "", "To tag (inclusive)")
+	singleTag := flag.String("tag", "", "Process a single tag")
+	all := flag.Bool("all", false, "Collect knowledge for all tags")
 	testTags := flag.Bool("test-tags", false, "Test tag retrieval")
+	aggregate := flag.Bool("aggregate", false, "Aggregate collected knowledge")
 	flag.Parse()
 
 	if *singleTag != "" {
 		fmt.Printf("Processing single tag: %s\n", *singleTag)
 		
-		if err := scan.ScanDefaults(*repo, *singleTag); err != nil {
+		// Create output directory
+		outputDir := filepath.Join("knowledge", *singleTag)
+		if err := os.MkdirAll(outputDir, 0755); err != nil {
+			fmt.Fprintf(os.Stderr, "[ERROR] Failed to create output directory: %v\n", err)
+			os.Exit(1)
+		}
+		
+		outputFile := filepath.Join(outputDir, "defaults.json")
+		if err := scan.ScanDefaults(*repo, outputFile, ""); err != nil {
 			fmt.Fprintf(os.Stderr, "[ERROR] ScanDefaults failed: %v\n", err)
 			os.Exit(1)
 		}

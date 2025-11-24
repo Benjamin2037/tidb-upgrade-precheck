@@ -169,21 +169,45 @@ func aggregateParameters() error {
 	return nil
 }
 
+// ScanUpgradeLogic scans the upgrade logic
+func ScanUpgradeLogic(repo, tag string) error {
+	return scanUpgradeLogic(repo)
+}
+
 // scanUpgradeLogic scans the upgrade logic
 func scanUpgradeLogic(repo string) error {
 	if repo == "" {
 		return fmt.Errorf("repo path is empty")
 	}
 
+	// Get current working directory
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current directory: %v", err)
+	}
+
 	// Create tools directory if not exists
-	toolsDir := filepath.Join("pkg", "scan", "tools")
+	toolsDir := filepath.Join(currentDir, "pkg", "scan", "tools")
 	if err := os.MkdirAll(toolsDir, 0755); err != nil {
 		return fmt.Errorf("failed to create tools directory: %v", err)
 	}
 
 	// Copy the tool to tools directory
 	toolPath := filepath.Join(toolsDir, "upgrade_logic_collector.go")
-	if err := copyFile(filepath.Join("../..", "tools", "upgrade_logic_collector.go"), toolPath); err != nil {
+	srcToolPath := filepath.Join(currentDir, "tools", "upgrade_logic_collector.go")
+	
+	// Check if source file exists
+	if _, err := os.Stat(srcToolPath); os.IsNotExist(err) {
+		// Try alternative path
+		srcToolPath = filepath.Join(currentDir, "..", "..", "tools", "upgrade_logic_collector.go")
+		if _, err := os.Stat(srcToolPath); os.IsNotExist(err) {
+			return fmt.Errorf("upgrade_logic_collector.go not found in %s or %s", 
+				filepath.Join(currentDir, "tools"), 
+				filepath.Join(currentDir, "..", "..", "tools"))
+		}
+	}
+	
+	if err := copyFile(srcToolPath, toolPath); err != nil {
 		return fmt.Errorf("failed to copy tool: %v", err)
 	}
 
@@ -195,7 +219,7 @@ func scanUpgradeLogic(repo string) error {
 	}
 
 	// Create knowledge/tidb directory if not exists
-	knowledgeDir := filepath.Join("knowledge", "tidb")
+	knowledgeDir := filepath.Join(currentDir, "knowledge", "tidb")
 	if err := os.MkdirAll(knowledgeDir, 0755); err != nil {
 		return fmt.Errorf("failed to create knowledge directory: %v", err)
 	}
