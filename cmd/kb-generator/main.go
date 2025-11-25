@@ -1,16 +1,17 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/kbgenerator"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/scan"
 )
 
-// Assuming collectFromTidbSource is available in the same project
-// import "../collectparams" if package needs to be split
+// Knowledge base generation main entry
 
 func main() {
 	repo := flag.String("repo", "", "TiDB repository path")
@@ -20,30 +21,71 @@ func main() {
 	all := flag.Bool("all", false, "Collect knowledge for all tags")
 	testTags := flag.Bool("test-tags", false, "Test tag retrieval")
 	aggregate := flag.Bool("aggregate", false, "Aggregate collected knowledge")
+	method := flag.String("method", "source", "Collection method: source or binary")
+	toolPath := flag.String("tool", "", "Path to the export tool (required for binary method)")
 	flag.Parse()
 
 	if *singleTag != "" {
 		fmt.Printf("Processing single tag: %s\n", *singleTag)
-		
+
 		// Create output directory
 		outputDir := filepath.Join("knowledge", *singleTag)
 		if err := os.MkdirAll(outputDir, 0755); err != nil {
 			fmt.Fprintf(os.Stderr, "[ERROR] Failed to create output directory: %v\n", err)
 			os.Exit(1)
 		}
-		
+
+		var snapshot *kbgenerator.KBSnapshot
+		var err error
+
+		// Collect based on method
+		if *method == "binary" {
+			if *toolPath == "" {
+				fmt.Fprintf(os.Stderr, "[ERROR] Tool path is required for binary method\n")
+				os.Exit(1)
+			}
+			snapshot, err = kbgenerator.CollectFromTidbBinary(*repo, *singleTag, *toolPath)
+		} else {
+			snapshot, err = kbgenerator.CollectFromTidbSource(*repo, *singleTag)
+		}
+
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "[ERROR] Collection failed: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Write parameters to file
 		outputFile := filepath.Join(outputDir, "defaults.json")
-		if err := scan.ScanDefaults(*repo, outputFile, ""); err != nil {
-			fmt.Fprintf(os.Stderr, "[ERROR] ScanDefaults failed: %v\n", err)
+		file, err := os.Create(outputFile)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "[ERROR] Failed to create output file: %v\n", err)
 			os.Exit(1)
 		}
-		
+		defer file.Close()
+
+		encoder := json.NewEncoder(file)
+		encoder.SetIndent("", "  ")
+		if err := encoder.Encode(snapshot); err != nil {
+			fmt.Fprintf(os.Stderr, "[ERROR] Failed to write snapshot: %v\n", err)
+			os.Exit(1)
+		}
+
 		// For upgrade logic, we only need to scan once using the latest code
-		if err := scan.ScanUpgradeLogic(*repo, *singleTag); err != nil {
-			fmt.Fprintf(os.Stderr, "[ERROR] ScanUpgradeLogic failed: %v\n", err)
+		// This collects the upgrade logic that will be part of our knowledge base
+		bootstrapPath := filepath.Join(*repo, "pkg", "session", "bootstrap.go")
+		upgradeLogic, err := kbgenerator.CollectUpgradeLogicFromSource(bootstrapPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "[ERROR] Failed to collect upgrade logic: %v\n", err)
 			os.Exit(1)
 		}
 		
+		// Save upgrade logic to knowledge base
+		upgradeOutputPath := filepath.Join("knowledge", "upgrade_logic.json")
+		if err := kbgenerator.SaveUpgradeLogic(upgradeLogic, upgradeOutputPath); err != nil {
+			fmt.Fprintf(os.Stderr, "[ERROR] Failed to save upgrade logic: %v\n", err)
+			os.Exit(1)
+		}
+
 		fmt.Println("Single tag processing completed")
 		return
 	}
@@ -55,19 +97,28 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Printf("Found %d LTS tags to process\n", len(tags))
-		
+
 		if err := scan.ScanAllAndAggregateParameters(*repo); err != nil {
 			fmt.Fprintf(os.Stderr, "[ERROR] ScanAllAndAggregateParameters failed: %v\n", err)
 			os.Exit(1)
 		}
-		
+
 		// After all defaults are collected, generate global upgrade_logic.json
-		// For upgrade logic, we only need to scan once using the latest code
-		if err := scan.ScanUpgradeLogic(*repo, ""); err != nil {
-			fmt.Fprintf(os.Stderr, "[ERROR] ScanUpgradeLogic failed: %v\n", err)
+		// This collects the upgrade logic that will be part of our knowledge base
+		bootstrapPath := filepath.Join(*repo, "pkg", "session", "bootstrap.go")
+		upgradeLogic, err := kbgenerator.CollectUpgradeLogicFromSource(bootstrapPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "[ERROR] Failed to collect upgrade logic: %v\n", err)
 			os.Exit(1)
 		}
 		
+		// Save upgrade logic to knowledge base
+		upgradeOutputPath := filepath.Join("knowledge", "upgrade_logic.json")
+		if err := kbgenerator.SaveUpgradeLogic(upgradeLogic, upgradeOutputPath); err != nil {
+			fmt.Fprintf(os.Stderr, "[ERROR] Failed to save upgrade logic: %v\n", err)
+			os.Exit(1)
+		}
+
 		fmt.Println("Full collection completed")
 		return
 	}
