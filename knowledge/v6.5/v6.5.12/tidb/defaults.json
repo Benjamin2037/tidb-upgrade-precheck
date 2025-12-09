@@ -1,0 +1,3693 @@
+{
+  "component": "tidb",
+  "version": "v6.5.12",
+  "config_defaults": {
+    "advertise-address": {
+      "value": "127.0.0.1",
+      "type": "string"
+    },
+    "alter-primary-key": {
+      "value": false,
+      "type": "bool"
+    },
+    "ballast-object-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "binlog.binlog-socket": {
+      "value": "",
+      "type": "string"
+    },
+    "binlog.enable": {
+      "value": false,
+      "type": "bool"
+    },
+    "binlog.ignore-error": {
+      "value": false,
+      "type": "bool"
+    },
+    "binlog.strategy": {
+      "value": "range",
+      "type": "string"
+    },
+    "binlog.write-timeout": {
+      "value": "15s",
+      "type": "string"
+    },
+    "compatible-kill-query": {
+      "value": false,
+      "type": "bool"
+    },
+    "cors": {
+      "value": "",
+      "type": "string"
+    },
+    "delay-clean-table-lock": {
+      "value": 0,
+      "type": "float"
+    },
+    "deprecate-integer-display-length": {
+      "value": false,
+      "type": "bool"
+    },
+    "enable-enum-length-limit": {
+      "value": true,
+      "type": "bool"
+    },
+    "enable-forwarding": {
+      "value": false,
+      "type": "bool"
+    },
+    "enable-global-index": {
+      "value": false,
+      "type": "bool"
+    },
+    "enable-global-kill": {
+      "value": true,
+      "type": "bool"
+    },
+    "enable-table-lock": {
+      "value": false,
+      "type": "bool"
+    },
+    "enable-tcp4-only": {
+      "value": false,
+      "type": "bool"
+    },
+    "enable-telemetry": {
+      "value": false,
+      "type": "bool"
+    },
+    "experimental.allow-expression-index": {
+      "value": false,
+      "type": "bool"
+    },
+    "graceful-wait-before-shutdown": {
+      "value": 0,
+      "type": "float"
+    },
+    "host": {
+      "value": "127.0.0.1",
+      "type": "string"
+    },
+    "index-limit": {
+      "value": 64,
+      "type": "float"
+    },
+    "initialize-sql-file": {
+      "value": "",
+      "type": "string"
+    },
+    "instance.ddl_slow_threshold": {
+      "value": 300,
+      "type": "float"
+    },
+    "instance.max_connections": {
+      "value": 0,
+      "type": "float"
+    },
+    "instance.plugin_dir": {
+      "value": "/data/deploy/plugin",
+      "type": "string"
+    },
+    "instance.plugin_load": {
+      "value": "",
+      "type": "string"
+    },
+    "instance.tidb_check_mb4_value_in_utf8": {
+      "value": true,
+      "type": "bool"
+    },
+    "instance.tidb_enable_collect_execution_info": {
+      "value": true,
+      "type": "bool"
+    },
+    "instance.tidb_enable_ddl": {
+      "value": true,
+      "type": "bool"
+    },
+    "instance.tidb_enable_slow_log": {
+      "value": true,
+      "type": "bool"
+    },
+    "instance.tidb_expensive_query_time_threshold": {
+      "value": 60,
+      "type": "float"
+    },
+    "instance.tidb_force_priority": {
+      "value": "NO_PRIORITY",
+      "type": "string"
+    },
+    "instance.tidb_general_log": {
+      "value": false,
+      "type": "bool"
+    },
+    "instance.tidb_pprof_sql_cpu": {
+      "value": false,
+      "type": "bool"
+    },
+    "instance.tidb_rc_read_check_ts": {
+      "value": false,
+      "type": "bool"
+    },
+    "instance.tidb_record_plan_in_slow_log": {
+      "value": 1,
+      "type": "float"
+    },
+    "instance.tidb_slow_log_threshold": {
+      "value": 300,
+      "type": "float"
+    },
+    "isolation-read.engines": {
+      "value": [
+        "tikv",
+        "tiflash",
+        "tidb"
+      ],
+      "type": "array"
+    },
+    "lease": {
+      "value": "45s",
+      "type": "string"
+    },
+    "log.disable-error-stack": {
+      "value": null,
+      "type": "string"
+    },
+    "log.disable-timestamp": {
+      "value": null,
+      "type": "string"
+    },
+    "log.enable-error-stack": {
+      "value": null,
+      "type": "string"
+    },
+    "log.enable-timestamp": {
+      "value": null,
+      "type": "string"
+    },
+    "log.file.filename": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.12-1765243217/tidb-0/tidb.log",
+      "type": "string"
+    },
+    "log.file.max-backups": {
+      "value": 0,
+      "type": "float"
+    },
+    "log.file.max-days": {
+      "value": 0,
+      "type": "float"
+    },
+    "log.file.max-size": {
+      "value": 300,
+      "type": "float"
+    },
+    "log.format": {
+      "value": "text",
+      "type": "string"
+    },
+    "log.level": {
+      "value": "info",
+      "type": "string"
+    },
+    "log.slow-query-file": {
+      "value": "tidb-slow.log",
+      "type": "string"
+    },
+    "max-ballast-object-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "max-index-length": {
+      "value": 3072,
+      "type": "float"
+    },
+    "new_collations_enabled_on_first_bootstrap": {
+      "value": true,
+      "type": "bool"
+    },
+    "opentracing.enable": {
+      "value": false,
+      "type": "bool"
+    },
+    "opentracing.reporter.buffer-flush-interval": {
+      "value": 0,
+      "type": "float"
+    },
+    "opentracing.reporter.local-agent-host-port": {
+      "value": "",
+      "type": "string"
+    },
+    "opentracing.reporter.log-spans": {
+      "value": false,
+      "type": "bool"
+    },
+    "opentracing.reporter.queue-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "opentracing.rpc-metrics": {
+      "value": false,
+      "type": "bool"
+    },
+    "opentracing.sampler.max-operations": {
+      "value": 0,
+      "type": "float"
+    },
+    "opentracing.sampler.param": {
+      "value": 1,
+      "type": "float"
+    },
+    "opentracing.sampler.sampling-refresh-interval": {
+      "value": 0,
+      "type": "float"
+    },
+    "opentracing.sampler.sampling-server-url": {
+      "value": "",
+      "type": "string"
+    },
+    "opentracing.sampler.type": {
+      "value": "const",
+      "type": "string"
+    },
+    "path": {
+      "value": "127.0.0.1:2379",
+      "type": "string"
+    },
+    "pd-client.pd-server-timeout": {
+      "value": 3,
+      "type": "float"
+    },
+    "performance.analyze-partition-concurrency-quota": {
+      "value": 16,
+      "type": "float"
+    },
+    "performance.bind-info-lease": {
+      "value": "3s",
+      "type": "string"
+    },
+    "performance.cross-join": {
+      "value": true,
+      "type": "bool"
+    },
+    "performance.distinct-agg-push-down": {
+      "value": false,
+      "type": "bool"
+    },
+    "performance.enable-load-fmsketch": {
+      "value": false,
+      "type": "bool"
+    },
+    "performance.enable-stats-cache-mem-quota": {
+      "value": false,
+      "type": "bool"
+    },
+    "performance.enforce-mpp": {
+      "value": false,
+      "type": "bool"
+    },
+    "performance.force-init-stats": {
+      "value": false,
+      "type": "bool"
+    },
+    "performance.gogc": {
+      "value": 100,
+      "type": "float"
+    },
+    "performance.max-procs": {
+      "value": 0,
+      "type": "float"
+    },
+    "performance.max-txn-ttl": {
+      "value": 3600000,
+      "type": "float"
+    },
+    "performance.plan-replayer-gc-lease": {
+      "value": "10m",
+      "type": "string"
+    },
+    "performance.projection-push-down": {
+      "value": false,
+      "type": "bool"
+    },
+    "performance.pseudo-estimate-ratio": {
+      "value": 0.8,
+      "type": "float"
+    },
+    "performance.server-memory-quota": {
+      "value": 0,
+      "type": "float"
+    },
+    "performance.stats-lease": {
+      "value": "3s",
+      "type": "string"
+    },
+    "performance.stats-load-concurrency": {
+      "value": 5,
+      "type": "float"
+    },
+    "performance.stats-load-queue-size": {
+      "value": 1000,
+      "type": "float"
+    },
+    "performance.stmt-count-limit": {
+      "value": 5000,
+      "type": "float"
+    },
+    "performance.tcp-keep-alive": {
+      "value": true,
+      "type": "bool"
+    },
+    "performance.tcp-no-delay": {
+      "value": true,
+      "type": "bool"
+    },
+    "performance.txn-entry-size-limit": {
+      "value": 6291456,
+      "type": "float"
+    },
+    "performance.txn-total-size-limit": {
+      "value": 104857600,
+      "type": "float"
+    },
+    "pessimistic-txn.constraint-check-in-place-pessimistic": {
+      "value": true,
+      "type": "bool"
+    },
+    "pessimistic-txn.deadlock-history-capacity": {
+      "value": 10,
+      "type": "float"
+    },
+    "pessimistic-txn.deadlock-history-collect-retryable": {
+      "value": false,
+      "type": "bool"
+    },
+    "pessimistic-txn.max-retry-count": {
+      "value": 256,
+      "type": "float"
+    },
+    "pessimistic-txn.pessimistic-auto-commit": {
+      "value": false,
+      "type": "bool"
+    },
+    "port": {
+      "value": 4000,
+      "type": "float"
+    },
+    "proxy-protocol.fallbackable": {
+      "value": false,
+      "type": "bool"
+    },
+    "proxy-protocol.header-timeout": {
+      "value": 5,
+      "type": "float"
+    },
+    "proxy-protocol.networks": {
+      "value": "",
+      "type": "string"
+    },
+    "repair-mode": {
+      "value": false,
+      "type": "bool"
+    },
+    "repair-table-list": {
+      "value": [],
+      "type": "array"
+    },
+    "security.auth-token-jwks": {
+      "value": "",
+      "type": "string"
+    },
+    "security.auth-token-refresh-interval": {
+      "value": "1h0m0s",
+      "type": "string"
+    },
+    "security.auto-tls": {
+      "value": true,
+      "type": "bool"
+    },
+    "security.cluster-ssl-ca": {
+      "value": "",
+      "type": "string"
+    },
+    "security.cluster-ssl-cert": {
+      "value": "",
+      "type": "string"
+    },
+    "security.cluster-ssl-key": {
+      "value": "",
+      "type": "string"
+    },
+    "security.cluster-verify-cn": {
+      "value": null,
+      "type": "string"
+    },
+    "security.disconnect-on-expired-password": {
+      "value": true,
+      "type": "bool"
+    },
+    "security.enable-sem": {
+      "value": false,
+      "type": "bool"
+    },
+    "security.rsa-key-size": {
+      "value": 4096,
+      "type": "float"
+    },
+    "security.secure-bootstrap": {
+      "value": false,
+      "type": "bool"
+    },
+    "security.session-token-signing-cert": {
+      "value": "",
+      "type": "string"
+    },
+    "security.session-token-signing-key": {
+      "value": "",
+      "type": "string"
+    },
+    "security.skip-grant-table": {
+      "value": false,
+      "type": "bool"
+    },
+    "security.spilled-file-encryption-method": {
+      "value": "plaintext",
+      "type": "string"
+    },
+    "security.ssl-ca": {
+      "value": "",
+      "type": "string"
+    },
+    "security.ssl-cert": {
+      "value": "",
+      "type": "string"
+    },
+    "security.ssl-key": {
+      "value": "",
+      "type": "string"
+    },
+    "security.tls-version": {
+      "value": "",
+      "type": "string"
+    },
+    "server-version": {
+      "value": "",
+      "type": "string"
+    },
+    "skip-register-to-dashboard": {
+      "value": false,
+      "type": "bool"
+    },
+    "socket": {
+      "value": "/tmp/tidb-4000.sock",
+      "type": "string"
+    },
+    "split-region-max-num": {
+      "value": 1000,
+      "type": "float"
+    },
+    "split-table": {
+      "value": true,
+      "type": "bool"
+    },
+    "status.grpc-concurrent-streams": {
+      "value": 1024,
+      "type": "float"
+    },
+    "status.grpc-initial-window-size": {
+      "value": 2097152,
+      "type": "float"
+    },
+    "status.grpc-keepalive-time": {
+      "value": 10,
+      "type": "float"
+    },
+    "status.grpc-keepalive-timeout": {
+      "value": 3,
+      "type": "float"
+    },
+    "status.grpc-max-send-msg-size": {
+      "value": 2147483647,
+      "type": "float"
+    },
+    "status.metrics-addr": {
+      "value": "",
+      "type": "string"
+    },
+    "status.metrics-interval": {
+      "value": 15,
+      "type": "float"
+    },
+    "status.record-db-qps": {
+      "value": false,
+      "type": "bool"
+    },
+    "status.report-status": {
+      "value": true,
+      "type": "bool"
+    },
+    "status.status-host": {
+      "value": "0.0.0.0",
+      "type": "string"
+    },
+    "status.status-port": {
+      "value": 10080,
+      "type": "float"
+    },
+    "store": {
+      "value": "tikv",
+      "type": "string"
+    },
+    "stores-refresh-interval": {
+      "value": 60,
+      "type": "float"
+    },
+    "table-column-count-limit": {
+      "value": 1017,
+      "type": "float"
+    },
+    "temp-dir": {
+      "value": "/tmp/tidb",
+      "type": "string"
+    },
+    "tidb-edition": {
+      "value": "",
+      "type": "string"
+    },
+    "tidb-max-reuse-chunk": {
+      "value": 64,
+      "type": "float"
+    },
+    "tidb-max-reuse-column": {
+      "value": 256,
+      "type": "float"
+    },
+    "tidb-release-version": {
+      "value": "",
+      "type": "string"
+    },
+    "tikv-client.async-commit.allowed-clock-drift": {
+      "value": 500000000,
+      "type": "float"
+    },
+    "tikv-client.async-commit.keys-limit": {
+      "value": 256,
+      "type": "float"
+    },
+    "tikv-client.async-commit.safe-window": {
+      "value": 2000000000,
+      "type": "float"
+    },
+    "tikv-client.async-commit.total-key-size-limit": {
+      "value": 4096,
+      "type": "float"
+    },
+    "tikv-client.batch-wait-size": {
+      "value": 8,
+      "type": "float"
+    },
+    "tikv-client.commit-timeout": {
+      "value": "41s",
+      "type": "string"
+    },
+    "tikv-client.copr-cache.capacity-mb": {
+      "value": 1000,
+      "type": "float"
+    },
+    "tikv-client.enable-chunk-rpc": {
+      "value": true,
+      "type": "bool"
+    },
+    "tikv-client.grpc-compression-type": {
+      "value": "none",
+      "type": "string"
+    },
+    "tikv-client.grpc-connection-count": {
+      "value": 4,
+      "type": "float"
+    },
+    "tikv-client.grpc-initial-conn-window-size": {
+      "value": 134217728,
+      "type": "float"
+    },
+    "tikv-client.grpc-initial-window-size": {
+      "value": 134217728,
+      "type": "float"
+    },
+    "tikv-client.grpc-keepalive-time": {
+      "value": 10,
+      "type": "float"
+    },
+    "tikv-client.grpc-keepalive-timeout": {
+      "value": 3,
+      "type": "float"
+    },
+    "tikv-client.max-batch-size": {
+      "value": 128,
+      "type": "float"
+    },
+    "tikv-client.max-batch-wait-time": {
+      "value": 0,
+      "type": "float"
+    },
+    "tikv-client.overload-threshold": {
+      "value": 200,
+      "type": "float"
+    },
+    "tikv-client.region-cache-ttl": {
+      "value": 600,
+      "type": "float"
+    },
+    "tikv-client.resolve-lock-lite-threshold": {
+      "value": 16,
+      "type": "float"
+    },
+    "tikv-client.store-limit": {
+      "value": 0,
+      "type": "float"
+    },
+    "tikv-client.store-liveness-timeout": {
+      "value": "1s",
+      "type": "string"
+    },
+    "tikv-client.ttl-refreshed-txn-size": {
+      "value": 33554432,
+      "type": "float"
+    },
+    "tmp-storage-path": {
+      "value": "/tmp/tidb-tmp-storage-kb-gen-v6.5.12-1765243217/501_tidb/MTI3LjAuMC4xOjQwMDAvMC4wLjAuMDoxMDA4MA==/tmp-storage",
+      "type": "string"
+    },
+    "tmp-storage-quota": {
+      "value": -1,
+      "type": "float"
+    },
+    "token-limit": {
+      "value": 1000,
+      "type": "float"
+    },
+    "top-sql.receiver-address": {
+      "value": "",
+      "type": "string"
+    },
+    "transaction-summary.transaction-id-digest-min-duration": {
+      "value": 2147483647,
+      "type": "float"
+    },
+    "transaction-summary.transaction-summary-capacity": {
+      "value": 500,
+      "type": "float"
+    },
+    "treat-old-version-utf8-as-utf8mb4": {
+      "value": true,
+      "type": "bool"
+    },
+    "version-comment": {
+      "value": "",
+      "type": "string"
+    }
+  },
+  "system_variables": {
+    "allow_auto_random_explicit_insert": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "auto_increment_increment": {
+      "value": "1",
+      "type": "string"
+    },
+    "auto_increment_offset": {
+      "value": "1",
+      "type": "string"
+    },
+    "autocommit": {
+      "value": "ON",
+      "type": "string"
+    },
+    "automatic_sp_privileges": {
+      "value": "1",
+      "type": "string"
+    },
+    "avoid_temporal_upgrade": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "back_log": {
+      "value": "80",
+      "type": "string"
+    },
+    "basedir": {
+      "value": "/usr/local/mysql",
+      "type": "string"
+    },
+    "big_tables": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "bind_address": {
+      "value": "*",
+      "type": "string"
+    },
+    "binlog_cache_size": {
+      "value": "32768",
+      "type": "string"
+    },
+    "binlog_checksum": {
+      "value": "CRC32",
+      "type": "string"
+    },
+    "binlog_direct_non_transactional_updates": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "binlog_error_action": {
+      "value": "IGNORE_ERROR",
+      "type": "string"
+    },
+    "binlog_format": {
+      "value": "STATEMENT",
+      "type": "string"
+    },
+    "binlog_group_commit_sync_delay": {
+      "value": "",
+      "type": "string"
+    },
+    "binlog_group_commit_sync_no_delay_count": {
+      "value": "",
+      "type": "string"
+    },
+    "binlog_gtid_simple_recovery": {
+      "value": "1",
+      "type": "string"
+    },
+    "binlog_max_flush_queue_time": {
+      "value": "0",
+      "type": "string"
+    },
+    "binlog_order_commits": {
+      "value": "ON",
+      "type": "string"
+    },
+    "binlog_row_image": {
+      "value": "FULL",
+      "type": "string"
+    },
+    "binlog_rows_query_log_events": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "binlog_stmt_cache_size": {
+      "value": "32768",
+      "type": "string"
+    },
+    "binlogging_impossible_mode": {
+      "value": "IGNORE_ERROR",
+      "type": "string"
+    },
+    "block_encryption_mode": {
+      "value": "aes-128-ecb",
+      "type": "string"
+    },
+    "bulk_insert_buffer_size": {
+      "value": "8388608",
+      "type": "string"
+    },
+    "character_set_client": {
+      "value": "utf8mb4",
+      "type": "string"
+    },
+    "character_set_connection": {
+      "value": "utf8mb4",
+      "type": "string"
+    },
+    "character_set_database": {
+      "value": "utf8mb4",
+      "type": "string"
+    },
+    "character_set_filesystem": {
+      "value": "binary",
+      "type": "string"
+    },
+    "character_set_results": {
+      "value": "utf8mb4",
+      "type": "string"
+    },
+    "character_set_server": {
+      "value": "utf8mb4",
+      "type": "string"
+    },
+    "character_set_system": {
+      "value": "utf8",
+      "type": "string"
+    },
+    "character_sets_dir": {
+      "value": "/usr/local/mysql-5.6.25-osx10.8-x86_64/share/charsets/",
+      "type": "string"
+    },
+    "check_proxy_users": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "collation_connection": {
+      "value": "utf8mb4_bin",
+      "type": "string"
+    },
+    "collation_database": {
+      "value": "utf8mb4_bin",
+      "type": "string"
+    },
+    "collation_server": {
+      "value": "utf8mb4_bin",
+      "type": "string"
+    },
+    "completion_type": {
+      "value": "NO_CHAIN",
+      "type": "string"
+    },
+    "concurrent_insert": {
+      "value": "AUTO",
+      "type": "string"
+    },
+    "connect_timeout": {
+      "value": "10",
+      "type": "string"
+    },
+    "core_file": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "cte_max_recursion_depth": {
+      "value": "1000",
+      "type": "string"
+    },
+    "datadir": {
+      "value": "127.0.0.1:2379",
+      "type": "string"
+    },
+    "date_format": {
+      "value": "%Y-%m-%d",
+      "type": "string"
+    },
+    "datetime_format": {
+      "value": "%Y-%m-%d %H:%i:%s",
+      "type": "string"
+    },
+    "ddl_slow_threshold": {
+      "value": "300",
+      "type": "string"
+    },
+    "debug": {
+      "value": "",
+      "type": "string"
+    },
+    "default_authentication_plugin": {
+      "value": "mysql_native_password",
+      "type": "string"
+    },
+    "default_password_lifetime": {
+      "value": "0",
+      "type": "string"
+    },
+    "default_storage_engine": {
+      "value": "InnoDB",
+      "type": "string"
+    },
+    "default_tmp_storage_engine": {
+      "value": "InnoDB",
+      "type": "string"
+    },
+    "default_week_format": {
+      "value": "0",
+      "type": "string"
+    },
+    "delay_key_write": {
+      "value": "ON",
+      "type": "string"
+    },
+    "delayed_insert_limit": {
+      "value": "100",
+      "type": "string"
+    },
+    "delayed_insert_timeout": {
+      "value": "300",
+      "type": "string"
+    },
+    "delayed_queue_size": {
+      "value": "1000",
+      "type": "string"
+    },
+    "disconnect_on_expired_password": {
+      "value": "ON",
+      "type": "string"
+    },
+    "div_precision_increment": {
+      "value": "4",
+      "type": "string"
+    },
+    "end_markers_in_json": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "enforce_gtid_consistency": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "eq_range_index_dive_limit": {
+      "value": "200",
+      "type": "string"
+    },
+    "event_scheduler": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "executed_gtids_compression_period": {
+      "value": "",
+      "type": "string"
+    },
+    "expire_logs_days": {
+      "value": "0",
+      "type": "string"
+    },
+    "explicit_defaults_for_timestamp": {
+      "value": "ON",
+      "type": "string"
+    },
+    "flush": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "flush_time": {
+      "value": "0",
+      "type": "string"
+    },
+    "foreign_key_checks": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "ft_boolean_syntax": {
+      "value": "+ -\u003e\u003c()~*:\"\"\u0026|",
+      "type": "string"
+    },
+    "ft_max_word_len": {
+      "value": "84",
+      "type": "string"
+    },
+    "ft_min_word_len": {
+      "value": "4",
+      "type": "string"
+    },
+    "ft_query_expansion_limit": {
+      "value": "20",
+      "type": "string"
+    },
+    "ft_stopword_file": {
+      "value": "(built-in)",
+      "type": "string"
+    },
+    "general_log": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "general_log_file": {
+      "value": "/usr/local/mysql/data/localhost.log",
+      "type": "string"
+    },
+    "group_concat_max_len": {
+      "value": "1024",
+      "type": "string"
+    },
+    "gtid_executed_compression_period": {
+      "value": "",
+      "type": "string"
+    },
+    "gtid_mode": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "gtid_purged": {
+      "value": "",
+      "type": "string"
+    },
+    "have_compress": {
+      "value": "YES",
+      "type": "string"
+    },
+    "have_crypt": {
+      "value": "YES",
+      "type": "string"
+    },
+    "have_dynamic_loading": {
+      "value": "YES",
+      "type": "string"
+    },
+    "have_geometry": {
+      "value": "YES",
+      "type": "string"
+    },
+    "have_openssl": {
+      "value": "YES",
+      "type": "string"
+    },
+    "have_profiling": {
+      "value": "NO",
+      "type": "string"
+    },
+    "have_query_cache": {
+      "value": "YES",
+      "type": "string"
+    },
+    "have_rtree_keys": {
+      "value": "YES",
+      "type": "string"
+    },
+    "have_ssl": {
+      "value": "YES",
+      "type": "string"
+    },
+    "have_symlink": {
+      "value": "YES",
+      "type": "string"
+    },
+    "host_cache_size": {
+      "value": "279",
+      "type": "string"
+    },
+    "hostname": {
+      "value": "Mac-mini-3.local",
+      "type": "string"
+    },
+    "ignore_builtin_innodb": {
+      "value": "0",
+      "type": "string"
+    },
+    "information_schema_stats_expiry": {
+      "value": "86400",
+      "type": "string"
+    },
+    "init_connect": {
+      "value": "",
+      "type": "string"
+    },
+    "init_slave": {
+      "value": "",
+      "type": "string"
+    },
+    "innodb_adaptive_flushing": {
+      "value": "ON",
+      "type": "string"
+    },
+    "innodb_adaptive_flushing_lwm": {
+      "value": "10",
+      "type": "string"
+    },
+    "innodb_adaptive_hash_index": {
+      "value": "ON",
+      "type": "string"
+    },
+    "innodb_adaptive_max_sleep_delay": {
+      "value": "150000",
+      "type": "string"
+    },
+    "innodb_additional_mem_pool_size": {
+      "value": "8388608",
+      "type": "string"
+    },
+    "innodb_api_bk_commit_interval": {
+      "value": "5",
+      "type": "string"
+    },
+    "innodb_api_disable_rowlock": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_api_enable_binlog": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_api_enable_mdl": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_api_trx_level": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_autoextend_increment": {
+      "value": "64",
+      "type": "string"
+    },
+    "innodb_autoinc_lock_mode": {
+      "value": "1",
+      "type": "string"
+    },
+    "innodb_buffer_pool_dump_at_shutdown": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_buffer_pool_dump_now": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "innodb_buffer_pool_dump_pct": {
+      "value": "",
+      "type": "string"
+    },
+    "innodb_buffer_pool_filename": {
+      "value": "ib_buffer_pool",
+      "type": "string"
+    },
+    "innodb_buffer_pool_instances": {
+      "value": "8",
+      "type": "string"
+    },
+    "innodb_buffer_pool_load_abort": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "innodb_buffer_pool_load_at_startup": {
+      "value": "1",
+      "type": "string"
+    },
+    "innodb_buffer_pool_load_now": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "innodb_buffer_pool_size": {
+      "value": "134217728",
+      "type": "string"
+    },
+    "innodb_change_buffer_max_size": {
+      "value": "25",
+      "type": "string"
+    },
+    "innodb_change_buffering": {
+      "value": "all",
+      "type": "string"
+    },
+    "innodb_checksum_algorithm": {
+      "value": "innodb",
+      "type": "string"
+    },
+    "innodb_checksums": {
+      "value": "ON",
+      "type": "string"
+    },
+    "innodb_cmp_per_index_enabled": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "innodb_commit_concurrency": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_compression_failure_threshold_pct": {
+      "value": "5",
+      "type": "string"
+    },
+    "innodb_compression_level": {
+      "value": "6",
+      "type": "string"
+    },
+    "innodb_compression_pad_pct_max": {
+      "value": "50",
+      "type": "string"
+    },
+    "innodb_concurrency_tickets": {
+      "value": "5000",
+      "type": "string"
+    },
+    "innodb_data_file_path": {
+      "value": "ibdata1:12M:autoextend",
+      "type": "string"
+    },
+    "innodb_default_row_format": {
+      "value": "dynamic",
+      "type": "string"
+    },
+    "innodb_disable_sort_file_cache": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_doublewrite": {
+      "value": "1",
+      "type": "string"
+    },
+    "innodb_fast_shutdown": {
+      "value": "1",
+      "type": "string"
+    },
+    "innodb_file_format": {
+      "value": "Barracuda",
+      "type": "string"
+    },
+    "innodb_file_format_check": {
+      "value": "1",
+      "type": "string"
+    },
+    "innodb_file_format_max": {
+      "value": "Antelope",
+      "type": "string"
+    },
+    "innodb_file_per_table": {
+      "value": "ON",
+      "type": "string"
+    },
+    "innodb_fill_factor": {
+      "value": "",
+      "type": "string"
+    },
+    "innodb_flush_log_at_timeout": {
+      "value": "1",
+      "type": "string"
+    },
+    "innodb_flush_log_at_trx_commit": {
+      "value": "1",
+      "type": "string"
+    },
+    "innodb_flush_neighbors": {
+      "value": "1",
+      "type": "string"
+    },
+    "innodb_flush_sync": {
+      "value": "",
+      "type": "string"
+    },
+    "innodb_flushing_avg_loops": {
+      "value": "30",
+      "type": "string"
+    },
+    "innodb_force_load_corrupted": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_force_recovery": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_ft_aux_table": {
+      "value": "",
+      "type": "string"
+    },
+    "innodb_ft_cache_size": {
+      "value": "8000000",
+      "type": "string"
+    },
+    "innodb_ft_enable_diag_print": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "innodb_ft_enable_stopword": {
+      "value": "ON",
+      "type": "string"
+    },
+    "innodb_ft_max_token_size": {
+      "value": "84",
+      "type": "string"
+    },
+    "innodb_ft_min_token_size": {
+      "value": "3",
+      "type": "string"
+    },
+    "innodb_ft_num_word_optimize": {
+      "value": "2000",
+      "type": "string"
+    },
+    "innodb_ft_result_cache_limit": {
+      "value": "2000000000",
+      "type": "string"
+    },
+    "innodb_ft_server_stopword_table": {
+      "value": "",
+      "type": "string"
+    },
+    "innodb_ft_sort_pll_degree": {
+      "value": "2",
+      "type": "string"
+    },
+    "innodb_ft_total_cache_size": {
+      "value": "640000000",
+      "type": "string"
+    },
+    "innodb_ft_user_stopword_table": {
+      "value": "",
+      "type": "string"
+    },
+    "innodb_io_capacity": {
+      "value": "200",
+      "type": "string"
+    },
+    "innodb_io_capacity_max": {
+      "value": "2000",
+      "type": "string"
+    },
+    "innodb_large_prefix": {
+      "value": "ON",
+      "type": "string"
+    },
+    "innodb_lock_wait_timeout": {
+      "value": "50",
+      "type": "string"
+    },
+    "innodb_locks_unsafe_for_binlog": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_log_buffer_size": {
+      "value": "8388608",
+      "type": "string"
+    },
+    "innodb_log_checksum_algorithm": {
+      "value": "",
+      "type": "string"
+    },
+    "innodb_log_compressed_pages": {
+      "value": "1",
+      "type": "string"
+    },
+    "innodb_log_file_size": {
+      "value": "50331648",
+      "type": "string"
+    },
+    "innodb_log_files_in_group": {
+      "value": "2",
+      "type": "string"
+    },
+    "innodb_log_group_home_dir": {
+      "value": "./",
+      "type": "string"
+    },
+    "innodb_log_write_ahead_size": {
+      "value": "",
+      "type": "string"
+    },
+    "innodb_lru_scan_depth": {
+      "value": "1024",
+      "type": "string"
+    },
+    "innodb_max_dirty_pages_pct": {
+      "value": "75",
+      "type": "string"
+    },
+    "innodb_max_dirty_pages_pct_lwm": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_max_purge_lag": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_max_purge_lag_delay": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_max_undo_log_size": {
+      "value": "",
+      "type": "string"
+    },
+    "innodb_mirrored_log_groups": {
+      "value": "1",
+      "type": "string"
+    },
+    "innodb_monitor_disable": {
+      "value": "",
+      "type": "string"
+    },
+    "innodb_monitor_enable": {
+      "value": "",
+      "type": "string"
+    },
+    "innodb_monitor_reset": {
+      "value": "",
+      "type": "string"
+    },
+    "innodb_monitor_reset_all": {
+      "value": "",
+      "type": "string"
+    },
+    "innodb_old_blocks_pct": {
+      "value": "37",
+      "type": "string"
+    },
+    "innodb_old_blocks_time": {
+      "value": "1000",
+      "type": "string"
+    },
+    "innodb_online_alter_log_max_size": {
+      "value": "134217728",
+      "type": "string"
+    },
+    "innodb_open_files": {
+      "value": "2000",
+      "type": "string"
+    },
+    "innodb_optimize_fulltext_only": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_page_size": {
+      "value": "16384",
+      "type": "string"
+    },
+    "innodb_print_all_deadlocks": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "innodb_purge_batch_size": {
+      "value": "300",
+      "type": "string"
+    },
+    "innodb_purge_rseg_truncate_frequency": {
+      "value": "",
+      "type": "string"
+    },
+    "innodb_purge_threads": {
+      "value": "1",
+      "type": "string"
+    },
+    "innodb_random_read_ahead": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "innodb_read_ahead_threshold": {
+      "value": "56",
+      "type": "string"
+    },
+    "innodb_read_io_threads": {
+      "value": "4",
+      "type": "string"
+    },
+    "innodb_read_only": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_replication_delay": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_rollback_on_timeout": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_rollback_segments": {
+      "value": "128",
+      "type": "string"
+    },
+    "innodb_sort_buffer_size": {
+      "value": "1048576",
+      "type": "string"
+    },
+    "innodb_spin_wait_delay": {
+      "value": "6",
+      "type": "string"
+    },
+    "innodb_stats_auto_recalc": {
+      "value": "1",
+      "type": "string"
+    },
+    "innodb_stats_method": {
+      "value": "nulls_equal",
+      "type": "string"
+    },
+    "innodb_stats_on_metadata": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_stats_persistent": {
+      "value": "ON",
+      "type": "string"
+    },
+    "innodb_stats_persistent_sample_pages": {
+      "value": "20",
+      "type": "string"
+    },
+    "innodb_stats_sample_pages": {
+      "value": "8",
+      "type": "string"
+    },
+    "innodb_stats_transient_sample_pages": {
+      "value": "8",
+      "type": "string"
+    },
+    "innodb_status_output": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "innodb_status_output_locks": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "innodb_strict_mode": {
+      "value": "ON",
+      "type": "string"
+    },
+    "innodb_support_xa": {
+      "value": "1",
+      "type": "string"
+    },
+    "innodb_sync_array_size": {
+      "value": "1",
+      "type": "string"
+    },
+    "innodb_sync_spin_loops": {
+      "value": "30",
+      "type": "string"
+    },
+    "innodb_table_locks": {
+      "value": "ON",
+      "type": "string"
+    },
+    "innodb_thread_concurrency": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_thread_sleep_delay": {
+      "value": "10000",
+      "type": "string"
+    },
+    "innodb_undo_directory": {
+      "value": ".",
+      "type": "string"
+    },
+    "innodb_undo_log_truncate": {
+      "value": "",
+      "type": "string"
+    },
+    "innodb_undo_logs": {
+      "value": "128",
+      "type": "string"
+    },
+    "innodb_undo_tablespaces": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_use_native_aio": {
+      "value": "0",
+      "type": "string"
+    },
+    "innodb_use_sys_malloc": {
+      "value": "1",
+      "type": "string"
+    },
+    "innodb_version": {
+      "value": "5.6.25",
+      "type": "string"
+    },
+    "innodb_write_io_threads": {
+      "value": "4",
+      "type": "string"
+    },
+    "interactive_timeout": {
+      "value": "28800",
+      "type": "string"
+    },
+    "internal_tmp_disk_storage_engine": {
+      "value": "",
+      "type": "string"
+    },
+    "join_buffer_size": {
+      "value": "262144",
+      "type": "string"
+    },
+    "keep_files_on_create": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "key_buffer_size": {
+      "value": "8388608",
+      "type": "string"
+    },
+    "key_cache_age_threshold": {
+      "value": "300",
+      "type": "string"
+    },
+    "key_cache_block_size": {
+      "value": "1024",
+      "type": "string"
+    },
+    "key_cache_division_limit": {
+      "value": "100",
+      "type": "string"
+    },
+    "large_files_support": {
+      "value": "1",
+      "type": "string"
+    },
+    "large_page_size": {
+      "value": "0",
+      "type": "string"
+    },
+    "large_pages": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "lc_messages": {
+      "value": "en_US",
+      "type": "string"
+    },
+    "lc_messages_dir": {
+      "value": "/usr/local/mysql-5.6.25-osx10.8-x86_64/share/",
+      "type": "string"
+    },
+    "lc_time_names": {
+      "value": "en_US",
+      "type": "string"
+    },
+    "license": {
+      "value": "Apache License 2.0",
+      "type": "string"
+    },
+    "local_infile": {
+      "value": "ON",
+      "type": "string"
+    },
+    "lock_wait_timeout": {
+      "value": "31536000",
+      "type": "string"
+    },
+    "locked_in_memory": {
+      "value": "0",
+      "type": "string"
+    },
+    "log_backward_compatible_user_definitions": {
+      "value": "",
+      "type": "string"
+    },
+    "log_bin": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "log_bin_trust_function_creators": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "log_bin_use_v1_row_events": {
+      "value": "0",
+      "type": "string"
+    },
+    "log_error": {
+      "value": "/usr/local/mysql/data/localhost.err",
+      "type": "string"
+    },
+    "log_error_verbosity": {
+      "value": "",
+      "type": "string"
+    },
+    "log_output": {
+      "value": "FILE",
+      "type": "string"
+    },
+    "log_queries_not_using_indexes": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "log_slave_updates": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "log_slow_admin_statements": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "log_slow_slave_statements": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "log_syslog": {
+      "value": "",
+      "type": "string"
+    },
+    "log_syslog_facility": {
+      "value": "",
+      "type": "string"
+    },
+    "log_syslog_include_pid": {
+      "value": "",
+      "type": "string"
+    },
+    "log_syslog_tag": {
+      "value": "",
+      "type": "string"
+    },
+    "log_throttle_queries_not_using_indexes": {
+      "value": "0",
+      "type": "string"
+    },
+    "log_timestamps": {
+      "value": "",
+      "type": "string"
+    },
+    "log_warnings": {
+      "value": "1",
+      "type": "string"
+    },
+    "long_query_time": {
+      "value": "10.000000",
+      "type": "string"
+    },
+    "low_priority_updates": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "lower_case_file_system": {
+      "value": "1",
+      "type": "string"
+    },
+    "lower_case_table_names": {
+      "value": "2",
+      "type": "string"
+    },
+    "master_info_repository": {
+      "value": "FILE",
+      "type": "string"
+    },
+    "master_verify_checksum": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "max_allowed_packet": {
+      "value": "67108864",
+      "type": "string"
+    },
+    "max_binlog_cache_size": {
+      "value": "18446744073709547520",
+      "type": "string"
+    },
+    "max_binlog_size": {
+      "value": "1073741824",
+      "type": "string"
+    },
+    "max_binlog_stmt_cache_size": {
+      "value": "18446744073709547520",
+      "type": "string"
+    },
+    "max_connect_errors": {
+      "value": "100",
+      "type": "string"
+    },
+    "max_connections": {
+      "value": "0",
+      "type": "string"
+    },
+    "max_delayed_threads": {
+      "value": "20",
+      "type": "string"
+    },
+    "max_digest_length": {
+      "value": "1024",
+      "type": "string"
+    },
+    "max_error_count": {
+      "value": "64",
+      "type": "string"
+    },
+    "max_execution_time": {
+      "value": "0",
+      "type": "string"
+    },
+    "max_heap_table_size": {
+      "value": "16777216",
+      "type": "string"
+    },
+    "max_insert_delayed_threads": {
+      "value": "20",
+      "type": "string"
+    },
+    "max_join_size": {
+      "value": "18446744073709551615",
+      "type": "string"
+    },
+    "max_length_for_sort_data": {
+      "value": "1024",
+      "type": "string"
+    },
+    "max_points_in_geometry": {
+      "value": "65536",
+      "type": "string"
+    },
+    "max_prepared_stmt_count": {
+      "value": "-1",
+      "type": "string"
+    },
+    "max_relay_log_size": {
+      "value": "0",
+      "type": "string"
+    },
+    "max_seeks_for_key": {
+      "value": "18446744073709551615",
+      "type": "string"
+    },
+    "max_sort_length": {
+      "value": "1024",
+      "type": "string"
+    },
+    "max_sp_recursion_depth": {
+      "value": "0",
+      "type": "string"
+    },
+    "max_statement_time": {
+      "value": "",
+      "type": "string"
+    },
+    "max_tmp_tables": {
+      "value": "32",
+      "type": "string"
+    },
+    "max_user_connections": {
+      "value": "0",
+      "type": "string"
+    },
+    "max_write_lock_count": {
+      "value": "18446744073709551615",
+      "type": "string"
+    },
+    "metadata_locks_cache_size": {
+      "value": "1024",
+      "type": "string"
+    },
+    "metadata_locks_hash_instances": {
+      "value": "8",
+      "type": "string"
+    },
+    "min_examined_row_limit": {
+      "value": "0",
+      "type": "string"
+    },
+    "multi_range_count": {
+      "value": "256",
+      "type": "string"
+    },
+    "myisam_data_pointer_size": {
+      "value": "6",
+      "type": "string"
+    },
+    "myisam_max_sort_file_size": {
+      "value": "9223372036853727232",
+      "type": "string"
+    },
+    "myisam_mmap_size": {
+      "value": "18446744073709551615",
+      "type": "string"
+    },
+    "myisam_recover_options": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "myisam_repair_threads": {
+      "value": "1",
+      "type": "string"
+    },
+    "myisam_sort_buffer_size": {
+      "value": "8388608",
+      "type": "string"
+    },
+    "myisam_stats_method": {
+      "value": "nulls_unequal",
+      "type": "string"
+    },
+    "myisam_use_mmap": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "mysql_native_password_proxy_users": {
+      "value": "",
+      "type": "string"
+    },
+    "ndb_blob_write_batch_bytes": {
+      "value": "",
+      "type": "string"
+    },
+    "ndb_deferred_constraints": {
+      "value": "",
+      "type": "string"
+    },
+    "ndb_distribution": {
+      "value": "",
+      "type": "string"
+    },
+    "ndb_eventbuffer_free_percent": {
+      "value": "",
+      "type": "string"
+    },
+    "ndb_eventbuffer_max_alloc": {
+      "value": "",
+      "type": "string"
+    },
+    "ndb_force_send": {
+      "value": "",
+      "type": "string"
+    },
+    "ndb_index_stat_enable": {
+      "value": "",
+      "type": "string"
+    },
+    "ndb_index_stat_option": {
+      "value": "",
+      "type": "string"
+    },
+    "ndb_join_pushdown": {
+      "value": "",
+      "type": "string"
+    },
+    "ndb_log_binlog_index": {
+      "value": "",
+      "type": "string"
+    },
+    "ndb_log_empty_epochs": {
+      "value": "",
+      "type": "string"
+    },
+    "ndb_log_updated_only": {
+      "value": "",
+      "type": "string"
+    },
+    "ndb_optimization_delay": {
+      "value": "",
+      "type": "string"
+    },
+    "ndb_recv_thread_cpu_mask": {
+      "value": "",
+      "type": "string"
+    },
+    "ndb_show_foreign_key_mock_tables": {
+      "value": "",
+      "type": "string"
+    },
+    "ndb_use_transactions": {
+      "value": "",
+      "type": "string"
+    },
+    "ndbinfo_max_rows": {
+      "value": "",
+      "type": "string"
+    },
+    "ndbinfo_show_hidden": {
+      "value": "",
+      "type": "string"
+    },
+    "net_buffer_length": {
+      "value": "16384",
+      "type": "string"
+    },
+    "net_read_timeout": {
+      "value": "30",
+      "type": "string"
+    },
+    "net_retry_count": {
+      "value": "10",
+      "type": "string"
+    },
+    "net_write_timeout": {
+      "value": "60",
+      "type": "string"
+    },
+    "new": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "offline_mode": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "old": {
+      "value": "0",
+      "type": "string"
+    },
+    "old_alter_table": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "old_passwords": {
+      "value": "0",
+      "type": "string"
+    },
+    "open_files_limit": {
+      "value": "5000",
+      "type": "string"
+    },
+    "optimizer_prune_level": {
+      "value": "1",
+      "type": "string"
+    },
+    "optimizer_search_depth": {
+      "value": "62",
+      "type": "string"
+    },
+    "optimizer_switch": {
+      "value": "index_merge=on,index_merge_union=on,index_merge_sort_union=on,index_merge_intersection=on,engine_condition_pushdown=on,index_condition_pushdown=on,mrr=on,mrr_cost_based=on,block_nested_loop=on,batched_key_access=off,materialization=on,semijoin=on,loosescan=on,firstmatch=on,subquery_materialization_cost_based=on,use_index_extensions=on",
+      "type": "string"
+    },
+    "optimizer_trace": {
+      "value": "enabled=off,one_line=off",
+      "type": "string"
+    },
+    "optimizer_trace_features": {
+      "value": "greedy_search=on,range_optimizer=on,dynamic_range=on,repeated_subselect=on",
+      "type": "string"
+    },
+    "optimizer_trace_limit": {
+      "value": "1",
+      "type": "string"
+    },
+    "optimizer_trace_max_mem_size": {
+      "value": "16384",
+      "type": "string"
+    },
+    "optimizer_trace_offset": {
+      "value": "-1",
+      "type": "string"
+    },
+    "password_history": {
+      "value": "0",
+      "type": "string"
+    },
+    "password_reuse_interval": {
+      "value": "0",
+      "type": "string"
+    },
+    "performance_schema": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "performance_schema_accounts_size": {
+      "value": "100",
+      "type": "string"
+    },
+    "performance_schema_digests_size": {
+      "value": "10000",
+      "type": "string"
+    },
+    "performance_schema_events_stages_history_long_size": {
+      "value": "10000",
+      "type": "string"
+    },
+    "performance_schema_events_stages_history_size": {
+      "value": "10",
+      "type": "string"
+    },
+    "performance_schema_events_statements_history_long_size": {
+      "value": "10000",
+      "type": "string"
+    },
+    "performance_schema_events_statements_history_size": {
+      "value": "10",
+      "type": "string"
+    },
+    "performance_schema_events_waits_history_long_size": {
+      "value": "10000",
+      "type": "string"
+    },
+    "performance_schema_events_waits_history_size": {
+      "value": "10",
+      "type": "string"
+    },
+    "performance_schema_hosts_size": {
+      "value": "100",
+      "type": "string"
+    },
+    "performance_schema_max_cond_classes": {
+      "value": "80",
+      "type": "string"
+    },
+    "performance_schema_max_cond_instances": {
+      "value": "3504",
+      "type": "string"
+    },
+    "performance_schema_max_file_classes": {
+      "value": "50",
+      "type": "string"
+    },
+    "performance_schema_max_file_handles": {
+      "value": "32768",
+      "type": "string"
+    },
+    "performance_schema_max_file_instances": {
+      "value": "7693",
+      "type": "string"
+    },
+    "performance_schema_max_mutex_classes": {
+      "value": "200",
+      "type": "string"
+    },
+    "performance_schema_max_mutex_instances": {
+      "value": "15906",
+      "type": "string"
+    },
+    "performance_schema_max_rwlock_classes": {
+      "value": "40",
+      "type": "string"
+    },
+    "performance_schema_max_rwlock_instances": {
+      "value": "9102",
+      "type": "string"
+    },
+    "performance_schema_max_socket_classes": {
+      "value": "10",
+      "type": "string"
+    },
+    "performance_schema_max_socket_instances": {
+      "value": "322",
+      "type": "string"
+    },
+    "performance_schema_max_stage_classes": {
+      "value": "150",
+      "type": "string"
+    },
+    "performance_schema_max_statement_classes": {
+      "value": "168",
+      "type": "string"
+    },
+    "performance_schema_max_table_handles": {
+      "value": "4000",
+      "type": "string"
+    },
+    "performance_schema_max_table_instances": {
+      "value": "12500",
+      "type": "string"
+    },
+    "performance_schema_max_thread_classes": {
+      "value": "50",
+      "type": "string"
+    },
+    "performance_schema_max_thread_instances": {
+      "value": "402",
+      "type": "string"
+    },
+    "performance_schema_session_connect_attrs_size": {
+      "value": "512",
+      "type": "string"
+    },
+    "performance_schema_setup_actors_size": {
+      "value": "100",
+      "type": "string"
+    },
+    "performance_schema_setup_objects_size": {
+      "value": "100",
+      "type": "string"
+    },
+    "performance_schema_users_size": {
+      "value": "100",
+      "type": "string"
+    },
+    "pid_file": {
+      "value": "/usr/local/mysql/data/localhost.pid",
+      "type": "string"
+    },
+    "plugin_dir": {
+      "value": "/data/deploy/plugin",
+      "type": "string"
+    },
+    "plugin_load": {
+      "value": "",
+      "type": "string"
+    },
+    "port": {
+      "value": "4000",
+      "type": "string"
+    },
+    "preload_buffer_size": {
+      "value": "32768",
+      "type": "string"
+    },
+    "profiling": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "profiling_history_size": {
+      "value": "15",
+      "type": "string"
+    },
+    "protocol_version": {
+      "value": "10",
+      "type": "string"
+    },
+    "query_alloc_block_size": {
+      "value": "8192",
+      "type": "string"
+    },
+    "query_cache_limit": {
+      "value": "1048576",
+      "type": "string"
+    },
+    "query_cache_min_res_unit": {
+      "value": "4096",
+      "type": "string"
+    },
+    "query_cache_size": {
+      "value": "1048576",
+      "type": "string"
+    },
+    "query_cache_type": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "query_cache_wlock_invalidate": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "query_prealloc_size": {
+      "value": "8192",
+      "type": "string"
+    },
+    "range_alloc_block_size": {
+      "value": "4096",
+      "type": "string"
+    },
+    "read_buffer_size": {
+      "value": "131072",
+      "type": "string"
+    },
+    "read_only": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "read_rnd_buffer_size": {
+      "value": "262144",
+      "type": "string"
+    },
+    "relay_log_info_file": {
+      "value": "relay-log.info",
+      "type": "string"
+    },
+    "relay_log_info_repository": {
+      "value": "FILE",
+      "type": "string"
+    },
+    "relay_log_purge": {
+      "value": "ON",
+      "type": "string"
+    },
+    "relay_log_recovery": {
+      "value": "0",
+      "type": "string"
+    },
+    "relay_log_space_limit": {
+      "value": "0",
+      "type": "string"
+    },
+    "report_port": {
+      "value": "3306",
+      "type": "string"
+    },
+    "require_secure_transport": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "rewriter_enabled": {
+      "value": "",
+      "type": "string"
+    },
+    "rewriter_verbose": {
+      "value": "",
+      "type": "string"
+    },
+    "rpl_semi_sync_master_enabled": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "rpl_semi_sync_master_timeout": {
+      "value": "10000",
+      "type": "string"
+    },
+    "rpl_semi_sync_master_trace_level": {
+      "value": "",
+      "type": "string"
+    },
+    "rpl_semi_sync_master_wait_for_slave_count": {
+      "value": "1",
+      "type": "string"
+    },
+    "rpl_semi_sync_master_wait_no_slave": {
+      "value": "ON",
+      "type": "string"
+    },
+    "rpl_semi_sync_master_wait_point": {
+      "value": "AFTER_SYNC",
+      "type": "string"
+    },
+    "rpl_semi_sync_slave_enabled": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "rpl_semi_sync_slave_trace_level": {
+      "value": "",
+      "type": "string"
+    },
+    "rpl_stop_slave_timeout": {
+      "value": "31536000",
+      "type": "string"
+    },
+    "secure_auth": {
+      "value": "ON",
+      "type": "string"
+    },
+    "server_id": {
+      "value": "0",
+      "type": "string"
+    },
+    "server_id_bits": {
+      "value": "32",
+      "type": "string"
+    },
+    "server_uuid": {
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    },
+    "session_track_gtids": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "session_track_schema": {
+      "value": "",
+      "type": "string"
+    },
+    "session_track_state_change": {
+      "value": "",
+      "type": "string"
+    },
+    "session_track_system_variables": {
+      "value": "",
+      "type": "string"
+    },
+    "sha256_password_proxy_users": {
+      "value": "",
+      "type": "string"
+    },
+    "show_compatibility_56": {
+      "value": "",
+      "type": "string"
+    },
+    "show_old_temporals": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "skip_external_locking": {
+      "value": "1",
+      "type": "string"
+    },
+    "skip_name_resolve": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "skip_networking": {
+      "value": "0",
+      "type": "string"
+    },
+    "skip_show_database": {
+      "value": "0",
+      "type": "string"
+    },
+    "slave_allow_batching": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "slave_checkpoint_group": {
+      "value": "512",
+      "type": "string"
+    },
+    "slave_checkpoint_period": {
+      "value": "300",
+      "type": "string"
+    },
+    "slave_compressed_protocol": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "slave_exec_mode": {
+      "value": "STRICT",
+      "type": "string"
+    },
+    "slave_load_tmpdir": {
+      "value": "/var/tmp/",
+      "type": "string"
+    },
+    "slave_max_allowed_packet": {
+      "value": "1073741824",
+      "type": "string"
+    },
+    "slave_net_timeout": {
+      "value": "3600",
+      "type": "string"
+    },
+    "slave_parallel_type": {
+      "value": "",
+      "type": "string"
+    },
+    "slave_parallel_workers": {
+      "value": "0",
+      "type": "string"
+    },
+    "slave_pending_jobs_size_max": {
+      "value": "16777216",
+      "type": "string"
+    },
+    "slave_preserve_commit_order": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "slave_rows_search_algorithms": {
+      "value": "TABLE_SCAN,INDEX_SCAN",
+      "type": "string"
+    },
+    "slave_skip_errors": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "slave_sql_verify_checksum": {
+      "value": "ON",
+      "type": "string"
+    },
+    "slave_transaction_retries": {
+      "value": "10",
+      "type": "string"
+    },
+    "slow_launch_time": {
+      "value": "2",
+      "type": "string"
+    },
+    "slow_query_log": {
+      "value": "0",
+      "type": "string"
+    },
+    "slow_query_log_file": {
+      "value": "/usr/local/mysql/data/localhost-slow.log",
+      "type": "string"
+    },
+    "socket": {
+      "value": "/tmp/tidb-4000.sock",
+      "type": "string"
+    },
+    "sort_buffer_size": {
+      "value": "262144",
+      "type": "string"
+    },
+    "sql_auto_is_null": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "sql_big_selects": {
+      "value": "ON",
+      "type": "string"
+    },
+    "sql_buffer_result": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "sql_log_bin": {
+      "value": "ON",
+      "type": "string"
+    },
+    "sql_log_off": {
+      "value": "0",
+      "type": "string"
+    },
+    "sql_mode": {
+      "value": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION",
+      "type": "string"
+    },
+    "sql_notes": {
+      "value": "1",
+      "type": "string"
+    },
+    "sql_quote_show_create": {
+      "value": "ON",
+      "type": "string"
+    },
+    "sql_require_primary_key": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "sql_safe_updates": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "sql_select_limit": {
+      "value": "18446744073709551615",
+      "type": "string"
+    },
+    "sql_slave_skip_counter": {
+      "value": "0",
+      "type": "string"
+    },
+    "sql_warnings": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "ssl_ca": {
+      "value": "",
+      "type": "string"
+    },
+    "ssl_cert": {
+      "value": "",
+      "type": "string"
+    },
+    "ssl_cipher": {
+      "value": "",
+      "type": "string"
+    },
+    "ssl_key": {
+      "value": "",
+      "type": "string"
+    },
+    "storage_engine": {
+      "value": "InnoDB",
+      "type": "string"
+    },
+    "stored_program_cache": {
+      "value": "256",
+      "type": "string"
+    },
+    "super_read_only": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "sync_binlog": {
+      "value": "0",
+      "type": "string"
+    },
+    "sync_frm": {
+      "value": "ON",
+      "type": "string"
+    },
+    "sync_master_info": {
+      "value": "10000",
+      "type": "string"
+    },
+    "sync_relay_log": {
+      "value": "10000",
+      "type": "string"
+    },
+    "sync_relay_log_info": {
+      "value": "10000",
+      "type": "string"
+    },
+    "system_time_zone": {
+      "value": "Asia/Shanghai",
+      "type": "string"
+    },
+    "table_definition_cache": {
+      "value": "2000",
+      "type": "string"
+    },
+    "table_open_cache": {
+      "value": "2000",
+      "type": "string"
+    },
+    "table_open_cache_instances": {
+      "value": "1",
+      "type": "string"
+    },
+    "thread_cache_size": {
+      "value": "9",
+      "type": "string"
+    },
+    "thread_concurrency": {
+      "value": "10",
+      "type": "string"
+    },
+    "thread_handling": {
+      "value": "one-thread-per-connection",
+      "type": "string"
+    },
+    "thread_pool_size": {
+      "value": "16",
+      "type": "string"
+    },
+    "thread_stack": {
+      "value": "262144",
+      "type": "string"
+    },
+    "tidb_adaptive_closest_read_threshold": {
+      "value": "4096",
+      "type": "string"
+    },
+    "tidb_allow_batch_cop": {
+      "value": "1",
+      "type": "string"
+    },
+    "tidb_allow_fallback_to_tikv": {
+      "value": "",
+      "type": "string"
+    },
+    "tidb_allow_function_for_expression_index": {
+      "value": "json_array, json_array_append, json_array_insert, json_contains, json_contains_path, json_depth, json_extract, json_insert, json_keys, json_length, json_merge_patch, json_merge_preserve, json_object, json_pretty, json_quote, json_remove, json_replace, json_search, json_set, json_storage_size, json_type, json_unquote, json_valid, lower, md5, reverse, tidb_shard, upper, vitess_hash",
+      "type": "string"
+    },
+    "tidb_allow_mpp": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_analyze_partition_concurrency": {
+      "value": "1",
+      "type": "string"
+    },
+    "tidb_analyze_version": {
+      "value": "2",
+      "type": "string"
+    },
+    "tidb_auto_analyze_end_time": {
+      "value": "23:59 +0000",
+      "type": "string"
+    },
+    "tidb_auto_analyze_partition_batch_size": {
+      "value": "1",
+      "type": "string"
+    },
+    "tidb_auto_analyze_ratio": {
+      "value": "0.5",
+      "type": "string"
+    },
+    "tidb_auto_analyze_start_time": {
+      "value": "00:00 +0000",
+      "type": "string"
+    },
+    "tidb_auto_build_stats_concurrency": {
+      "value": "1",
+      "type": "string"
+    },
+    "tidb_backoff_lock_fast": {
+      "value": "10",
+      "type": "string"
+    },
+    "tidb_backoff_weight": {
+      "value": "2",
+      "type": "string"
+    },
+    "tidb_batch_pending_tiflash_count": {
+      "value": "4000",
+      "type": "string"
+    },
+    "tidb_broadcast_join_threshold_count": {
+      "value": "10240",
+      "type": "string"
+    },
+    "tidb_broadcast_join_threshold_size": {
+      "value": "104857600",
+      "type": "string"
+    },
+    "tidb_build_stats_concurrency": {
+      "value": "4",
+      "type": "string"
+    },
+    "tidb_capture_plan_baselines": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_check_mb4_value_in_utf8": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_committer_concurrency": {
+      "value": "128",
+      "type": "string"
+    },
+    "tidb_config": {
+      "value": "{\n\t\"advertise-address\": \"127.0.0.1\",\n\t\"alter-primary-key\": false,\n\t\"ballast-object-size\": 0,\n\t\"binlog\": {\n\t\t\"binlog-socket\": \"\",\n\t\t\"enable\": false,\n\t\t\"ignore-error\": false,\n\t\t\"strategy\": \"range\",\n\t\t\"write-timeout\": \"15s\"\n\t},\n\t\"compatible-kill-query\": false,\n\t\"cors\": \"\",\n\t\"delay-clean-table-lock\": 0,\n\t\"deprecate-integer-display-length\": false,\n\t\"enable-enum-length-limit\": true,\n\t\"enable-forwarding\": false,\n\t\"enable-global-index\": false,\n\t\"enable-global-kill\": true,\n\t\"enable-table-lock\": false,\n\t\"enable-tcp4-only\": false,\n\t\"enable-telemetry\": false,\n\t\"experimental\": {\n\t\t\"allow-expression-index\": false\n\t},\n\t\"graceful-wait-before-shutdown\": 0,\n\t\"host\": \"127.0.0.1\",\n\t\"index-limit\": 64,\n\t\"initialize-sql-file\": \"\",\n\t\"instance\": {\n\t\t\"ddl_slow_threshold\": 300,\n\t\t\"max_connections\": 0,\n\t\t\"plugin_dir\": \"/data/deploy/plugin\",\n\t\t\"plugin_load\": \"\",\n\t\t\"tidb_check_mb4_value_in_utf8\": true,\n\t\t\"tidb_enable_collect_execution_info\": true,\n\t\t\"tidb_enable_ddl\": true,\n\t\t\"tidb_enable_slow_log\": true,\n\t\t\"tidb_expensive_query_time_threshold\": 60,\n\t\t\"tidb_force_priority\": \"NO_PRIORITY\",\n\t\t\"tidb_general_log\": false,\n\t\t\"tidb_pprof_sql_cpu\": false,\n\t\t\"tidb_rc_read_check_ts\": false,\n\t\t\"tidb_record_plan_in_slow_log\": 1,\n\t\t\"tidb_slow_log_threshold\": 300\n\t},\n\t\"isolation-read\": {\n\t\t\"engines\": [\n\t\t\t\"tikv\",\n\t\t\t\"tiflash\",\n\t\t\t\"tidb\"\n\t\t]\n\t},\n\t\"labels\": {},\n\t\"lease\": \"45s\",\n\t\"log\": {\n\t\t\"disable-error-stack\": null,\n\t\t\"disable-timestamp\": null,\n\t\t\"enable-error-stack\": null,\n\t\t\"enable-timestamp\": null,\n\t\t\"file\": {\n\t\t\t\"filename\": \"/Users/benjamin2037/.tiup/data/kb-gen-v6.5.12-1765243217/tidb-0/tidb.log\",\n\t\t\t\"max-backups\": 0,\n\t\t\t\"max-days\": 0,\n\t\t\t\"max-size\": 300\n\t\t},\n\t\t\"format\": \"text\",\n\t\t\"level\": \"info\",\n\t\t\"slow-query-file\": \"tidb-slow.log\"\n\t},\n\t\"max-ballast-object-size\": 0,\n\t\"max-index-length\": 3072,\n\t\"new_collations_enabled_on_first_bootstrap\": true,\n\t\"opentracing\": {\n\t\t\"enable\": false,\n\t\t\"reporter\": {\n\t\t\t\"buffer-flush-interval\": 0,\n\t\t\t\"local-agent-host-port\": \"\",\n\t\t\t\"log-spans\": false,\n\t\t\t\"queue-size\": 0\n\t\t},\n\t\t\"rpc-metrics\": false,\n\t\t\"sampler\": {\n\t\t\t\"max-operations\": 0,\n\t\t\t\"param\": 1,\n\t\t\t\"sampling-refresh-interval\": 0,\n\t\t\t\"sampling-server-url\": \"\",\n\t\t\t\"type\": \"const\"\n\t\t}\n\t},\n\t\"path\": \"127.0.0.1:2379\",\n\t\"pd-client\": {\n\t\t\"pd-server-timeout\": 3\n\t},\n\t\"performance\": {\n\t\t\"analyze-partition-concurrency-quota\": 16,\n\t\t\"bind-info-lease\": \"3s\",\n\t\t\"cross-join\": true,\n\t\t\"distinct-agg-push-down\": false,\n\t\t\"enable-load-fmsketch\": false,\n\t\t\"enable-stats-cache-mem-quota\": false,\n\t\t\"enforce-mpp\": false,\n\t\t\"force-init-stats\": false,\n\t\t\"gogc\": 100,\n\t\t\"max-procs\": 0,\n\t\t\"max-txn-ttl\": 3600000,\n\t\t\"plan-replayer-gc-lease\": \"10m\",\n\t\t\"projection-push-down\": false,\n\t\t\"pseudo-estimate-ratio\": 0.8,\n\t\t\"server-memory-quota\": 0,\n\t\t\"stats-lease\": \"3s\",\n\t\t\"stats-load-concurrency\": 5,\n\t\t\"stats-load-queue-size\": 1000,\n\t\t\"stmt-count-limit\": 5000,\n\t\t\"tcp-keep-alive\": true,\n\t\t\"tcp-no-delay\": true,\n\t\t\"txn-entry-size-limit\": 6291456,\n\t\t\"txn-total-size-limit\": 104857600\n\t},\n\t\"pessimistic-txn\": {\n\t\t\"constraint-check-in-place-pessimistic\": true,\n\t\t\"deadlock-history-capacity\": 10,\n\t\t\"deadlock-history-collect-retryable\": false,\n\t\t\"max-retry-count\": 256,\n\t\t\"pessimistic-auto-commit\": false\n\t},\n\t\"plugin\": {},\n\t\"port\": 4000,\n\t\"prepared-plan-cache\": {},\n\t\"proxy-protocol\": {\n\t\t\"fallbackable\": false,\n\t\t\"header-timeout\": 5,\n\t\t\"networks\": \"\"\n\t},\n\t\"repair-mode\": false,\n\t\"repair-table-list\": [],\n\t\"security\": {\n\t\t\"auth-token-jwks\": \"\",\n\t\t\"auth-token-refresh-interval\": \"1h0m0s\",\n\t\t\"auto-tls\": true,\n\t\t\"cluster-ssl-ca\": \"\",\n\t\t\"cluster-ssl-cert\": \"\",\n\t\t\"cluster-ssl-key\": \"\",\n\t\t\"cluster-verify-cn\": null,\n\t\t\"disconnect-on-expired-password\": true,\n\t\t\"enable-sem\": false,\n\t\t\"rsa-key-size\": 4096,\n\t\t\"secure-bootstrap\": false,\n\t\t\"session-token-signing-cert\": \"\",\n\t\t\"session-token-signing-key\": \"\",\n\t\t\"skip-grant-table\": false,\n\t\t\"spilled-file-encryption-method\": \"plaintext\",\n\t\t\"ssl-ca\": \"\",\n\t\t\"ssl-cert\": \"\",\n\t\t\"ssl-key\": \"\",\n\t\t\"tls-version\": \"\"\n\t},\n\t\"server-version\": \"\",\n\t\"skip-register-to-dashboard\": false,\n\t\"socket\": \"/tmp/tidb-4000.sock\",\n\t\"split-region-max-num\": 1000,\n\t\"split-table\": true,\n\t\"status\": {\n\t\t\"grpc-concurrent-streams\": 1024,\n\t\t\"grpc-initial-window-size\": 2097152,\n\t\t\"grpc-keepalive-time\": 10,\n\t\t\"grpc-keepalive-timeout\": 3,\n\t\t\"grpc-max-send-msg-size\": 2147483647,\n\t\t\"metrics-addr\": \"\",\n\t\t\"metrics-interval\": 15,\n\t\t\"record-db-qps\": false,\n\t\t\"report-status\": true,\n\t\t\"status-host\": \"0.0.0.0\",\n\t\t\"status-port\": 10080\n\t},\n\t\"store\": \"tikv\",\n\t\"stores-refresh-interval\": 60,\n\t\"table-column-count-limit\": 1017,\n\t\"temp-dir\": \"/tmp/tidb\",\n\t\"tidb-edition\": \"\",\n\t\"tidb-max-reuse-chunk\": 64,\n\t\"tidb-max-reuse-column\": 256,\n\t\"tidb-release-version\": \"\",\n\t\"tikv-client\": {\n\t\t\"async-commit\": {\n\t\t\t\"allowed-clock-drift\": 500000000,\n\t\t\t\"keys-limit\": 256,\n\t\t\t\"safe-window\": 2000000000,\n\t\t\t\"total-key-size-limit\": 4096\n\t\t},\n\t\t\"batch-wait-size\": 8,\n\t\t\"commit-timeout\": \"41s\",\n\t\t\"copr-cache\": {\n\t\t\t\"capacity-mb\": 1000\n\t\t},\n\t\t\"enable-chunk-rpc\": true,\n\t\t\"grpc-compression-type\": \"none\",\n\t\t\"grpc-connection-count\": 4,\n\t\t\"grpc-initial-conn-window-size\": 134217728,\n\t\t\"grpc-initial-window-size\": 134217728,\n\t\t\"grpc-keepalive-time\": 10,\n\t\t\"grpc-keepalive-timeout\": 3,\n\t\t\"max-batch-size\": 128,\n\t\t\"max-batch-wait-time\": 0,\n\t\t\"overload-threshold\": 200,\n\t\t\"region-cache-ttl\": 600,\n\t\t\"resolve-lock-lite-threshold\": 16,\n\t\t\"store-limit\": 0,\n\t\t\"store-liveness-timeout\": \"1s\",\n\t\t\"ttl-refreshed-txn-size\": 33554432\n\t},\n\t\"tmp-storage-path\": \"/tmp/tidb-tmp-storage-kb-gen-v6.5.12-1765243217/501_tidb/MTI3LjAuMC4xOjQwMDAvMC4wLjAuMDoxMDA4MA==/tmp-storage\",\n\t\"tmp-storage-quota\": -1,\n\t\"token-limit\": 1000,\n\t\"top-sql\": {\n\t\t\"receiver-address\": \"\"\n\t},\n\t\"transaction-summary\": {\n\t\t\"transaction-id-digest-min-duration\": 2147483647,\n\t\t\"transaction-summary-capacity\": 500\n\t},\n\t\"treat-old-version-utf8-as-utf8mb4\": true,\n\t\"version-comment\": \"\"\n}",
+      "type": "string"
+    },
+    "tidb_constraint_check_in_place": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_cost_model_version": {
+      "value": "2",
+      "type": "string"
+    },
+    "tidb_ddl_disk_quota": {
+      "value": "107374182400",
+      "type": "string"
+    },
+    "tidb_ddl_enable_fast_reorg": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_ddl_error_count_limit": {
+      "value": "512",
+      "type": "string"
+    },
+    "tidb_ddl_flashback_concurrency": {
+      "value": "64",
+      "type": "string"
+    },
+    "tidb_ddl_reorg_batch_size": {
+      "value": "256",
+      "type": "string"
+    },
+    "tidb_ddl_reorg_max_write_speed": {
+      "value": "0",
+      "type": "string"
+    },
+    "tidb_ddl_reorg_worker_cnt": {
+      "value": "4",
+      "type": "string"
+    },
+    "tidb_default_string_match_selectivity": {
+      "value": "0.8",
+      "type": "string"
+    },
+    "tidb_disable_txn_auto_retry": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_distsql_scan_concurrency": {
+      "value": "15",
+      "type": "string"
+    },
+    "tidb_dml_batch_size": {
+      "value": "0",
+      "type": "string"
+    },
+    "tidb_enable_1pc": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_amend_pessimistic_txn": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_analyze_snapshot": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_async_commit": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_auto_analyze": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_auto_increment_in_generated": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_batch_dml": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_cascades_planner": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_clustered_index": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_collect_execution_info": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_column_tracking": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_concurrent_ddl": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_ddl": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_enhanced_security": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_exchange_partition": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_extended_stats": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_external_ts_read": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_fast_analyze": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_foreign_key": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_gc_aware_memory_track": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_general_plan_cache": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_gogc_tuner": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_historical_stats": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_index_merge": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_index_merge_join": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_inl_join_inner_multi_pattern": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_legacy_instance_scope": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_list_partition": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_local_txn": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_metadata_lock": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_mutation_checker": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_new_cost_interface": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_new_only_full_group_by_check": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_noop_functions": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_noop_variables": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_null_aware_anti_join": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_ordered_result_mode": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_outer_join_reorder": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_paging": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_parallel_apply": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_pipelined_window_function": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_plan_replayer_capture": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_prepared_plan_cache": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_prepared_plan_cache_memory_monitor": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_pseudo_for_outdated_stats": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_rate_limit_action": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_reuse_chunk": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_slow_log": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_stmt_summary": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_strict_double_type_check": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_table_partition": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_telemetry": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_tiflash_read_for_write_stmt": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_tmp_storage_on_oom": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_top_sql": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_tso_follower_proxy": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_unsafe_substitute": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_enable_vectorized_expression": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_enable_window_function": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_evolve_plan_baselines": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_evolve_plan_task_end_time": {
+      "value": "23:59 +0000",
+      "type": "string"
+    },
+    "tidb_evolve_plan_task_max_time": {
+      "value": "600",
+      "type": "string"
+    },
+    "tidb_evolve_plan_task_start_time": {
+      "value": "00:00 +0000",
+      "type": "string"
+    },
+    "tidb_executor_concurrency": {
+      "value": "5",
+      "type": "string"
+    },
+    "tidb_expensive_query_time_threshold": {
+      "value": "60",
+      "type": "string"
+    },
+    "tidb_external_ts": {
+      "value": "0",
+      "type": "string"
+    },
+    "tidb_force_priority": {
+      "value": "NO_PRIORITY",
+      "type": "string"
+    },
+    "tidb_gc_concurrency": {
+      "value": "-1",
+      "type": "string"
+    },
+    "tidb_gc_enable": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_gc_life_time": {
+      "value": "10m0s",
+      "type": "string"
+    },
+    "tidb_gc_max_wait_time": {
+      "value": "86400",
+      "type": "string"
+    },
+    "tidb_gc_run_interval": {
+      "value": "10m0s",
+      "type": "string"
+    },
+    "tidb_gc_scan_lock_mode": {
+      "value": "LEGACY",
+      "type": "string"
+    },
+    "tidb_general_log": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_general_plan_cache_size": {
+      "value": "100",
+      "type": "string"
+    },
+    "tidb_generate_binary_plan": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_gogc_tuner_threshold": {
+      "value": "0.6",
+      "type": "string"
+    },
+    "tidb_guarantee_linearizability": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_hash_exchange_with_new_collation": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_hash_join_concurrency": {
+      "value": "-1",
+      "type": "string"
+    },
+    "tidb_hashagg_final_concurrency": {
+      "value": "-1",
+      "type": "string"
+    },
+    "tidb_hashagg_partial_concurrency": {
+      "value": "-1",
+      "type": "string"
+    },
+    "tidb_ignore_prepared_cache_close_stmt": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_index_join_batch_size": {
+      "value": "25000",
+      "type": "string"
+    },
+    "tidb_index_join_double_read_penalty_cost_rate": {
+      "value": "0",
+      "type": "string"
+    },
+    "tidb_index_lookup_concurrency": {
+      "value": "-1",
+      "type": "string"
+    },
+    "tidb_index_lookup_join_concurrency": {
+      "value": "-1",
+      "type": "string"
+    },
+    "tidb_index_lookup_size": {
+      "value": "20000",
+      "type": "string"
+    },
+    "tidb_index_merge_intersection_concurrency": {
+      "value": "-1",
+      "type": "string"
+    },
+    "tidb_index_serial_scan_concurrency": {
+      "value": "1",
+      "type": "string"
+    },
+    "tidb_init_chunk_size": {
+      "value": "32",
+      "type": "string"
+    },
+    "tidb_log_file_max_days": {
+      "value": "0",
+      "type": "string"
+    },
+    "tidb_max_auto_analyze_time": {
+      "value": "43200",
+      "type": "string"
+    },
+    "tidb_max_chunk_size": {
+      "value": "1024",
+      "type": "string"
+    },
+    "tidb_max_delta_schema_count": {
+      "value": "1024",
+      "type": "string"
+    },
+    "tidb_max_paging_size": {
+      "value": "50000",
+      "type": "string"
+    },
+    "tidb_max_tiflash_threads": {
+      "value": "-1",
+      "type": "string"
+    },
+    "tidb_mem_oom_action": {
+      "value": "CANCEL",
+      "type": "string"
+    },
+    "tidb_mem_quota_analyze": {
+      "value": "-1",
+      "type": "string"
+    },
+    "tidb_mem_quota_apply_cache": {
+      "value": "33554432",
+      "type": "string"
+    },
+    "tidb_mem_quota_binding_cache": {
+      "value": "67108864",
+      "type": "string"
+    },
+    "tidb_mem_quota_query": {
+      "value": "1073741824",
+      "type": "string"
+    },
+    "tidb_memory_usage_alarm_keep_record_num": {
+      "value": "5",
+      "type": "string"
+    },
+    "tidb_memory_usage_alarm_ratio": {
+      "value": "0.7",
+      "type": "string"
+    },
+    "tidb_merge_join_concurrency": {
+      "value": "1",
+      "type": "string"
+    },
+    "tidb_merge_partition_stats_concurrency": {
+      "value": "1",
+      "type": "string"
+    },
+    "tidb_min_paging_size": {
+      "value": "128",
+      "type": "string"
+    },
+    "tidb_mpp_store_fail_ttl": {
+      "value": "60s",
+      "type": "string"
+    },
+    "tidb_multi_statement_mode": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_nontransactional_ignore_error": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_opt_advanced_join_hint": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_opt_agg_push_down": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_opt_broadcast_cartesian_join": {
+      "value": "1",
+      "type": "string"
+    },
+    "tidb_opt_concurrency_factor": {
+      "value": "3",
+      "type": "string"
+    },
+    "tidb_opt_copcpu_factor": {
+      "value": "3",
+      "type": "string"
+    },
+    "tidb_opt_correlation_exp_factor": {
+      "value": "1",
+      "type": "string"
+    },
+    "tidb_opt_correlation_threshold": {
+      "value": "0.9",
+      "type": "string"
+    },
+    "tidb_opt_cpu_factor": {
+      "value": "3",
+      "type": "string"
+    },
+    "tidb_opt_desc_factor": {
+      "value": "3",
+      "type": "string"
+    },
+    "tidb_opt_disk_factor": {
+      "value": "1.5",
+      "type": "string"
+    },
+    "tidb_opt_enable_correlation_adjustment": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_opt_enable_hash_join": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_opt_fix_control": {
+      "value": "",
+      "type": "string"
+    },
+    "tidb_opt_force_inline_cte": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_opt_insubq_to_join_and_agg": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_opt_join_reorder_threshold": {
+      "value": "0",
+      "type": "string"
+    },
+    "tidb_opt_limit_push_down_threshold": {
+      "value": "100",
+      "type": "string"
+    },
+    "tidb_opt_memory_factor": {
+      "value": "0.001",
+      "type": "string"
+    },
+    "tidb_opt_mpp_outer_join_fixed_build_side": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_opt_network_factor": {
+      "value": "1",
+      "type": "string"
+    },
+    "tidb_opt_prefer_range_scan": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_opt_prefix_index_single_scan": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_opt_range_max_size": {
+      "value": "67108864",
+      "type": "string"
+    },
+    "tidb_opt_scan_factor": {
+      "value": "1.5",
+      "type": "string"
+    },
+    "tidb_opt_seek_factor": {
+      "value": "20",
+      "type": "string"
+    },
+    "tidb_opt_skew_distinct_agg": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_opt_three_stage_distinct_agg": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_opt_tiflash_concurrency_factor": {
+      "value": "24",
+      "type": "string"
+    },
+    "tidb_partition_prune_mode": {
+      "value": "dynamic",
+      "type": "string"
+    },
+    "tidb_persist_analyze_options": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_placement_mode": {
+      "value": "STRICT",
+      "type": "string"
+    },
+    "tidb_pprof_sql_cpu": {
+      "value": "0",
+      "type": "string"
+    },
+    "tidb_prepared_plan_cache_memory_guard_ratio": {
+      "value": "0.1",
+      "type": "string"
+    },
+    "tidb_prepared_plan_cache_size": {
+      "value": "100",
+      "type": "string"
+    },
+    "tidb_projection_concurrency": {
+      "value": "-1",
+      "type": "string"
+    },
+    "tidb_query_log_max_len": {
+      "value": "4096",
+      "type": "string"
+    },
+    "tidb_rc_read_check_ts": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_rc_write_check_ts": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_record_plan_in_slow_log": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_redact_log": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_regard_null_as_point": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_remove_orderby_in_subquery": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_replica_read": {
+      "value": "leader",
+      "type": "string"
+    },
+    "tidb_restricted_read_only": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_retry_limit": {
+      "value": "10",
+      "type": "string"
+    },
+    "tidb_row_format_version": {
+      "value": "2",
+      "type": "string"
+    },
+    "tidb_scatter_region": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_server_memory_limit": {
+      "value": "80%",
+      "type": "string"
+    },
+    "tidb_server_memory_limit_gc_trigger": {
+      "value": "0.7",
+      "type": "string"
+    },
+    "tidb_server_memory_limit_sess_min_size": {
+      "value": "134217728",
+      "type": "string"
+    },
+    "tidb_shard_allocate_step": {
+      "value": "9223372036854775807",
+      "type": "string"
+    },
+    "tidb_simplified_metrics": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_skip_ascii_check": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_skip_isolation_level_check": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_skip_missing_partition_stats": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_skip_utf8_check": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_slow_log_threshold": {
+      "value": "300",
+      "type": "string"
+    },
+    "tidb_source_id": {
+      "value": "1",
+      "type": "string"
+    },
+    "tidb_stats_cache_mem_quota": {
+      "value": "0",
+      "type": "string"
+    },
+    "tidb_stats_load_pseudo_timeout": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_stats_load_sync_wait": {
+      "value": "100",
+      "type": "string"
+    },
+    "tidb_stmt_summary_history_size": {
+      "value": "24",
+      "type": "string"
+    },
+    "tidb_stmt_summary_internal_query": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_stmt_summary_max_sql_length": {
+      "value": "4096",
+      "type": "string"
+    },
+    "tidb_stmt_summary_max_stmt_count": {
+      "value": "3000",
+      "type": "string"
+    },
+    "tidb_stmt_summary_refresh_interval": {
+      "value": "1800",
+      "type": "string"
+    },
+    "tidb_store_batch_size": {
+      "value": "0",
+      "type": "string"
+    },
+    "tidb_store_limit": {
+      "value": "0",
+      "type": "string"
+    },
+    "tidb_streamagg_concurrency": {
+      "value": "1",
+      "type": "string"
+    },
+    "tidb_super_read_only": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_sysdate_is_now": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tidb_sysproc_scan_concurrency": {
+      "value": "1",
+      "type": "string"
+    },
+    "tidb_table_cache_lease": {
+      "value": "3",
+      "type": "string"
+    },
+    "tidb_tmp_table_max_size": {
+      "value": "67108864",
+      "type": "string"
+    },
+    "tidb_top_sql_max_meta_count": {
+      "value": "5000",
+      "type": "string"
+    },
+    "tidb_top_sql_max_time_series_count": {
+      "value": "100",
+      "type": "string"
+    },
+    "tidb_track_aggregate_memory_usage": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_tso_client_batch_max_wait_time": {
+      "value": "0",
+      "type": "string"
+    },
+    "tidb_ttl_delete_batch_size": {
+      "value": "100",
+      "type": "string"
+    },
+    "tidb_ttl_delete_rate_limit": {
+      "value": "0",
+      "type": "string"
+    },
+    "tidb_ttl_delete_worker_count": {
+      "value": "4",
+      "type": "string"
+    },
+    "tidb_ttl_job_enable": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_ttl_job_run_interval": {
+      "value": "1h0m0s",
+      "type": "string"
+    },
+    "tidb_ttl_job_schedule_window_end_time": {
+      "value": "23:59 +0000",
+      "type": "string"
+    },
+    "tidb_ttl_job_schedule_window_start_time": {
+      "value": "00:00 +0000",
+      "type": "string"
+    },
+    "tidb_ttl_scan_batch_size": {
+      "value": "500",
+      "type": "string"
+    },
+    "tidb_ttl_scan_worker_count": {
+      "value": "4",
+      "type": "string"
+    },
+    "tidb_txn_assertion_level": {
+      "value": "FAST",
+      "type": "string"
+    },
+    "tidb_txn_commit_batch_size": {
+      "value": "16384",
+      "type": "string"
+    },
+    "tidb_txn_mode": {
+      "value": "pessimistic",
+      "type": "string"
+    },
+    "tidb_use_plan_baselines": {
+      "value": "ON",
+      "type": "string"
+    },
+    "tidb_window_concurrency": {
+      "value": "-1",
+      "type": "string"
+    },
+    "tiflash_fastscan": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "tiflash_fine_grained_shuffle_batch_size": {
+      "value": "8192",
+      "type": "string"
+    },
+    "tiflash_fine_grained_shuffle_stream_count": {
+      "value": "0",
+      "type": "string"
+    },
+    "time_format": {
+      "value": "%H:%i:%s",
+      "type": "string"
+    },
+    "time_zone": {
+      "value": "SYSTEM",
+      "type": "string"
+    },
+    "tls_version": {
+      "value": "TLSv1,TLSv1.1,TLSv1.2",
+      "type": "string"
+    },
+    "tmp_table_size": {
+      "value": "16777216",
+      "type": "string"
+    },
+    "tmpdir": {
+      "value": "/var/tmp/",
+      "type": "string"
+    },
+    "transaction_alloc_block_size": {
+      "value": "8192",
+      "type": "string"
+    },
+    "transaction_isolation": {
+      "value": "REPEATABLE-READ",
+      "type": "string"
+    },
+    "transaction_prealloc_size": {
+      "value": "4096",
+      "type": "string"
+    },
+    "transaction_read_only": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "transaction_write_set_extraction": {
+      "value": "",
+      "type": "string"
+    },
+    "tx_isolation": {
+      "value": "REPEATABLE-READ",
+      "type": "string"
+    },
+    "tx_read_only": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "unique_checks": {
+      "value": "ON",
+      "type": "string"
+    },
+    "updatable_views_with_limit": {
+      "value": "YES",
+      "type": "string"
+    },
+    "validate_password.check_user_name": {
+      "value": "ON",
+      "type": "string"
+    },
+    "validate_password.dictionary": {
+      "value": "",
+      "type": "string"
+    },
+    "validate_password.enable": {
+      "value": "OFF",
+      "type": "string"
+    },
+    "validate_password.length": {
+      "value": "8",
+      "type": "string"
+    },
+    "validate_password.mixed_case_count": {
+      "value": "1",
+      "type": "string"
+    },
+    "validate_password.number_count": {
+      "value": "1",
+      "type": "string"
+    },
+    "validate_password.policy": {
+      "value": "MEDIUM",
+      "type": "string"
+    },
+    "validate_password.special_char_count": {
+      "value": "1",
+      "type": "string"
+    },
+    "version": {
+      "value": "5.7.25-TiDB-v6.5.12",
+      "type": "string"
+    },
+    "version_comment": {
+      "value": "TiDB Server (Apache License 2.0) Community Edition, MySQL 5.7 compatible",
+      "type": "string"
+    },
+    "version_compile_machine": {
+      "value": "arm64",
+      "type": "string"
+    },
+    "version_compile_os": {
+      "value": "darwin",
+      "type": "string"
+    },
+    "wait_timeout": {
+      "value": "28800",
+      "type": "string"
+    },
+    "windowing_use_high_precision": {
+      "value": "ON",
+      "type": "string"
+    }
+  },
+  "bootstrap_version": 110
+}

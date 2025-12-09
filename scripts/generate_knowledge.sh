@@ -624,23 +624,18 @@ start_version() {
     )
     
     # Add repository paths for components that need code definitions
-    # Map component names to their repository variables
-    declare -A REPO_MAP=(
-        ["tidb"]="TIDB_REPO"
-        ["pd"]="PD_REPO"
-        ["tikv"]="TIKV_REPO"
-        ["tiflash"]="TIFLASH_REPO"
-    )
-    
-    for component in tidb pd tikv tiflash; do
-        if [[ "$COMPONENTS" == *"$component"* ]]; then
-            repo_var="${REPO_MAP[$component]}"
-            repo_path="${!repo_var}"
-            if [ -n "$repo_path" ] && [ -d "$repo_path" ]; then
-                CMD_ARGS+=("--${component}-repo=$repo_path")
-            fi
-        fi
-    done
+    if [[ "$COMPONENTS" == *"tidb"* ]] && [ -n "$TIDB_REPO" ] && [ -d "$TIDB_REPO" ]; then
+        CMD_ARGS+=("--tidb-repo=$TIDB_REPO")
+    fi
+    if [[ "$COMPONENTS" == *"pd"* ]] && [ -n "$PD_REPO" ] && [ -d "$PD_REPO" ]; then
+        CMD_ARGS+=("--pd-repo=$PD_REPO")
+    fi
+    if [[ "$COMPONENTS" == *"tikv"* ]] && [ -n "$TIKV_REPO" ] && [ -d "$TIKV_REPO" ]; then
+        CMD_ARGS+=("--tikv-repo=$TIKV_REPO")
+    fi
+    if [[ "$COMPONENTS" == *"tiflash"* ]] && [ -n "$TIFLASH_REPO" ] && [ -d "$TIFLASH_REPO" ]; then
+        CMD_ARGS+=("--tiflash-repo=$TIFLASH_REPO")
+    fi
     
     # Add components flag (remove keep-cluster to allow immediate cleanup after each version)
     CMD_ARGS+=("--components=$COMPONENTS")

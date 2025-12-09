@@ -1,153 +1,199 @@
- # tidb-upgrade-precheck
+# tidb-upgrade-precheck
 
-`tidb-upgrade-precheck` 提供用于收集和分析 TiDB 集群配置的工具，以识别版本升级期间的潜在风险。该系统包含两个主要组件：
+A precheck tool that provides TiDB cluster upgrade risk assessment and reporting to reduce overall risks for users during version upgrades.
 
-1. **知识库生成器** - 从 TiDB 源代码中收集参数默认值和升级逻辑，构建知识库
-2. **运行时采集器** - 从正在运行的集群中收集当前配置，用于风险分析
+## Overview
 
-## Key Features
-- Automated risk scanning of TiDB cluster parameters, configuration, and compatibility before upgrade.
-- Multiple report output formats: text, markdown, html. 
-- Aggregated parameter history
+The project is currently in the initial architecture phase. It primarily uses parameter and system variable precheck to identify changes and incompatibilities before and after upgrades, forming the overall design and architecture of the TiDB Upgrade Precheck system.
 
-## Typical Scenarios
+## Current Scope (v1.0)
 
-- Pre-upgrade risk assessment and archiving
-- Integration into automated O&M workflows
-- Change review and compliance traceability
+**This is the initial version of the TiDB Upgrade Precheck system, focusing on parameter and system variable risk assessment.**
 
----
+**Current Capabilities:**
+- Parameter default value changes
+- System variable forced changes during upgrades
+- Parameter deprecation and removal
+- Configuration compatibility analysis
 
-For rule extension, custom report templates, or integration into your own system, please refer to the source code and README.
+**Supported Components:**
+- TiDB: Configuration parameters and system variables
+- TiKV: Configuration parameters
+- PD: Configuration parameters
+- TiFlash: Configuration parameters
 
-Issues and pull requests are welcome.
+> **Note**: This project is designed to be extensible. The current version (v1.0) focuses on parameter and system variable risk assessment as the initial implementation. Future versions will continuously add additional precheck capabilities.
 
-## Knowledge Base Generation Tool (kb-generator)
+## Future Roadmap
 
-This repository includes tools to automatically generate TiDB parameter defaults (defaults.json) and upgrade logic (upgrade_logic.json) across versions. This is used to build a knowledge base for upgrade compatibility checking.
+The TiDB Upgrade Precheck system is designed to be a comprehensive precheck platform. Future enhancements will include:
 
-### Directory Structure
+**Candidate Features:**
+- **Execution Plan Jump Detection**: Detect execution plan changes that may impact query performance after upgrade
+- **SQL Compatibility Checking**: Identify SQL statements that may behave differently in the target version
+- **Schema Change Compatibility**: Check for schema changes that may affect application compatibility
+- **Feature Deprecation Detection**: Identify deprecated features that will be removed in the target version
+- **Performance Regression Analysis**: Analyze potential performance regressions based on version changes
+- **Additional Risk Monitoring**: Continuously expand risk detection capabilities based on real-world upgrade scenarios
 
-```
-tidb-upgrade-precheck/
-├── cmd/
-│   └── kb-generator/         # Knowledge base generator CLI
-├── pkg/
-│   └── kbgenerator/          # Core parameter collection logic
-│       ├── kb_generator.go   # Parameter collection from source code
-│       ├── pd_kb_generator.go # PD parameter collection from source code
-│       └── collect_upgrade_logic.go # Upgrade logic analysis
-├── knowledge/                # Output directory (not version controlled)
-│   ├── tidb/                 # TiDB knowledge base files
-│   ├── pd/                   # PD knowledge base files
-│   │   ├── v6.5.0/           # PD knowledge for v6.5.0
-│   │   │   └── pd_defaults.json # PD parameter defaults for v6.5.0
-│   │   └── v8.5.0/           # PD knowledge for v8.5.0
-│   │       └── pd_defaults.json # PD parameter defaults for v8.5.0
-│   └── upgrade_logic.json    # Cross-version upgrade logic
-├── doc/                      # Documentation
-│   ├── parameter_collection_design.md    # Technical design document
-│   ├── parameter_collection_guide.md     # Operation guide
-│   ├── parameter_collection_design_zh.md # Technical design document (Chinese)
-│   ├── parameter_collection_guide_zh.md  # Operation guide (Chinese)
-│   ├── pd_knowledge_base_generation.md   # PD knowledge base generation guide
-│   ├── pd_parameter_upgrade_comparison_design.md  # PD parameter upgrade comparison design
-│   ├── pd_mandatory_changes.md           # PD mandatory parameter changes
-│   └── tikv_parameter_upgrade_comparison_design.md # TiKV parameter upgrade comparison design
-└── Makefile                  # Build and run commands
-```
+**Version Strategy:**
+- **v1.0 (Current)**: Parameter and system variable risk assessment
+- **v2.0 (Planning)**: Execution plan jump detection and SQL compatibility checking
+- **v3.0+ (Future)**: Additional risk items and enhanced analysis capabilities
 
-### Knowledge Base Generation Features
+The system architecture is designed to support easy extension of new precheck rules and analysis capabilities.
 
-1. **Parameter Collection (P1/P2 Risks)**
-   - Strategy: Runtime Import or Static Analysis
-   
-2. **PD Configuration Collection**
-   - Strategy: Static Analysis of PD source code
-   - Extracts PD configuration parameters and their default values
-   - Generates knowledge base for PD parameter comparison
+## Quick Start
 
-### Building and Running
-
-Build the tools:
+### Installation
 
 ```bash
 make build
 ```
 
-Generate knowledge base for TiDB:
+### Generate Knowledge Base
+
+The knowledge base contains parameter defaults and upgrade logic for different TiDB versions. Generate it using:
 
 ```bash
-make gen-kb-tidb REPO_ROOT=../tidb TAG=v6.5.0
+# Generate for all LTS versions
+./scripts/generate_knowledge.sh --serial
+
+# Generate for specific version range
+./scripts/generate_knowledge.sh --start-from=v7.5.0 --stop-at=v8.1.0 --serial
 ```
 
-Generate knowledge base for PD:
+For detailed knowledge base generation guide, see [Knowledge Base Generation Guide](./doc/knowledge_generation_guide.md).
 
+### Using Precheck
+
+The precheck functionality is typically integrated into cluster management tools rather than run directly. The system is designed to be used through:
+
+**TiUP Integration:**
 ```bash
-make gen-kb-pd PD_REPO_ROOT=../pd TAG=v6.5.0
+# Standalone precheck command
+tiup cluster upgrade-precheck <cluster-name> <version>
+
+# Integrated into upgrade command
+tiup cluster upgrade <cluster-name> <version> --precheck
 ```
 
-Generate upgrade logic for TiDB:
+**TiDB Operator Integration（TBD）:**
+The precheck can be integrated into TiDB Operator upgrade workflows to automatically perform compatibility checks before upgrades.
 
+**Direct Usage (Development/Testing):**
+For development or testing purposes, you can run the precheck command directly:
 ```bash
-make gen-ul-tidb REPO_ROOT=../tidb FROM_TAG=v6.5.0 TO_TAG=v7.1.0
+./bin/precheck \
+  --target-version=v8.1.0 \
+  --topology-file=/path/to/topology.yaml \
+  --format=html \
+  --output-dir=./reports
 ```
 
-Generate upgrade logic for PD:
+For detailed integration guides, see [TiUP Integration Documents](./doc/design/tiup/).
 
-```bash
-make gen-ul-pd PD_REPO_ROOT=../pd FROM_TAG=v6.5.0 TO_TAG=v7.1.0
-```
-
-See `make help` for more details.
-
-## Runtime Collection Tool
-
-The runtime collection tool collects current configuration from running TiDB clusters. This is used to compare against the knowledge base to identify potential upgrade risks.
-
-### Directory Structure
+## System Architecture
 
 ```
-tidb-upgrade-precheck/
-├── pkg/
-│   └── runtime/              # Runtime collection logic
-│       ├── types.go          # Data structures
-│       ├── collector.go      # Main collector
-│       ├── tidb_collector.go # TiDB collector
-│       ├── tikv_collector.go # TiKV collector
-│       └── pd_collector.go   # PD collector
-└── examples/
-    └── runtime_collector_example.go # Runtime collection example
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Consumer Layer                               │
+├─────────────────────────────────────────────────────────────────────┤
+│  TiUP CLI    │  TiDB Operator    │  Other Tools                     │
+└─────────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────────┐
+│                       Integration Layer                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                   tidb-upgrade-precheck Library                     │
+└─────────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Analysis Layer                               │
+├─────────────────────────────────────────────────────────────────────┤
+│   Analyzer   │  Report Generator  │  Rules Engine                   │
+└─────────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Collection Layer                             │
+├─────────────────────────────────────────────────────────────────────┤
+│           Runtime Collector          │        KB Generator          │
+└─────────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Data Sources                                 │
+├─────────────────────────────────────────────────────────────────────┤
+│  TiDB Source  │  TiUP Playground  │  Running Cluster                │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Runtime Collection Features
+### Architecture Advantages
 
-1. **Real-time Configuration Collection**
-   - Collects current TiDB configuration via HTTP API
-   - Collects current system variables via MySQL protocol
-   - Collects TiKV and PD configuration via HTTP API
+**Rule-Based Design for Rapid Extension:**
 
-2. **Multi-component Support**
-   - TiDB: Configuration and system variables
-   - TiKV: Configuration parameters
-   - PD: Configuration parameters
+The system adopts a rule-based architecture that enables sustainable and rapid addition of new check rules. This design provides significant advantages:
 
-### Runtime Collection Usage
+- **Modular Rule System**: Each check rule is implemented as an independent module implementing the `Rule` interface, allowing new rules to be added without modifying existing code
+- **Rapid Development**: New check rules can be developed and integrated quickly, typically requiring only implementing the `Rule` interface and adding the rule to the analyzer
+- **Isolated Testing**: Each rule can be tested independently, ensuring reliability and maintainability
+- **Flexible Configuration**: Rules can be enabled/disabled or configured independently, providing fine-grained control over the precheck process
+- **Extensible Framework**: The rule-based architecture provides a solid foundation for continuously expanding precheck capabilities, from parameter checks to execution plan analysis and beyond
 
-```bash
-# Collect from a running cluster
-go run examples/runtime_collector_example.go \
-  --tidb-addr=127.0.0.1:4000 \
-  --tikv-addrs=127.0.0.1:20180 \
-  --pd-addrs=127.0.0.1:2379
-```
+This architecture ensures that as new upgrade risks are identified, corresponding check rules can be quickly developed and integrated, making the system highly adaptable to evolving upgrade scenarios.
 
-### Collected Runtime Information
+## Core Components
 
-The runtime collector gathers:
+### 1. Collector
 
-1. **Current Configuration Values**: Actual values set in the running cluster
-2. **User-modified Parameters**: Parameters that differ from defaults
-3. **Component Versions**: Version information for each component
+The collector consists of two parts:
 
-This information is compared against the knowledge base to identify potential upgrade risks.
+- **Knowledge Base Generator (Offline)**: Generates parameter defaults and upgrade logic from TiUP playground clusters and source code
+- **Runtime Collector (Online)**: Collects current configuration from running TiDB clusters
+
+For detailed design and implementation, see [Collector Design](./doc/design/collector/README.md).
+
+### 2. Analyzer
+
+Compares runtime configuration against the knowledge base to identify risks using a rule-based architecture.
+
+**Current Rules:**
+- **User Modified Params Rule**: Detects parameters modified from defaults
+- **Upgrade Differences Rule**: Detects forced parameter changes during upgrades
+- **TiKV Consistency Rule**: Checks parameter consistency across TiKV nodes
+- **High Risk Params Rule**: Validates manually specified high-risk parameters
+
+For detailed design and implementation, including how to add new rules, see [Analyzer Design](./doc/design/analyzer/README.md).
+
+### 3. Report Generator
+
+Generates precheck reports in multiple formats (text, markdown, HTML, JSON).
+
+For detailed design and implementation, see [Report Generator Design](./doc/design/reporter/README.md).
+
+### 4. Knowledge Base
+
+Stores parameter defaults and upgrade logic for different TiDB versions, organized by version and component.
+
+For detailed knowledge base structure and generation process, see [knowledge base generator Guide](./doc/knowledge_generation_guide.md).
+
+## Documentation
+
+### High-Level Documentation
+
+- **[System Design](./doc/design.md)** - System architecture and design overview
+- **[Documentation Center](./doc/README.md)** - Complete documentation index
+
+### Detailed Design Documents
+
+- **[Parameter Comparison Design](./doc/design/parameter_comparison/)** - Detailed design and implementation of parameter comparison capabilities
+- **[Collector Design](./doc/design/collector/README.md)** - Knowledge base generator and runtime collector design
+- **[Analyzer Design](./doc/design/analyzer/README.md)** - Rule-based analyzer design and rule development guide
+- **[Report Generator Design](./doc/design/reporter/README.md)** - Report generation design and format specifications
+
+### User Guides
+
+- **[Knowledge Base Generation Guide](./doc/knowledge_generation_guide.md)** - Detailed guide for knowledge base generation
+
+## Contributing
+
+Issues and pull requests are welcome.

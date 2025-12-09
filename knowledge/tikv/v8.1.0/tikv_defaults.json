@@ -1,9 +1,0 @@
-{
-  "version": "v8.1.0",
-  "config_defaults": {
-    "raftstore.raft-entry-max-size": "16MB",
-    "rocksdb.defaultcf.block-cache-size": "1GB",
-    "server.grpc-concurrency": 5,
-    "storage.reserve-space": "0"
-  }
-}

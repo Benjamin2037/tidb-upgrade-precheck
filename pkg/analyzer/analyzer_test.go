@@ -1,215 +1,323 @@
-// Copyright 2024 PingCAP, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package analyzer
 
 import (
+	"context"
 	"testing"
 
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/runtime"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer/rules"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestAnalyzer_AnalyzeUpgrade(t *testing.T) {
-	type args struct {
-		component   ComponentType
-		fromVersion string
-		toVersion   string
-	}
+func TestNewAnalyzer(t *testing.T) {
 	tests := []struct {
 		name    string
-		args    args
+		options *AnalysisOptions
 		wantErr bool
 	}{
 		{
-			name: "TiDB upgrade analysis",
-			args: args{
-				component:   TiDBComponent,
-				fromVersion: "v6.5.0",
-				toVersion:   "v7.1.0",
-			},
+			name:    "nil options",
+			options: nil,
 			wantErr: false,
 		},
 		{
-			name: "PD upgrade analysis",
-			args: args{
-				component:   PDComponent,
-				fromVersion: "v6.5.0",
-				toVersion:   "v7.1.0",
-			},
+			name:    "empty options",
+			options: &AnalysisOptions{},
 			wantErr: false,
 		},
 		{
-			name: "TiKV upgrade analysis",
-			args: args{
-				component:   TiKVComponent,
-				fromVersion: "v6.5.0",
-				toVersion:   "v7.1.0",
+			name: "with custom rules",
+			options: &AnalysisOptions{
+				Rules: []rules.Rule{
+					rules.NewUserModifiedParamsRule(),
+				},
 			},
 			wantErr: false,
-		},
-		{
-			name: "Unsupported component",
-			args: args{
-				component:   "unsupported",
-				fromVersion: "v6.5.0",
-				toVersion:   "v7.1.0",
-			},
-			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			analyzer := NewAnalyzer("../knowledge")
-			_, err := analyzer.AnalyzeUpgrade(tt.args.component, tt.args.fromVersion, tt.args.toVersion)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Analyzer.AnalyzeUpgrade() error = %v, wantErr %v", err, tt.wantErr)
-				return
+			analyzer := NewAnalyzer(tt.options)
+			assert.NotNil(t, analyzer)
+			assert.NotNil(t, analyzer.options)
+			assert.NotEmpty(t, analyzer.rules)
+		})
+	}
+}
+
+func TestAnalyzer_GetDataRequirements(t *testing.T) {
+	analyzer := NewAnalyzer(nil)
+	req := analyzer.GetDataRequirements()
+
+	assert.NotNil(t, req)
+	// Default rules should require some components
+	assert.NotEmpty(t, req.SourceClusterRequirements.Components)
+}
+
+func TestAnalyzer_GetCollectionRequirements(t *testing.T) {
+	analyzer := NewAnalyzer(nil)
+	req := analyzer.GetCollectionRequirements()
+
+	assert.NotNil(t, req)
+	assert.NotEmpty(t, req.Components)
+	assert.True(t, req.NeedConfig || req.NeedSystemVariables)
+}
+
+func TestAnalyzer_Analyze(t *testing.T) {
+	tests := []struct {
+		name          string
+		snapshot      *collector.ClusterSnapshot
+		sourceVersion string
+		targetVersion string
+		sourceKB      map[string]interface{}
+		targetKB      map[string]interface{}
+		wantErr       bool
+	}{
+		{
+			name:          "nil snapshot",
+			snapshot:       nil,
+			sourceVersion:  "v7.5.0",
+			targetVersion:  "v8.0.0",
+			sourceKB:      make(map[string]interface{}),
+			targetKB:      make(map[string]interface{}),
+			wantErr:       true,
+		},
+		{
+			name: "empty snapshot",
+			snapshot: &collector.ClusterSnapshot{
+				Components: make(map[string]collector.ComponentState),
+			},
+			sourceVersion: "v7.5.0",
+			targetVersion: "v8.0.0",
+			sourceKB:     make(map[string]interface{}),
+			targetKB:     make(map[string]interface{}),
+			wantErr:      false,
+		},
+		{
+			name: "with TiDB component",
+			snapshot: &collector.ClusterSnapshot{
+				Components: map[string]collector.ComponentState{
+					"tidb": {
+						Type:    types.ComponentTiDB,
+						Version: "v7.5.0",
+						Config: types.ConfigDefaults{
+							"max-connections": types.ParameterValue{Value: 1000, Type: "int"},
+						},
+						Variables: types.SystemVariables{
+							"tidb_mem_quota_query": types.ParameterValue{Value: 1073741824, Type: "int"},
+						},
+					},
+				},
+			},
+			sourceVersion: "v7.5.0",
+			targetVersion: "v8.0.0",
+			sourceKB: map[string]interface{}{
+				"tidb": map[string]interface{}{
+					"config_defaults": map[string]interface{}{
+						"max-connections": 1000,
+					},
+					"system_variables": map[string]interface{}{
+						"tidb_mem_quota_query": 1073741824,
+					},
+				},
+			},
+			targetKB: map[string]interface{}{
+				"tidb": map[string]interface{}{
+					"config_defaults": map[string]interface{}{
+						"max-connections": 2000,
+					},
+					"system_variables": map[string]interface{}{
+						"tidb_mem_quota_query": 2147483648,
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			analyzer := NewAnalyzer(nil)
+			ctx := context.Background()
+
+			result, err := analyzer.Analyze(ctx, tt.snapshot, tt.sourceVersion, tt.targetVersion, tt.sourceKB, tt.targetKB)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, result)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, result)
+				assert.Equal(t, tt.sourceVersion, result.SourceVersion)
+				assert.Equal(t, tt.targetVersion, result.TargetVersion)
 			}
 		})
 	}
 }
 
-func TestAnalyzer_AnalyzeCluster(t *testing.T) {
-	// Create a mock cluster state
-	mockClusterState := &runtime.ClusterState{
-		Instances: []runtime.InstanceState{
-			{
-				Address: "127.0.0.1:4000",
-				State: runtime.ComponentState{
-					Type:    runtime.TiDBComponent,
-					Version: "v6.5.0",
-					Config: map[string]interface{}{
-						"performance.max-procs": 0,
-						"log.level":             "info",
+func TestAnalyzer_collectDataRequirements(t *testing.T) {
+	analyzer := NewAnalyzer(nil)
+	req := analyzer.collectDataRequirements()
+
+	assert.NotNil(t, req)
+	// Should have merged requirements from all default rules
+	assert.NotEmpty(t, req.SourceClusterRequirements.Components)
+}
+
+func TestAnalyzer_loadKBFromRequirements(t *testing.T) {
+	analyzer := NewAnalyzer(nil)
+
+	tests := []struct {
+		name                string
+		kb                  map[string]interface{}
+		components          []string
+		needConfigDefaults  bool
+		needSystemVariables bool
+		want                map[string]map[string]interface{}
+	}{
+		{
+			name:                "no requirements",
+			kb:                  make(map[string]interface{}),
+			components:          []string{"tidb"},
+			needConfigDefaults:  false,
+			needSystemVariables: false,
+			want:                make(map[string]map[string]interface{}),
+		},
+		{
+			name: "with config defaults",
+			kb: map[string]interface{}{
+				"tidb": map[string]interface{}{
+					"config_defaults": map[string]interface{}{
+						"max-connections": 1000,
 					},
-					Status: map[string]interface{}{},
 				},
 			},
-			{
-				Address: "127.0.0.1:2379",
-				State: runtime.ComponentState{
-					Type:    runtime.PDComponent,
-					Version: "v6.5.0",
-					Config: map[string]interface{}{
-						"schedule.max-store-down-time": "30m",
-					},
-					Status: map[string]interface{}{},
+			components:          []string{"tidb"},
+			needConfigDefaults:  true,
+			needSystemVariables: false,
+			want: map[string]map[string]interface{}{
+				"tidb": {
+					"max-connections": 1000,
 				},
 			},
-			{
-				Address: "127.0.0.1:20160",
-				State: runtime.ComponentState{
-					Type:    runtime.TiKVComponent,
-					Version: "v6.5.0",
-					Config: map[string]interface{}{
-						"storage.reserve-space": "2GB",
+		},
+		{
+			name: "with system variables",
+			kb: map[string]interface{}{
+				"tidb": map[string]interface{}{
+					"system_variables": map[string]interface{}{
+						"tidb_mem_quota_query": 1073741824,
 					},
-					Status: map[string]interface{}{},
+				},
+			},
+			components:          []string{"tidb"},
+			needConfigDefaults:  false,
+			needSystemVariables: true,
+			want: map[string]map[string]interface{}{
+				"tidb": {
+					"sysvar:tidb_mem_quota_query": 1073741824,
 				},
 			},
 		},
 	}
 
-	analyzer := NewAnalyzer("../knowledge")
-	report, err := analyzer.AnalyzeCluster(mockClusterState)
-	if err != nil {
-		t.Fatalf("Analyzer.AnalyzeCluster() error = %v", err)
-	}
-
-	if report == nil {
-		t.Error("Expected non-nil report")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, _ := analyzer.loadKBFromRequirements(tt.kb, tt.components, tt.needConfigDefaults, tt.needSystemVariables)
+			assert.Equal(t, tt.want, result)
+		})
 	}
 }
 
-func TestAnalyzer_assessPDRisk(t *testing.T) {
-	analyzer := NewAnalyzer("../../knowledge")
+func TestAnalyzer_buildComponentMapping(t *testing.T) {
+	analyzer := NewAnalyzer(nil)
 
 	tests := []struct {
-		paramName string
-		expected  RiskLevel
+		name           string
+		snapshot       *collector.ClusterSnapshot
+		sourceDefaults map[string]map[string]interface{}
+		want           map[string]string
 	}{
-		{"schedule.max-store-down-time", HighRisk},
-		{"schedule.leader-schedule-limit", HighRisk},
-		{"schedule.region-schedule-limit", HighRisk},
-		{"schedule.replica-schedule-limit", MediumRisk},
-		{"replication.max-replicas", MediumRisk},
-		{"log.level", LowRisk},
+		{
+			name: "exact match",
+			snapshot: &collector.ClusterSnapshot{
+				Components: map[string]collector.ComponentState{
+					"tidb": {
+						Type: types.ComponentTiDB,
+					},
+				},
+			},
+			sourceDefaults: map[string]map[string]interface{}{
+				"tidb": {"param1": "value1"},
+			},
+			want: map[string]string{
+				"tidb": "tidb",
+			},
+		},
+		{
+			name: "TiKV prefix match",
+			snapshot: &collector.ClusterSnapshot{
+				Components: map[string]collector.ComponentState{
+					"tikv-192-168-1-100-20160": {
+						Type: types.ComponentTiKV,
+					},
+				},
+			},
+			sourceDefaults: map[string]map[string]interface{}{
+				"tikv": {"param1": "value1"},
+			},
+			want: map[string]string{
+				"tikv": "tikv-192-168-1-100-20160",
+			},
+		},
 	}
 
-	for _, test := range tests {
-		actual := analyzer.assessPDRisk(test.paramName, "from", "to")
-		if actual != test.expected {
-			t.Errorf("Expected risk level %s for parameter %s, got %s", test.expected, test.paramName, actual)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := analyzer.buildComponentMapping(tt.snapshot, tt.sourceDefaults)
+			assert.Equal(t, tt.want, result)
+		})
 	}
 }
 
-func TestAnalyzer_assessTiKVRisk(t *testing.T) {
-	analyzer := NewAnalyzer("../../knowledge")
-
+func TestMergeStringSlices(t *testing.T) {
 	tests := []struct {
-		paramName string
-		expected  RiskLevel
+		name   string
+		slice1 []string
+		slice2 []string
+		want   []string
 	}{
-		{"storage.reserve-space", HighRisk},
-		{"raftstore.raft-entry-max-size", HighRisk},
-		{"rocksdb.defaultcf.block-cache-size", HighRisk},
-		{"server.grpc-concurrency", MediumRisk},
-		{"readpool.storage.high-concurrency", MediumRisk},
-		{"readpool.storage.normal-concurrency", MediumRisk},
-		{"readpool.storage.low-concurrency", MediumRisk},
-		{"log.level", LowRisk},
+		{
+			name:   "empty slices",
+			slice1: []string{},
+			slice2: []string{},
+			want:   []string{},
+		},
+		{
+			name:   "no duplicates",
+			slice1: []string{"a", "b"},
+			slice2: []string{"c", "d"},
+			want:   []string{"a", "b", "c", "d"},
+		},
+		{
+			name:   "with duplicates",
+			slice1: []string{"a", "b"},
+			slice2: []string{"b", "c"},
+			want:   []string{"a", "b", "c"},
+		},
 	}
 
-	for _, test := range tests {
-		actual := analyzer.assessTiKVRisk(test.paramName, "from", "to")
-		if actual != test.expected {
-			t.Errorf("Expected risk level %s for parameter %s, got %s", test.expected, test.paramName, actual)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := mergeStringSlices(tt.slice1, tt.slice2)
+			require.Equal(t, len(tt.want), len(result))
+			for _, v := range tt.want {
+				assert.Contains(t, result, v)
+			}
+		})
 	}
 }
 
-func TestAnalyzer_assessInconsistencyRisk(t *testing.T) {
-	analyzer := NewAnalyzer("../../knowledge")
-
-	values := []ParameterValue{
-		{InstanceAddress: "127.0.0.1:4000", Value: "info"},
-		{InstanceAddress: "127.0.0.1:4001", Value: "debug"},
-	}
-
-	tests := []struct {
-		paramName string
-		expected  RiskLevel
-	}{
-		{"storage.reserve-space", HighRisk},
-		{"raftstore.raft-entry-max-size", HighRisk},
-		{"rocksdb.defaultcf.block-cache-size", HighRisk},
-		{"schedule.max-store-down-time", HighRisk},
-		{"schedule.leader-schedule-limit", HighRisk},
-		{"schedule.region-schedule-limit", HighRisk},
-		{"server.grpc-concurrency", MediumRisk},
-		{"readpool.storage.high-concurrency", MediumRisk},
-		{"readpool.storage.normal-concurrency", MediumRisk},
-		{"readpool.storage.low-concurrency", MediumRisk},
-		{"schedule.replica-schedule-limit", MediumRisk},
-		{"replication.max-replicas", MediumRisk},
-		{"log.level", LowRisk},
-	}
-
-	for _, test := range tests {
-		actual := analyzer.assessInconsistencyRisk(test.paramName, values)
-		if actual != test.expected {
-			t.Errorf("Expected risk level %s for parameter %s, got %s", test.expected, test.paramName, actual)
-		}
-	}
-}

@@ -1,199 +1,183 @@
-// Copyright 2024 PingCAP, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package reporter
 
 import (
-	"encoding/json"
-	"strings"
+	"os"
 	"testing"
 
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer"
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/runtime"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer/rules"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestReporter_GenerateUpgradeReport(t *testing.T) {
-	report := &analyzer.AnalysisReport{
-		Component:   analyzer.TiDBComponent,
-		VersionFrom: "v6.5.0",
-		VersionTo:   "v7.1.0",
-		Parameters: []analyzer.ParameterChange{
-			{
-				Name:        "performance.run-auto-analyze",
-				Type:        "bool",
-				FromVersion: "v6.5.0",
-				ToVersion:   "v7.1.0",
-				FromValue:   false,
-				ToValue:     true,
-				Description: "Parameter performance.run-auto-analyze was modified from false to true",
-				RiskLevel:   analyzer.LowRisk,
-			},
-		},
-		Summary: analyzer.Summary{
-			TotalChanges: 1,
-			Added:        0,
-			Removed:      0,
-			Modified:     1,
-			HighRisk:     0,
-			MediumRisk:   0,
-			LowRisk:      1,
-			InfoLevel:    0,
-		},
-	}
+func TestNewGenerator(t *testing.T) {
+	gen := NewGenerator()
+	assert.NotNil(t, gen)
+}
 
+func TestGenerator_GenerateFromAnalysisResult(t *testing.T) {
 	tests := []struct {
-		format   ReportFormat
-		expected string
+		name    string
+		result  *analyzer.AnalysisResult
+		options *Options
+		wantErr bool
 	}{
-		{JSONFormat, "application/json"},
-		{TextFormat, "text/plain"},
-		{HTMLFormat, "text/html"},
+		{
+			name: "text format",
+			result: &analyzer.AnalysisResult{
+				SourceVersion:       "v7.5.0",
+				TargetVersion:       "v8.0.0",
+				ModifiedParams:      make(map[string]map[string]analyzer.ModifiedParamInfo),
+				TikvInconsistencies: make(map[string][]analyzer.InconsistentNode),
+				UpgradeDifferences:  make(map[string]map[string]analyzer.UpgradeDifference),
+				ForcedChanges:       make(map[string]map[string]analyzer.ForcedChange),
+				CheckResults:        []rules.CheckResult{},
+			},
+			options: &Options{
+				Format:    TextFormat,
+				OutputDir: t.TempDir(),
+				Filename:  "report", // Extension will be added automatically
+			},
+			wantErr: false,
+		},
+		{
+			name: "markdown format",
+			result: &analyzer.AnalysisResult{
+				SourceVersion:       "v7.5.0",
+				TargetVersion:       "v8.1.2",
+				ModifiedParams:      make(map[string]map[string]analyzer.ModifiedParamInfo),
+				TikvInconsistencies: make(map[string][]analyzer.InconsistentNode),
+				UpgradeDifferences:  make(map[string]map[string]analyzer.UpgradeDifference),
+				ForcedChanges:       make(map[string]map[string]analyzer.ForcedChange),
+				CheckResults:        []rules.CheckResult{},
+			},
+			options: &Options{
+				Format:    MarkdownFormat,
+				OutputDir: t.TempDir(),
+				Filename:  "report", // Extension will be added automatically
+			},
+			wantErr: false,
+		},
+		{
+			name: "html format",
+			result: &analyzer.AnalysisResult{
+				SourceVersion:       "v7.5.0",
+				TargetVersion:       "v8.0.0",
+				ModifiedParams:      make(map[string]map[string]analyzer.ModifiedParamInfo),
+				TikvInconsistencies: make(map[string][]analyzer.InconsistentNode),
+				UpgradeDifferences:  make(map[string]map[string]analyzer.UpgradeDifference),
+				ForcedChanges:       make(map[string]map[string]analyzer.ForcedChange),
+				CheckResults:        []rules.CheckResult{},
+			},
+			options: &Options{
+				Format:    HTMLFormat,
+				OutputDir: t.TempDir(),
+				Filename:  "report", // Extension will be added automatically
+			},
+			wantErr: false,
+		},
+		{
+			name: "json format",
+			result: &analyzer.AnalysisResult{
+				SourceVersion:       "v7.5.0",
+				TargetVersion:       "v8.0.0",
+				ModifiedParams:      make(map[string]map[string]analyzer.ModifiedParamInfo),
+				TikvInconsistencies: make(map[string][]analyzer.InconsistentNode),
+				UpgradeDifferences:  make(map[string]map[string]analyzer.UpgradeDifference),
+				ForcedChanges:       make(map[string]map[string]analyzer.ForcedChange),
+				CheckResults:        []rules.CheckResult{},
+			},
+			options: &Options{
+				Format:    JSONFormat,
+				OutputDir: t.TempDir(),
+				Filename:  "report", // Extension will be added automatically
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid format",
+			result: &analyzer.AnalysisResult{
+				SourceVersion: "v7.5.0",
+				TargetVersion: "v8.0.0",
+			},
+			options: &Options{
+				Format:    Format("invalid"),
+				OutputDir: t.TempDir(),
+				Filename:  "report", // Don't include extension, it will be added automatically
+			},
+			wantErr: true,
+		},
 	}
 
-	for _, test := range tests {
-		reporter := NewReporter(test.format)
-		data, err := reporter.GenerateUpgradeReport(report)
-		if err != nil {
-			t.Fatalf("Failed to generate %s report: %v", test.format, err)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gen := NewGenerator()
+			content, err := gen.GenerateFromAnalysisResult(tt.result, tt.options)
 
-		if len(data) == 0 {
-			t.Errorf("Expected non-empty %s report", test.format)
-		}
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Empty(t, content)
+			} else {
+				assert.NoError(t, err)
+				assert.NotEmpty(t, content)
 
-		// Verify the content type based on format
-		contentType := ""
-		switch test.format {
-		case JSONFormat:
-			contentType = "application/json"
-			// Verify it's valid JSON
-			var result map[string]interface{}
-			if err := json.Unmarshal(data, &result); err != nil {
-				t.Errorf("Generated JSON is invalid: %v", err)
+				// Verify file was created (content is the file path)
+				_, statErr := os.Stat(content)
+				assert.NoError(t, statErr)
 			}
-		case TextFormat:
-			contentType = "text/plain"
-			if !strings.Contains(string(data), "UPGRADE ANALYSIS REPORT") {
-				t.Errorf("Text report does not contain expected header")
-			}
-		case HTMLFormat:
-			contentType = "text/html"
-			if !strings.Contains(string(data), "<html>") {
-				t.Errorf("HTML report does not contain expected HTML tag")
-			}
-		}
-
-		// Just print the content type for verification
-		t.Logf("Generated %s report with content type: %s", test.format, contentType)
+		})
 	}
 }
 
-func TestReporter_GenerateClusterReport(t *testing.T) {
-	report := &analyzer.ClusterAnalysisReport{
-		Instances: []runtime.InstanceState{
-			{
-				Address: "127.0.0.1:4000",
-				State: runtime.ComponentState{
-					Type:    runtime.TiDBComponent,
-					Version: "v6.5.0",
-					Config: map[string]interface{}{
-						"log.level": "info",
-					},
-					Status: map[string]interface{}{},
+func TestGenerator_GenerateFromAnalysisResult_WithData(t *testing.T) {
+	result := &analyzer.AnalysisResult{
+		SourceVersion: "v7.5.0",
+		TargetVersion: "v8.0.0",
+		ModifiedParams: map[string]map[string]analyzer.ModifiedParamInfo{
+			"tidb": {
+				"max-connections": {
+					Component:     "tidb",
+					ParamName:     "max-connections",
+					CurrentValue:  2000,
+					SourceDefault: 1000,
+					ParamType:     "config",
 				},
 			},
 		},
-		InconsistentConfigs: []analyzer.InconsistentConfig{
+		TikvInconsistencies: make(map[string][]analyzer.InconsistentNode),
+		UpgradeDifferences:  make(map[string]map[string]analyzer.UpgradeDifference),
+		ForcedChanges:       make(map[string]map[string]analyzer.ForcedChange),
+		CheckResults: []rules.CheckResult{
 			{
-				ParameterName: "log.level",
-				Values: []analyzer.ParameterValue{
-					{InstanceAddress: "127.0.0.1:4000", Value: "info"},
-					{InstanceAddress: "127.0.0.1:4001", Value: "debug"},
-				},
-				RiskLevel:   analyzer.MediumRisk,
-				Description: "Parameter log.level has different values across instances",
-			},
-		},
-		Recommendations: []analyzer.Recommendation{
-			{
-				ParameterName:      "log.level",
-				RiskLevel:          analyzer.MediumRisk,
-				Description:        "Parameter log.level has different values across instances",
-				Recommendation:     "Consider aligning the value of log.level across all instances for optimal performance and behavior consistency",
-				AffectedComponents: []string{"cluster"},
+				RuleID:      "USER_MODIFIED_PARAMS",
+				Category:    "user_modified",
+				Component:   "tidb",
+				Severity:    "info",
+				Message:     "Parameter max-connections has been modified",
+				Details:     "Current value: 2000, Source default: 1000",
+				Suggestions: []string{"Review parameter changes"},
 			},
 		},
 	}
 
-	tests := []struct {
-		format   ReportFormat
-		expected string
-	}{
-		{JSONFormat, "application/json"},
-		{TextFormat, "text/plain"},
-		{HTMLFormat, "text/html"},
+	options := &Options{
+		Format:    TextFormat,
+		OutputDir: t.TempDir(),
+		Filename:  "report", // Extension will be added automatically
 	}
 
-	for _, test := range tests {
-		reporter := NewReporter(test.format)
-		data, err := reporter.GenerateClusterReport(report)
-		if err != nil {
-			t.Fatalf("Failed to generate %s report: %v", test.format, err)
-		}
+	gen := NewGenerator()
+	filePath, err := gen.GenerateFromAnalysisResult(result, options)
 
-		if len(data) == 0 {
-			t.Errorf("Expected non-empty %s report", test.format)
-		}
+	require.NoError(t, err)
+	assert.NotEmpty(t, filePath)
 
-		// Verify the content type based on format
-		contentType := ""
-		switch test.format {
-		case JSONFormat:
-			contentType = "application/json"
-			// Verify it's valid JSON
-			var result map[string]interface{}
-			if err := json.Unmarshal(data, &result); err != nil {
-				t.Errorf("Generated JSON is invalid: %v", err)
-			}
-		case TextFormat:
-			contentType = "text/plain"
-			if !strings.Contains(string(data), "CLUSTER CONFIGURATION ANALYSIS REPORT") {
-				t.Errorf("Text report does not contain expected header")
-			}
-		case HTMLFormat:
-			contentType = "text/html"
-			if !strings.Contains(string(data), "<html>") {
-				t.Errorf("HTML report does not contain expected HTML tag")
-			}
-		}
+	// Read the file content
+	fileContent, err := os.ReadFile(filePath)
+	require.NoError(t, err)
+	content := string(fileContent)
 
-		// Just print the content type for verification
-		t.Logf("Generated %s report with content type: %s", test.format, contentType)
-	}
-}
-
-func TestReporter_UnsupportedFormat(t *testing.T) {
-	reporter := &Reporter{format: "unsupported"}
-
-	upgradeReport := &analyzer.AnalysisReport{}
-	_, err := reporter.GenerateUpgradeReport(upgradeReport)
-	if err == nil {
-		t.Error("Expected error for unsupported format")
-	}
-
-	clusterReport := &analyzer.ClusterAnalysisReport{}
-	_, err = reporter.GenerateClusterReport(clusterReport)
-	if err == nil {
-		t.Error("Expected error for unsupported format")
-	}
+	assert.Contains(t, content, "v7.5.0")
+	assert.Contains(t, content, "v8.0.0")
+	assert.Contains(t, content, "max-connections")
 }

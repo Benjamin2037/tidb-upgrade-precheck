@@ -1,520 +1,576 @@
-// Copyright 2024 PingCAP, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+// Package analyzer provides risk analysis logic for upgrade precheck
+// Analyzer performs analysis based on rules, which define what data to collect and how to compare
 package analyzer
 
 import (
+	"context"
 	"fmt"
-	"path/filepath"
+	"strconv"
+	"strings"
 
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/kbgenerator"
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/runtime"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer/rules"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector"
 )
 
-// ComponentType represents the type of a TiDB cluster component
-type ComponentType string
-
-const (
-	// TiDBComponent represents a TiDB component
-	TiDBComponent ComponentType = "tidb"
-	// PDComponent represents a PD component
-	PDComponent ComponentType = "pd"
-	// TiKVComponent represents a TiKV component
-	TiKVComponent ComponentType = "tikv"
-)
-
-// RiskLevel represents the risk level of a change or inconsistency
-type RiskLevel string
-
-const (
-	// HighRisk represents a high risk change
-	HighRisk RiskLevel = "high"
-	// MediumRisk represents a medium risk change
-	MediumRisk = "medium"
-	// LowRisk represents a low risk change
-	LowRisk = "low"
-	// InfoLevel represents an informational change
-	InfoLevel = "info"
-)
-
-// ParameterChange represents a parameter change between versions
-type ParameterChange struct {
-	// Name is the name of the parameter
-	Name string `json:"name"`
-	// Type is the type of the parameter
-	Type string `json:"type"`
-	// FromVersion is the source version
-	FromVersion string `json:"from_version"`
-	// ToVersion is the target version
-	ToVersion string `json:"to_version"`
-	// FromValue is the value in the source version
-	FromValue interface{} `json:"from_value"`
-	// ToValue is the value in the target version
-	ToValue interface{} `json:"to_value"`
-	// Description is a description of the change
-	Description string `json:"description"`
-	// RiskLevel is the risk level of the change
-	RiskLevel RiskLevel `json:"risk_level"`
+// AnalysisOptions contains options for analysis
+type AnalysisOptions struct {
+	// Rules is the list of rules to apply. If empty, default rules will be used
+	Rules []rules.Rule `json:"rules,omitempty"`
 }
 
-// InconsistentConfig represents an inconsistent configuration across instances
-type InconsistentConfig struct {
-	// ParameterName is the name of the parameter
-	ParameterName string `json:"parameter_name"`
-	// Values are the different values of the parameter across instances
-	Values []ParameterValue `json:"values"`
-	// RiskLevel is the risk level of the inconsistency
-	RiskLevel RiskLevel `json:"risk_level"`
-	// Description is a description of the inconsistency
-	Description string `json:"description"`
-}
-
-// ParameterValue represents a parameter value on a specific instance
-type ParameterValue struct {
-	// InstanceAddress is the address of the instance
-	InstanceAddress string `json:"instance_address"`
-	// Value is the value of the parameter
-	Value interface{} `json:"value"`
-}
-
-// Recommendation represents a recommendation for handling a change or inconsistency
-type Recommendation struct {
-	// ParameterName is the name of the parameter
-	ParameterName string `json:"parameter_name"`
-	// RiskLevel is the risk level of the recommendation
-	RiskLevel RiskLevel `json:"risk_level"`
-	// Description is a description of the recommendation
-	Description string `json:"description"`
-	// Recommendation is the recommended action
-	Recommendation string `json:"recommendation"`
-	// AffectedComponents are the components affected by this recommendation
-	AffectedComponents []string `json:"affected_components"`
-}
-
-// AnalysisReport represents a report of the analysis
-type AnalysisReport struct {
-	// Component is the component being analyzed
-	Component ComponentType `json:"component"`
-	// VersionFrom is the source version
-	VersionFrom string `json:"version_from"`
-	// VersionTo is the target version
-	VersionTo string `json:"version_to"`
-	// Parameters is the list of parameter changes
-	Parameters []ParameterChange `json:"parameters"`
-	// Summary contains summary information
-	Summary Summary `json:"summary"`
-}
-
-// ClusterAnalysisReport represents a report of cluster configuration analysis
-type ClusterAnalysisReport struct {
-	// Instances is the list of instances in the cluster
-	Instances []runtime.InstanceState `json:"instances"`
-	// InconsistentConfigs are the configurations that are inconsistent across instances
-	InconsistentConfigs []InconsistentConfig `json:"inconsistent_configs"`
-	// Recommendations are the recommendations for handling inconsistencies
-	Recommendations []Recommendation `json:"recommendations"`
-}
-
-// Summary contains summary information about the analysis
-type Summary struct {
-	// TotalChanges is the total number of changes
-	TotalChanges int `json:"total_changes"`
-	// Added is the number of added parameters
-	Added int `json:"added"`
-	// Removed is the number of removed parameters
-	Removed int `json:"removed"`
-	// Modified is the number of modified parameters
-	Modified int `json:"modified"`
-	// HighRisk is the number of high risk changes
-	HighRisk int `json:"high_risk"`
-	// MediumRisk is the number of medium risk changes
-	MediumRisk int `json:"medium_risk"`
-	// LowRisk is the number of low risk changes
-	LowRisk int `json:"low_risk"`
-	// InfoLevel is the number of info level changes
-	InfoLevel int `json:"info_level"`
-}
-
-// Analyzer is responsible for analyzing parameter changes and cluster configurations
+// Analyzer performs comprehensive risk analysis on cluster snapshots based on rules
 type Analyzer struct {
-	// knowledgeBasePath is the path to the knowledge base
-	knowledgeBasePath string
+	options *AnalysisOptions
+	rules   []rules.Rule
 }
 
-// NewAnalyzer creates a new analyzer
-func NewAnalyzer(knowledgeBasePath string) *Analyzer {
+// NewAnalyzer creates a new analyzer with the provided rules
+// If no rules are provided, default rules will be used
+func NewAnalyzer(options *AnalysisOptions) *Analyzer {
+	if options == nil {
+		options = &AnalysisOptions{}
+	}
+
+	// Use provided rules or default rules
+	ruleList := options.Rules
+	if len(ruleList) == 0 {
+		ruleList = getDefaultRules()
+	}
+
 	return &Analyzer{
-		knowledgeBasePath: knowledgeBasePath,
+		options: options,
+		rules:   ruleList,
 	}
 }
 
-// AnalyzeUpgrade analyzes parameter changes between two versions of a component
-func (a *Analyzer) AnalyzeUpgrade(component ComponentType, fromVersion, toVersion string) (*AnalysisReport, error) {
-	switch component {
-	case TiDBComponent:
-		return a.analyzeTiDBUpgrade(fromVersion, toVersion)
-	case PDComponent:
-		return a.analyzePDUpgrade(fromVersion, toVersion)
-	case TiKVComponent:
-		return a.analyzeTiKVUpgrade(fromVersion, toVersion)
-	default:
-		return nil, fmt.Errorf("unsupported component type: %s", component)
+// GetDataRequirements returns the merged data requirements from all rules
+// This is used by the analyzer to determine what data to load from knowledge base
+func (a *Analyzer) GetDataRequirements() rules.DataSourceRequirement {
+	return a.collectDataRequirements()
+}
+
+// GetCollectionRequirements returns the collection requirements for the runtime collector
+// This extracts only the SourceClusterRequirements from the full data requirements
+// since the collector only needs to know what to collect from the running cluster
+// Returns a struct compatible with collector/runtime.CollectDataRequirements
+func (a *Analyzer) GetCollectionRequirements() CollectionRequirements {
+	dataReqs := a.collectDataRequirements()
+	return CollectionRequirements{
+		Components:          dataReqs.SourceClusterRequirements.Components,
+		NeedConfig:          dataReqs.SourceClusterRequirements.NeedConfig,
+		NeedSystemVariables: dataReqs.SourceClusterRequirements.NeedSystemVariables,
+		NeedAllTikvNodes:    dataReqs.SourceClusterRequirements.NeedAllTikvNodes,
 	}
 }
 
-// AnalyzeCluster analyzes the configuration consistency of a cluster
-func (a *Analyzer) AnalyzeCluster(clusterState *runtime.ClusterState) (*ClusterAnalysisReport, error) {
-	// Group instances by component type
-	tidbInstances := []runtime.InstanceState{}
-	pdInstances := []runtime.InstanceState{}
-	tikvInstances := []runtime.InstanceState{}
-
-	for _, instance := range clusterState.Instances {
-		switch instance.State.Type {
-		case runtime.TiDBComponent:
-			tidbInstances = append(tidbInstances, instance)
-		case runtime.PDComponent:
-			pdInstances = append(pdInstances, instance)
-		case runtime.TiKVComponent:
-			tikvInstances = append(tikvInstances, instance)
-		}
-	}
-
-	// Analyze each component type
-	var allInconsistentConfigs []InconsistentConfig
-	var allRecommendations []Recommendation
-
-	// Analyze TiDB instances
-	if len(tidbInstances) > 1 {
-		inconsistentConfigs := a.findInconsistentConfigs(tidbInstances)
-		allInconsistentConfigs = append(allInconsistentConfigs, inconsistentConfigs...)
-		
-		recommendations := a.generateRecommendations(inconsistentConfigs)
-		allRecommendations = append(allRecommendations, recommendations...)
-	}
-
-	// Analyze PD instances
-	if len(pdInstances) > 1 {
-		inconsistentConfigs := a.findInconsistentConfigs(pdInstances)
-		allInconsistentConfigs = append(allInconsistentConfigs, inconsistentConfigs...)
-		
-		recommendations := a.generateRecommendations(inconsistentConfigs)
-		allRecommendations = append(allRecommendations, recommendations...)
-	}
-
-	// Analyze TiKV instances
-	if len(tikvInstances) > 1 {
-		inconsistentConfigs := a.findInconsistentConfigs(tikvInstances)
-		allInconsistentConfigs = append(allInconsistentConfigs, inconsistentConfigs...)
-		
-		recommendations := a.generateRecommendations(inconsistentConfigs)
-		allRecommendations = append(allRecommendations, recommendations...)
-	}
-
-	report := &ClusterAnalysisReport{
-		Instances:           clusterState.Instances,
-		InconsistentConfigs: allInconsistentConfigs,
-		Recommendations:     allRecommendations,
-	}
-
-	return report, nil
+// CollectionRequirements defines what data needs to be collected from the cluster
+// This is a simplified version of DataSourceRequirement that only includes cluster collection needs
+// The structure matches collector/runtime.CollectDataRequirements for compatibility
+type CollectionRequirements struct {
+	// Components specifies which components' data is needed
+	Components []string `json:"components"`
+	// NeedConfig indicates if configuration parameters are needed
+	NeedConfig bool `json:"need_config"`
+	// NeedSystemVariables indicates if system variables are needed (mainly for TiDB)
+	NeedSystemVariables bool `json:"need_system_variables"`
+	// NeedAllTikvNodes indicates if all TiKV nodes' data is needed (for consistency checks)
+	NeedAllTikvNodes bool `json:"need_all_tikv_nodes"`
 }
 
-// analyzeTiDBUpgrade analyzes parameter changes between two TiDB versions
-func (a *Analyzer) analyzeTiDBUpgrade(fromVersion, toVersion string) (*AnalysisReport, error) {
-	// This is a placeholder implementation
-	// A real implementation would compare the parameters between the two versions
-	report := &AnalysisReport{
-		Component:   TiDBComponent,
-		VersionFrom: fromVersion,
-		VersionTo:   toVersion,
-		Parameters:  []ParameterChange{},
-		Summary: Summary{
-			TotalChanges: 0,
-			Added:        0,
-			Removed:      0,
-			Modified:     0,
-			HighRisk:     0,
-			MediumRisk:   0,
-			LowRisk:      0,
-			InfoLevel:    0,
-		},
+// getDefaultRules returns the default set of rules
+func getDefaultRules() []rules.Rule {
+	return []rules.Rule{
+		rules.NewUserModifiedParamsRule(),
+		rules.NewUpgradeDifferencesRule(),
+		rules.NewTikvConsistencyRule(),
 	}
-
-	// For now, we'll return mock data
-	// A real implementation would compare actual parameter changes
-	switch {
-	case fromVersion == "v6.5.0" && toVersion == "v7.1.0":
-		report.Parameters = append(report.Parameters, ParameterChange{
-			Name:        "performance.run-auto-analyze",
-			Type:        "bool",
-			FromVersion: "v6.5.0",
-			ToVersion:   "v7.1.0",
-			FromValue:   false,
-			ToValue:     true,
-			Description: "Parameter performance.run-auto-analyze was modified from false to true",
-			RiskLevel:   LowRisk,
-		})
-		report.Summary.TotalChanges = 1
-		report.Summary.Modified = 1
-		report.Summary.LowRisk = 1
-	}
-
-	return report, nil
 }
 
-// analyzePDUpgrade analyzes parameter changes between two PD versions
-func (a *Analyzer) analyzePDUpgrade(fromVersion, toVersion string) (*AnalysisReport, error) {
-	// This is a placeholder implementation
-	report := &AnalysisReport{
-		Component:   PDComponent,
-		VersionFrom: fromVersion,
-		VersionTo:   toVersion,
-		Parameters:  []ParameterChange{},
-		Summary: Summary{
-			TotalChanges: 0,
-			Added:        0,
-			Removed:      0,
-			Modified:     0,
-			HighRisk:     0,
-			MediumRisk:   0,
-			LowRisk:      0,
-			InfoLevel:    0,
-		},
+// Analyze performs comprehensive analysis on a cluster snapshot based on rules
+// It:
+// 1. Collects data requirements from all rules
+// 2. Loads necessary data from knowledge base
+// 3. Executes all rules
+// 4. Returns analysis results organized by rule category
+func (a *Analyzer) Analyze(
+	ctx context.Context,
+	snapshot *collector.ClusterSnapshot,
+	sourceVersion, targetVersion string,
+	sourceKB, targetKB map[string]interface{},
+) (*AnalysisResult, error) {
+	if snapshot == nil {
+		return nil, fmt.Errorf("snapshot cannot be nil")
 	}
 
-	// For now, we'll return mock data
-	switch {
-	case fromVersion == "v6.5.0" && toVersion == "v7.1.0":
-		report.Parameters = append(report.Parameters, ParameterChange{
-			Name:        "schedule.max-store-down-time",
-			Type:        "string",
-			FromVersion: "v6.5.0",
-			ToVersion:   "v7.1.0",
-			FromValue:   "30m",
-			ToValue:     "1h",
-			Description: "Parameter schedule.max-store-down-time was modified from 30m to 1h",
-			RiskLevel:   MediumRisk,
-		})
-		report.Summary.TotalChanges = 1
-		report.Summary.Modified = 1
-		report.Summary.MediumRisk = 1
-	}
+	// Step 1: Collect data requirements from all rules
+	// Merge requirements from all rules to determine what data needs to be loaded
+	dataReqs := a.collectDataRequirements()
 
-	return report, nil
-}
+	// Step 2: Load knowledge base data based on merged requirements
+	// Load once, all rules can reuse the same data
+	sourceDefaults, sourceBootstrapVersions := a.loadSourceKB(sourceKB, dataReqs)
+	targetDefaults, targetBootstrapVersions := a.loadTargetKB(targetKB, dataReqs)
 
-// analyzeTiKVUpgrade analyzes parameter changes between two TiKV versions
-func (a *Analyzer) analyzeTiKVUpgrade(fromVersion, toVersion string) (*AnalysisReport, error) {
-	// Load parameter history
-	historyFile := filepath.Join(a.knowledgeBasePath, "tikv", "parameters-history.json")
-	changes, err := kbgenerator.GetTikvParameterChanges(historyFile, fromVersion, toVersion)
+	// Step 2.1: Build component mapping and validate one-to-one correspondence
+	// Map component types to actual component instances in snapshot
+	// This ensures source KB defaults and runtime parameters are properly matched
+	componentMapping := a.buildComponentMapping(snapshot, sourceDefaults)
+
+	// Validate and report any mismatches (KB has defaults but runtime doesn't, or vice versa)
+	mismatchResults := a.validateComponentMapping(snapshot, sourceDefaults, componentMapping, sourceVersion)
+
+	// Load upgrade logic (only need to load once, contains all historical changes)
+	// Upgrade logic is version-agnostic and contains all changes with version tags
+	upgradeLogic := a.loadUpgradeLogic(sourceKB, targetKB, dataReqs)
+
+	// Step 3: Create shared rule context with loaded data
+	// All rules share the same context, but each rule only accesses data it needs
+	// Extract bootstrap versions for TiDB (most important for upgrade logic filtering)
+	sourceBootstrapVersion := sourceBootstrapVersions["tidb"]
+	targetBootstrapVersion := targetBootstrapVersions["tidb"]
+
+	ruleCtx := rules.NewRuleContext(
+		snapshot,
+		sourceVersion,
+		targetVersion,
+		sourceDefaults,
+		targetDefaults,
+		upgradeLogic,
+		sourceBootstrapVersion,
+		targetBootstrapVersion,
+	)
+
+	// Step 4: Execute all rules with the shared context
+	ruleRunner := rules.NewRuleRunner(a.rules)
+	checkResults, err := ruleRunner.Run(ctx, ruleCtx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get TiKV parameter changes: %v", err)
+		return nil, fmt.Errorf("failed to run rules: %w", err)
 	}
 
-	// Convert to analysis report format
-	parameters := []ParameterChange{}
-	for _, change := range changes {
-		parameters = append(parameters, ParameterChange{
-			Name:        change.Name,
-			Type:        change.Type,
-			FromVersion: change.FromVersion,
-			ToVersion:   change.ToVersion,
-			FromValue:   change.FromValue,
-			ToValue:     change.ToValue,
-			Description: change.Description,
-			RiskLevel:   a.assessTiKVRisk(change.Name, change.FromValue, change.ToValue),
-		})
-	}
+	// Step 5: Merge mismatch results with rule results
+	allCheckResults := append(checkResults, mismatchResults...)
 
-	report := &AnalysisReport{
-		Component:   TiKVComponent,
-		VersionFrom: fromVersion,
-		VersionTo:   toVersion,
-		Parameters:  parameters,
-		Summary:     a.calculateSummary(parameters),
-	}
+	// Step 6: Organize results by category
+	result := a.organizeResults(allCheckResults, sourceVersion, targetVersion)
 
-	return report, nil
+	return result, nil
 }
 
-// findInconsistentConfigs finds configurations that are inconsistent across instances
-func (a *Analyzer) findInconsistentConfigs(instances []runtime.InstanceState) []InconsistentConfig {
-	inconsistentConfigs := []InconsistentConfig{}
+// collectDataRequirements collects data requirements from all rules
+// and merges them to determine what data needs to be loaded
+func (a *Analyzer) collectDataRequirements() rules.DataSourceRequirement {
+	// Start with empty requirements
+	merged := rules.DataSourceRequirement{}
 
-	if len(instances) <= 1 {
-		return inconsistentConfigs
+	// Merge requirements from all rules
+	for _, rule := range a.rules {
+		req := rule.DataRequirements()
+
+		// Merge source cluster requirements
+		merged.SourceClusterRequirements.Components = mergeStringSlices(
+			merged.SourceClusterRequirements.Components,
+			req.SourceClusterRequirements.Components,
+		)
+		merged.SourceClusterRequirements.NeedConfig = merged.SourceClusterRequirements.NeedConfig || req.SourceClusterRequirements.NeedConfig
+		merged.SourceClusterRequirements.NeedSystemVariables = merged.SourceClusterRequirements.NeedSystemVariables || req.SourceClusterRequirements.NeedSystemVariables
+		merged.SourceClusterRequirements.NeedAllTikvNodes = merged.SourceClusterRequirements.NeedAllTikvNodes || req.SourceClusterRequirements.NeedAllTikvNodes
+
+		// Merge source KB requirements
+		merged.SourceKBRequirements.Components = mergeStringSlices(
+			merged.SourceKBRequirements.Components,
+			req.SourceKBRequirements.Components,
+		)
+		merged.SourceKBRequirements.NeedConfigDefaults = merged.SourceKBRequirements.NeedConfigDefaults || req.SourceKBRequirements.NeedConfigDefaults
+		merged.SourceKBRequirements.NeedSystemVariables = merged.SourceKBRequirements.NeedSystemVariables || req.SourceKBRequirements.NeedSystemVariables
+		// Note: NeedUpgradeLogic is merged but upgrade logic is loaded once (not per version)
+
+		// Merge target KB requirements
+		merged.TargetKBRequirements.Components = mergeStringSlices(
+			merged.TargetKBRequirements.Components,
+			req.TargetKBRequirements.Components,
+		)
+		merged.TargetKBRequirements.NeedConfigDefaults = merged.TargetKBRequirements.NeedConfigDefaults || req.TargetKBRequirements.NeedConfigDefaults
+		merged.TargetKBRequirements.NeedSystemVariables = merged.TargetKBRequirements.NeedSystemVariables || req.TargetKBRequirements.NeedSystemVariables
+		// Note: NeedUpgradeLogic is merged but upgrade logic is loaded once (not per version)
 	}
 
-	// Create a map of parameter name to values across instances
-	paramValues := make(map[string][]ParameterValue)
+	return merged
+}
 
-	for _, instance := range instances {
-		for paramName, paramValue := range instance.State.Config {
-			pv := ParameterValue{
-				InstanceAddress: instance.Address,
-				Value:           paramValue,
+// loadKBFromRequirements is a generic function to load knowledge base data based on requirements
+// It extracts config defaults and system variables for specified components
+// Always loads bootstrap_version if available (needed for upgrade logic filtering)
+// Returns: defaults map and bootstrap version map
+func (a *Analyzer) loadKBFromRequirements(
+	kb map[string]interface{},
+	components []string,
+	needConfigDefaults, needSystemVariables bool,
+) (map[string]map[string]interface{}, map[string]int64) {
+	defaults := make(map[string]map[string]interface{})
+	bootstrapVersions := make(map[string]int64)
+
+	// Always load bootstrap_version if available (needed for upgrade logic filtering)
+	// Even if we don't need config defaults or system variables
+	for _, comp := range components {
+		if compKB, ok := kb[comp].(map[string]interface{}); ok {
+			// Load bootstrap_version (always load if available)
+			if bootstrapVersion, ok := compKB["bootstrap_version"]; ok {
+				var version int64
+				switch v := bootstrapVersion.(type) {
+				case int64:
+					version = v
+				case float64:
+					version = int64(v)
+				case int:
+					version = int64(v)
+				default:
+					if str, ok := v.(string); ok {
+						if parsed, err := strconv.ParseInt(str, 10, 64); err == nil {
+							version = parsed
+						}
+					}
+				}
+				if version > 0 {
+					bootstrapVersions[comp] = version
+				}
 			}
-			paramValues[paramName] = append(paramValues[paramName], pv)
 		}
 	}
 
-	// Check each parameter for inconsistencies
-	for paramName, values := range paramValues {
-		if len(values) != len(instances) {
-			// Parameter doesn't exist on all instances
-			inconsistentConfigs = append(inconsistentConfigs, InconsistentConfig{
-				ParameterName: paramName,
-				Values:        values,
-				RiskLevel:     MediumRisk,
-				Description:   fmt.Sprintf("Parameter %s is not configured on all instances", paramName),
-			})
-			continue
-		}
+	if !needConfigDefaults && !needSystemVariables {
+		return defaults, bootstrapVersions
+	}
 
-		// Check if all values are the same
-		firstValue := values[0].Value
-		isConsistent := true
-		for _, value := range values[1:] {
-			if firstValue != value.Value {
-				isConsistent = false
+	// Load data for each required component
+	for _, comp := range components {
+		defaults[comp] = make(map[string]interface{})
+
+		if compKB, ok := kb[comp].(map[string]interface{}); ok {
+			// Load config defaults
+			if needConfigDefaults {
+				if configDefaults, ok := compKB["config_defaults"].(map[string]interface{}); ok {
+					for k, v := range configDefaults {
+						defaults[comp][k] = v
+					}
+				}
+			}
+
+			// Load system variables
+			if needSystemVariables {
+				if systemVars, ok := compKB["system_variables"].(map[string]interface{}); ok {
+					for k, v := range systemVars {
+						// Prefix with "sysvar:" to distinguish from config params
+						defaults[comp]["sysvar:"+k] = v
+					}
+				}
+			}
+
+			// Bootstrap version is already loaded above (always load if available)
+		}
+	}
+
+	return defaults, bootstrapVersions
+}
+
+// loadSourceKB loads source version knowledge base data based on requirements
+// Returns: defaults map and bootstrap version map
+func (a *Analyzer) loadSourceKB(kb map[string]interface{}, req rules.DataSourceRequirement) (map[string]map[string]interface{}, map[string]int64) {
+	return a.loadKBFromRequirements(
+		kb,
+		req.SourceKBRequirements.Components,
+		req.SourceKBRequirements.NeedConfigDefaults,
+		req.SourceKBRequirements.NeedSystemVariables,
+	)
+}
+
+// loadTargetKB loads target version knowledge base data based on requirements
+// Returns: defaults map and bootstrap version map
+func (a *Analyzer) loadTargetKB(kb map[string]interface{}, req rules.DataSourceRequirement) (map[string]map[string]interface{}, map[string]int64) {
+	return a.loadKBFromRequirements(
+		kb,
+		req.TargetKBRequirements.Components,
+		req.TargetKBRequirements.NeedConfigDefaults,
+		req.TargetKBRequirements.NeedSystemVariables,
+	)
+}
+
+// buildComponentMapping creates a map from component type to actual component instance
+// This ensures one-to-one correspondence between source KB defaults and runtime components
+// Returns: map[componentType]componentName (e.g., map["tidb"]"tidb", map["tikv"]"tikv-192-168-1-100-20160")
+func (a *Analyzer) buildComponentMapping(snapshot *collector.ClusterSnapshot, sourceDefaults map[string]map[string]interface{}) map[string]string {
+	mapping := make(map[string]string)
+
+	// Build mapping for each component type in source defaults
+	for compType := range sourceDefaults {
+		// Try to find component by exact type match
+		for name, comp := range snapshot.Components {
+			if string(comp.Type) == compType {
+				mapping[compType] = name
 				break
 			}
 		}
 
-		if !isConsistent {
-			// Assess risk level for this inconsistency
-			riskLevel := a.assessInconsistencyRisk(paramName, values)
+		// If not found, try prefix matching for TiKV/TiFlash
+		if _, found := mapping[compType]; !found {
+			for name := range snapshot.Components {
+				if (compType == "tikv" && strings.HasPrefix(name, "tikv")) ||
+					(compType == "tiflash" && strings.HasPrefix(name, "tiflash")) {
+					// Use the first instance found
+					if mapping[compType] == "" {
+						mapping[compType] = name
+					}
+				}
+			}
+		}
+	}
 
-			inconsistentConfigs = append(inconsistentConfigs, InconsistentConfig{
-				ParameterName: paramName,
-				Values:        values,
-				RiskLevel:     riskLevel,
-				Description:   fmt.Sprintf("Parameter %s has different values across instances", paramName),
+	return mapping
+}
+
+// validateComponentMapping validates one-to-one correspondence between source KB and runtime
+// Reports mismatches where KB has defaults but runtime doesn't have the component/parameter
+// or vice versa
+func (a *Analyzer) validateComponentMapping(
+	snapshot *collector.ClusterSnapshot,
+	sourceDefaults map[string]map[string]interface{},
+	componentMapping map[string]string,
+	sourceVersion string,
+) []rules.CheckResult {
+	var results []rules.CheckResult
+
+	// Check 1: KB has defaults for a component, but runtime doesn't have it
+	for compType, defaults := range sourceDefaults {
+		if compName, ok := componentMapping[compType]; !ok || compName == "" {
+			// KB has defaults but runtime doesn't have this component
+			results = append(results, rules.CheckResult{
+				RuleID:      "COMPONENT_MISMATCH",
+				Category:    "validation",
+				Component:   compType,
+				Severity:    "warning",
+				Message:     fmt.Sprintf("Source KB (v%s) has defaults for %s, but component not found in runtime cluster", sourceVersion, compType),
+				Details:     fmt.Sprintf("Source KB contains %d parameters for %s, but no corresponding component found in cluster snapshot", len(defaults), compType),
+				Suggestions: []string{"Verify cluster topology configuration", "Check if component is actually deployed"},
 			})
+			continue
+		}
+
+		// Check 2: For each component, validate parameter correspondence
+		comp, exists := snapshot.Components[componentMapping[compType]]
+		if !exists {
+			continue
+		}
+
+		// Build runtime parameter map for O(1) lookup (avoid nested loops)
+		runtimeConfigMap := make(map[string]bool)
+		runtimeVarsMap := make(map[string]bool)
+
+		for paramName := range comp.Config {
+			runtimeConfigMap[paramName] = true
+		}
+		for varName := range comp.Variables {
+			runtimeVarsMap[varName] = true
+		}
+
+		// Check KB defaults against runtime (single loop, O(1) lookup)
+		for paramName := range defaults {
+			isSystemVar := strings.HasPrefix(paramName, "sysvar:")
+			varName := paramName
+			if isSystemVar {
+				varName = strings.TrimPrefix(paramName, "sysvar:")
+			}
+
+			if isSystemVar {
+				if !runtimeVarsMap[varName] {
+					// KB has system variable default, but runtime doesn't have it
+					results = append(results, rules.CheckResult{
+						RuleID:        "PARAMETER_MISMATCH",
+						Category:      "validation",
+						Component:     compType,
+						ParameterName: varName,
+						ParamType:     "system_variable",
+						Severity:      "warning",
+						Message:       fmt.Sprintf("Source KB (v%s) has default for system variable %s in %s, but not found in runtime", sourceVersion, varName, compType),
+						Details:       fmt.Sprintf("System variable %s exists in source KB defaults but not in runtime cluster", varName),
+						Suggestions: []string{
+							"Verify system variable name spelling",
+							"Check if variable was removed in this version",
+						},
+					})
+				}
+			} else {
+				if !runtimeConfigMap[paramName] {
+					// KB has config parameter default, but runtime doesn't have it
+					results = append(results, rules.CheckResult{
+						RuleID:        "PARAMETER_MISMATCH",
+						Category:      "validation",
+						Component:     compType,
+						ParameterName: paramName,
+						ParamType:     "config",
+						Severity:      "warning",
+						Message:       fmt.Sprintf("Source KB (v%s) has default for parameter %s in %s, but not found in runtime", sourceVersion, paramName, compType),
+						Details:       fmt.Sprintf("Parameter %s exists in source KB defaults but not in runtime cluster", paramName),
+						Suggestions: []string{
+							"Verify parameter name spelling",
+							"Check if parameter was removed in this version",
+						},
+					})
+				}
+			}
 		}
 	}
 
-	return inconsistentConfigs
+	return results
 }
 
-// generateRecommendations generates recommendations for inconsistent configurations
-func (a *Analyzer) generateRecommendations(inconsistentConfigs []InconsistentConfig) []Recommendation {
-	recommendations := []Recommendation{}
+// loadUpgradeLogic loads upgrade logic from knowledge base
+// Upgrade logic is version-agnostic and contains all historical changes with version tags
+// We prefer to load from target KB, but fallback to source KB if target doesn't have it
+// Since upgrade logic contains all historical changes, we only need to load it once
+func (a *Analyzer) loadUpgradeLogic(sourceKB, targetKB map[string]interface{}, req rules.DataSourceRequirement) map[string]interface{} {
+	upgradeLogic := make(map[string]interface{})
 
-	for _, ic := range inconsistentConfigs {
-		rec := Recommendation{
-			ParameterName:      ic.ParameterName,
-			RiskLevel:          ic.RiskLevel,
-			Description:        ic.Description,
-			AffectedComponents: []string{"cluster"}, // This could be more specific
+	// Check if any rule needs upgrade logic
+	needUpgradeLogic := req.SourceKBRequirements.NeedUpgradeLogic || req.TargetKBRequirements.NeedUpgradeLogic
+	if !needUpgradeLogic {
+		return upgradeLogic
+	}
+
+	// Get all components that need upgrade logic
+	components := mergeStringSlices(req.SourceKBRequirements.Components, req.TargetKBRequirements.Components)
+
+	// Load upgrade logic for each component
+	// Prefer target KB, fallback to source KB
+	// Since upgrade logic is the same across versions (contains all historical changes),
+	// it doesn't matter which KB we load from, but we prefer target KB
+	for _, comp := range components {
+		// Try target KB first
+		if compKB, ok := targetKB[comp].(map[string]interface{}); ok {
+			if upgrade, ok := compKB["upgrade_logic"].(map[string]interface{}); ok {
+				upgradeLogic[comp] = upgrade
+				continue
+			}
 		}
 
-		switch ic.RiskLevel {
-		case HighRisk:
-			rec.Recommendation = fmt.Sprintf("Align the value of %s across all instances to prevent potential data inconsistency or cluster instability", ic.ParameterName)
-		case MediumRisk:
-			rec.Recommendation = fmt.Sprintf("Consider aligning the value of %s across all instances for optimal performance and behavior consistency", ic.ParameterName)
-		case LowRisk:
-			rec.Recommendation = fmt.Sprintf("Parameter %s has different values across instances. This is generally acceptable but consider standardizing for easier management", ic.ParameterName)
-		}
-
-		recommendations = append(recommendations, rec)
-	}
-
-	return recommendations
-}
-
-
-// assessTiKVRisk assesses the risk level of a TiKV parameter change
-func (a *Analyzer) assessTiKVRisk(paramName string, fromValue, toValue interface{}) RiskLevel {
-	// High risk parameters
-	highRiskParams := map[string]bool{
-		"storage.reserve-space": true,
-		"raftstore.raft-entry-max-size": true,
-		"rocksdb.defaultcf.block-cache-size": true,
-	}
-
-	if highRiskParams[paramName] {
-		return HighRisk
-	}
-
-	// Medium risk parameters
-	mediumRiskParams := map[string]bool{
-		"server.grpc-concurrency": true,
-		"readpool.storage.high-concurrency": true,
-		"readpool.storage.normal-concurrency": true,
-		"readpool.storage.low-concurrency": true,
-	}
-
-	if mediumRiskParams[paramName] {
-		return MediumRisk
-	}
-
-	return LowRisk
-}
-
-// assessInconsistencyRisk assesses the risk level of a configuration inconsistency
-func (a *Analyzer) assessInconsistencyRisk(paramName string, values []ParameterValue) RiskLevel {
-	// High risk parameters
-	highRiskParams := map[string]bool{
-		"storage.reserve-space": true,
-		"raftstore.raft-entry-max-size": true,
-		"rocksdb.defaultcf.block-cache-size": true,
-		"schedule.max-store-down-time": true,
-		"schedule.leader-schedule-limit": true,
-		"schedule.region-schedule-limit": true,
-	}
-
-	if highRiskParams[paramName] {
-		return HighRisk
-	}
-
-	// Medium risk parameters
-	mediumRiskParams := map[string]bool{
-		"server.grpc-concurrency": true,
-		"readpool.storage.high-concurrency": true,
-		"readpool.storage.normal-concurrency": true,
-		"readpool.storage.low-concurrency": true,
-		"schedule.replica-schedule-limit": true,
-		"replication.max-replicas": true,
-	}
-
-	if mediumRiskParams[paramName] {
-		return MediumRisk
-	}
-
-	return LowRisk
-}
-
-// calculateSummary calculates the summary of parameter changes
-func (a *Analyzer) calculateSummary(parameters []ParameterChange) Summary {
-	summary := Summary{}
-
-	for _, param := range parameters {
-		summary.TotalChanges++
-		switch param.RiskLevel {
-		case HighRisk:
-			summary.HighRisk++
-		case MediumRisk:
-			summary.MediumRisk++
-		case LowRisk:
-			summary.LowRisk++
-		case InfoLevel:
-			summary.InfoLevel++
+		// Fallback to source KB
+		if compKB, ok := sourceKB[comp].(map[string]interface{}); ok {
+			if upgrade, ok := compKB["upgrade_logic"].(map[string]interface{}); ok {
+				upgradeLogic[comp] = upgrade
+			}
 		}
 	}
 
-	return summary
+	return upgradeLogic
+}
+
+// organizeResults organizes check results by category for reporter
+func (a *Analyzer) organizeResults(checkResults []rules.CheckResult, sourceVersion, targetVersion string) *AnalysisResult {
+	result := &AnalysisResult{
+		SourceVersion:       sourceVersion,
+		TargetVersion:       targetVersion,
+		ModifiedParams:      make(map[string]map[string]ModifiedParamInfo),
+		TikvInconsistencies: make(map[string][]InconsistentNode),
+		UpgradeDifferences:  make(map[string]map[string]UpgradeDifference),
+		ForcedChanges:       make(map[string]map[string]ForcedChange),
+		CheckResults:        checkResults,
+	}
+
+	// Organize results by category
+	for _, check := range checkResults {
+		switch check.Category {
+		case "user_modified":
+			a.addModifiedParam(result, check)
+		case "upgrade_difference":
+			if check.ForcedValue != nil {
+				a.addForcedChange(result, check)
+			} else {
+				a.addUpgradeDifference(result, check)
+			}
+		case "consistency":
+			a.addTikvInconsistency(result, check)
+		}
+	}
+
+	return result
+}
+
+// Helper functions to add results to appropriate structures
+
+func (a *Analyzer) addModifiedParam(result *AnalysisResult, check rules.CheckResult) {
+	if result.ModifiedParams[check.Component] == nil {
+		result.ModifiedParams[check.Component] = make(map[string]ModifiedParamInfo)
+	}
+	result.ModifiedParams[check.Component][check.ParameterName] = ModifiedParamInfo{
+		Component:     check.Component,
+		ParamName:     check.ParameterName,
+		CurrentValue:  check.CurrentValue,
+		SourceDefault: check.SourceDefault,
+		ParamType:     check.ParamType,
+	}
+}
+
+func (a *Analyzer) addUpgradeDifference(result *AnalysisResult, check rules.CheckResult) {
+	if result.UpgradeDifferences[check.Component] == nil {
+		result.UpgradeDifferences[check.Component] = make(map[string]UpgradeDifference)
+	}
+	result.UpgradeDifferences[check.Component][check.ParameterName] = UpgradeDifference{
+		Component:     check.Component,
+		ParamName:     check.ParameterName,
+		CurrentValue:  check.CurrentValue,
+		TargetDefault: check.TargetDefault,
+		SourceDefault: check.SourceDefault,
+		ParamType:     check.ParamType,
+	}
+}
+
+func (a *Analyzer) addForcedChange(result *AnalysisResult, check rules.CheckResult) {
+	if result.ForcedChanges[check.Component] == nil {
+		result.ForcedChanges[check.Component] = make(map[string]ForcedChange)
+	}
+	result.ForcedChanges[check.Component][check.ParameterName] = ForcedChange{
+		Component:     check.Component,
+		ParamName:     check.ParameterName,
+		CurrentValue:  check.CurrentValue,
+		ForcedValue:   check.ForcedValue,
+		SourceDefault: check.SourceDefault,
+		ParamType:     check.ParamType,
+		Summary:       check.Details,
+	}
+}
+
+func (a *Analyzer) addTikvInconsistency(result *AnalysisResult, check rules.CheckResult) {
+	// For TiKV consistency, we need to extract node information from the details
+	// The actual node information is stored in the check result's metadata or details
+	// For now, we'll store the parameter name and let reporter handle the details
+	// In a full implementation, we might need to parse the details string or use metadata
+
+	// Check if we already have this parameter
+	if _, exists := result.TikvInconsistencies[check.ParameterName]; !exists {
+		// Initialize with empty slice - the actual node details are in check.Details
+		result.TikvInconsistencies[check.ParameterName] = []InconsistentNode{}
+	}
+
+	// Note: Full node details are available in check.Details and check.Metadata
+	// Reporter will display them from the CheckResult
+}
+
+// Helper function to merge string slices without duplicates
+func mergeStringSlices(slice1, slice2 []string) []string {
+	seen := make(map[string]bool)
+	result := []string{}
+
+	for _, s := range slice1 {
+		if !seen[s] {
+			seen[s] = true
+			result = append(result, s)
+		}
+	}
+
+	for _, s := range slice2 {
+		if !seen[s] {
+			seen[s] = true
+			result = append(result, s)
+		}
+	}
+
+	return result
 }

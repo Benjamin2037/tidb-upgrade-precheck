@@ -1,0 +1,2913 @@
+{
+  "component": "tiflash",
+  "version": "v6.5.0",
+  "config_defaults": {
+    "default_profile": {
+      "value": "default",
+      "type": "string"
+    },
+    "display_name": {
+      "value": "TiFlash",
+      "type": "string"
+    },
+    "engine-store.default_profile": {
+      "value": "default",
+      "type": "string"
+    },
+    "engine-store.display_name": {
+      "value": "TiFlash",
+      "type": "string"
+    },
+    "engine-store.flash.flash_cluster.cluster_manager_path": {
+      "value": "/Users/benjamin2037/.tiup/components/tiflash/v6.5.0/tiflash/flash_cluster_manager",
+      "type": "string"
+    },
+    "engine-store.flash.flash_cluster.log": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.0-1765242670/tiflash-0/log/tiflash_cluster_manager.log",
+      "type": "string"
+    },
+    "engine-store.flash.flash_cluster.master_ttl": {
+      "value": 60,
+      "type": "float"
+    },
+    "engine-store.flash.flash_cluster.refresh_interval": {
+      "value": 20,
+      "type": "float"
+    },
+    "engine-store.flash.flash_cluster.update_rule_interval": {
+      "value": 5,
+      "type": "float"
+    },
+    "engine-store.flash.proxy.config": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.0-1765242670/tiflash-0/tiflash-learner.toml",
+      "type": "string"
+    },
+    "engine-store.flash.service_addr": {
+      "value": "127.0.0.1:3930",
+      "type": "string"
+    },
+    "engine-store.flash.tidb_status_addr": {
+      "value": "127.0.0.1:10080",
+      "type": "string"
+    },
+    "engine-store.http_port": {
+      "value": 8123,
+      "type": "float"
+    },
+    "engine-store.listen_host": {
+      "value": "0.0.0.0",
+      "type": "string"
+    },
+    "engine-store.logger.count": {
+      "value": 20,
+      "type": "float"
+    },
+    "engine-store.logger.errorlog": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.0-1765242670/tiflash-0/log/tiflash_error.log",
+      "type": "string"
+    },
+    "engine-store.logger.level": {
+      "value": "debug",
+      "type": "string"
+    },
+    "engine-store.logger.log": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.0-1765242670/tiflash-0/log/tiflash.log",
+      "type": "string"
+    },
+    "engine-store.logger.size": {
+      "value": "1000M",
+      "type": "string"
+    },
+    "engine-store.path": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.0-1765242670/tiflash-0/data",
+      "type": "string"
+    },
+    "engine-store.profiles.default.load_balancing": {
+      "value": "random",
+      "type": "string"
+    },
+    "engine-store.profiles.default.max_memory_usage": {
+      "value": 0,
+      "type": "float"
+    },
+    "engine-store.profiles.default.use_uncompressed_cache": {
+      "value": 0,
+      "type": "float"
+    },
+    "engine-store.profiles.readonly.readonly": {
+      "value": 1,
+      "type": "float"
+    },
+    "engine-store.quotas.default.interval.duration": {
+      "value": 3600,
+      "type": "float"
+    },
+    "engine-store.quotas.default.interval.errors": {
+      "value": 0,
+      "type": "float"
+    },
+    "engine-store.quotas.default.interval.execution_time": {
+      "value": 0,
+      "type": "float"
+    },
+    "engine-store.quotas.default.interval.queries": {
+      "value": 0,
+      "type": "float"
+    },
+    "engine-store.quotas.default.interval.read_rows": {
+      "value": 0,
+      "type": "float"
+    },
+    "engine-store.quotas.default.interval.result_rows": {
+      "value": 0,
+      "type": "float"
+    },
+    "engine-store.raft.pd_addr": {
+      "value": "127.0.0.1:2379",
+      "type": "string"
+    },
+    "engine-store.status.metrics_port": {
+      "value": 8234,
+      "type": "float"
+    },
+    "engine-store.tcp_port": {
+      "value": 9100,
+      "type": "float"
+    },
+    "engine-store.tmp_path": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.0-1765242670/tiflash-0/tmp",
+      "type": "string"
+    },
+    "engine-store.users.default.networks.ip": {
+      "value": "::/0",
+      "type": "string"
+    },
+    "engine-store.users.default.password": {
+      "value": "",
+      "type": "string"
+    },
+    "engine-store.users.default.profile": {
+      "value": "default",
+      "type": "string"
+    },
+    "engine-store.users.default.quota": {
+      "value": "default",
+      "type": "string"
+    },
+    "engine-store.users.readonly.networks.ip": {
+      "value": "::/0",
+      "type": "string"
+    },
+    "engine-store.users.readonly.password": {
+      "value": "",
+      "type": "string"
+    },
+    "engine-store.users.readonly.profile": {
+      "value": "readonly",
+      "type": "string"
+    },
+    "engine-store.users.readonly.quota": {
+      "value": "default",
+      "type": "string"
+    },
+    "flash.flash_cluster.cluster_manager_path": {
+      "value": "/Users/benjamin2037/.tiup/components/tiflash/v6.5.0/tiflash/flash_cluster_manager",
+      "type": "string"
+    },
+    "flash.flash_cluster.log": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.0-1765242670/tiflash-0/log/tiflash_cluster_manager.log",
+      "type": "string"
+    },
+    "flash.flash_cluster.master_ttl": {
+      "value": 60,
+      "type": "int"
+    },
+    "flash.flash_cluster.refresh_interval": {
+      "value": 20,
+      "type": "int"
+    },
+    "flash.flash_cluster.update_rule_interval": {
+      "value": 5,
+      "type": "int"
+    },
+    "flash.proxy.config": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.0-1765242670/tiflash-0/tiflash-learner.toml",
+      "type": "string"
+    },
+    "flash.service_addr": {
+      "value": "127.0.0.1:3930",
+      "type": "string"
+    },
+    "flash.tidb_status_addr": {
+      "value": "127.0.0.1:10080",
+      "type": "string"
+    },
+    "http_port": {
+      "value": 8123,
+      "type": "int"
+    },
+    "listen_host": {
+      "value": "0.0.0.0",
+      "type": "string"
+    },
+    "logger.count": {
+      "value": 20,
+      "type": "int"
+    },
+    "logger.errorlog": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.0-1765242670/tiflash-0/log/tiflash_error.log",
+      "type": "string"
+    },
+    "logger.level": {
+      "value": "debug",
+      "type": "string"
+    },
+    "logger.log": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.0-1765242670/tiflash-0/log/tiflash.log",
+      "type": "string"
+    },
+    "logger.size": {
+      "value": "1000M",
+      "type": "string"
+    },
+    "path": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.0-1765242670/tiflash-0/data",
+      "type": "string"
+    },
+    "profiles.default.load_balancing": {
+      "value": "random",
+      "type": "string"
+    },
+    "profiles.default.max_memory_usage": {
+      "value": 0,
+      "type": "int"
+    },
+    "profiles.default.use_uncompressed_cache": {
+      "value": 0,
+      "type": "int"
+    },
+    "profiles.readonly.readonly": {
+      "value": 1,
+      "type": "int"
+    },
+    "quotas.default.interval.duration": {
+      "value": 3600,
+      "type": "int"
+    },
+    "quotas.default.interval.errors": {
+      "value": 0,
+      "type": "int"
+    },
+    "quotas.default.interval.execution_time": {
+      "value": 0,
+      "type": "int"
+    },
+    "quotas.default.interval.queries": {
+      "value": 0,
+      "type": "int"
+    },
+    "quotas.default.interval.read_rows": {
+      "value": 0,
+      "type": "int"
+    },
+    "quotas.default.interval.result_rows": {
+      "value": 0,
+      "type": "int"
+    },
+    "raft.pd_addr": {
+      "value": "127.0.0.1:2379",
+      "type": "string"
+    },
+    "raftstore-proxy.abort-on-panic": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.backup.auto-tune-refresh-interval": {
+      "value": "1m",
+      "type": "string"
+    },
+    "raftstore-proxy.backup.auto-tune-remain-threads": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore-proxy.backup.batch-size": {
+      "value": 8,
+      "type": "float"
+    },
+    "raftstore-proxy.backup.enable-auto-tune": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.backup.hadoop.home": {
+      "value": "",
+      "type": "string"
+    },
+    "raftstore-proxy.backup.hadoop.linux-user": {
+      "value": "",
+      "type": "string"
+    },
+    "raftstore-proxy.backup.io-thread-size": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore-proxy.backup.num-threads": {
+      "value": 6,
+      "type": "float"
+    },
+    "raftstore-proxy.backup.s3-multi-part-size": {
+      "value": "5MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.backup.sst-max-size": {
+      "value": "144MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.causal-ts.alloc-ahead-buffer": {
+      "value": "3s",
+      "type": "string"
+    },
+    "raftstore-proxy.causal-ts.renew-batch-max-size": {
+      "value": 8192,
+      "type": "float"
+    },
+    "raftstore-proxy.causal-ts.renew-batch-min-size": {
+      "value": 100,
+      "type": "float"
+    },
+    "raftstore-proxy.causal-ts.renew-interval": {
+      "value": "100ms",
+      "type": "string"
+    },
+    "raftstore-proxy.cdc.hibernate-regions-compatible": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.cdc.incremental-scan-concurrency": {
+      "value": 6,
+      "type": "float"
+    },
+    "raftstore-proxy.cdc.incremental-scan-speed-limit": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.cdc.incremental-scan-threads": {
+      "value": 4,
+      "type": "float"
+    },
+    "raftstore-proxy.cdc.incremental-scan-ts-filter-ratio": {
+      "value": 0.2,
+      "type": "float"
+    },
+    "raftstore-proxy.cdc.min-ts-interval": {
+      "value": "200ms",
+      "type": "string"
+    },
+    "raftstore-proxy.cdc.old-value-cache-memory-quota": {
+      "value": "512MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.cdc.sink-memory-quota": {
+      "value": "512MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.cdc.tso-worker-threads": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftstore-proxy.coprocessor-v2.coprocessor-plugin-directory": {
+      "value": null,
+      "type": "string"
+    },
+    "raftstore-proxy.coprocessor.batch-split-limit": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftstore-proxy.coprocessor.consistency-check-method": {
+      "value": "mvcc",
+      "type": "string"
+    },
+    "raftstore-proxy.coprocessor.enable-region-bucket": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.coprocessor.prefer-approximate-bucket": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.coprocessor.region-bucket-merge-size-ratio": {
+      "value": 0.33,
+      "type": "float"
+    },
+    "raftstore-proxy.coprocessor.region-bucket-size": {
+      "value": "96MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.coprocessor.region-max-keys": {
+      "value": 1440000,
+      "type": "float"
+    },
+    "raftstore-proxy.coprocessor.region-max-size": {
+      "value": "144MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.coprocessor.region-size-threshold-for-approximate": {
+      "value": "1440MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.coprocessor.region-split-keys": {
+      "value": 960000,
+      "type": "float"
+    },
+    "raftstore-proxy.coprocessor.region-split-size": {
+      "value": "96MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.coprocessor.split-region-on-table": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.gc.batch-keys": {
+      "value": 512,
+      "type": "float"
+    },
+    "raftstore-proxy.gc.compaction-filter-skip-version-check": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.gc.enable-compaction-filter": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.gc.max-write-bytes-per-sec": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.gc.ratio-threshold": {
+      "value": 1.1,
+      "type": "float"
+    },
+    "raftstore-proxy.import.import-mode-timeout": {
+      "value": "10m",
+      "type": "string"
+    },
+    "raftstore-proxy.import.num-threads": {
+      "value": 4,
+      "type": "float"
+    },
+    "raftstore-proxy.import.stream-channel-window": {
+      "value": 128,
+      "type": "float"
+    },
+    "raftstore-proxy.log-backup.enable": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.log-backup.file-size-limit": {
+      "value": "256MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.log-backup.initial-scan-pending-memory-quota": {
+      "value": "512MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.log-backup.initial-scan-rate-limit": {
+      "value": "60MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.log-backup.max-flush-interval": {
+      "value": "3m",
+      "type": "string"
+    },
+    "raftstore-proxy.log-backup.num-threads": {
+      "value": 6,
+      "type": "float"
+    },
+    "raftstore-proxy.log-backup.temp-path": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.0-1765242670/tiflash-0/flash/log-backup-temp",
+      "type": "string"
+    },
+    "raftstore-proxy.log-file": {
+      "value": "",
+      "type": "string"
+    },
+    "raftstore-proxy.log-format": {
+      "value": "text",
+      "type": "string"
+    },
+    "raftstore-proxy.log-level": {
+      "value": "info",
+      "type": "string"
+    },
+    "raftstore-proxy.log-rotation-size": {
+      "value": "300MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.log-rotation-timespan": {
+      "value": "0s",
+      "type": "string"
+    },
+    "raftstore-proxy.log.enable-timestamp": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.log.file.filename": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.0-1765242670/tiflash-0/log/tiflash_tikv.log",
+      "type": "string"
+    },
+    "raftstore-proxy.log.file.max-backups": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.log.file.max-days": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.log.file.max-size": {
+      "value": 300,
+      "type": "float"
+    },
+    "raftstore-proxy.log.format": {
+      "value": "text",
+      "type": "string"
+    },
+    "raftstore-proxy.log.level": {
+      "value": "info",
+      "type": "string"
+    },
+    "raftstore-proxy.memory-usage-high-water": {
+      "value": 0.9,
+      "type": "float"
+    },
+    "raftstore-proxy.memory-usage-limit": {
+      "value": "5068117333B",
+      "type": "string"
+    },
+    "raftstore-proxy.pd.enable-forwarding": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.pd.endpoints": {
+      "value": [
+        "127.0.0.1:2379"
+      ],
+      "type": "string"
+    },
+    "raftstore-proxy.pd.retry-interval": {
+      "value": "300ms",
+      "type": "string"
+    },
+    "raftstore-proxy.pd.retry-log-every": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftstore-proxy.pd.retry-max-count": {
+      "value": 9223372036854776000,
+      "type": "float"
+    },
+    "raftstore-proxy.pd.update-interval": {
+      "value": "10m",
+      "type": "string"
+    },
+    "raftstore-proxy.pessimistic-txn.in-memory": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.pessimistic-txn.pipelined": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.pessimistic-txn.wait-for-lock-timeout": {
+      "value": "1s",
+      "type": "string"
+    },
+    "raftstore-proxy.pessimistic-txn.wake-up-delay-duration": {
+      "value": "20ms",
+      "type": "string"
+    },
+    "raftstore-proxy.quota.background-cpu-time": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.quota.background-read-bandwidth": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.quota.background-write-bandwidth": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.quota.enable-auto-tune": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.quota.foreground-cpu-time": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.quota.foreground-read-bandwidth": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.quota.foreground-write-bandwidth": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.quota.max-delay-duration": {
+      "value": "500ms",
+      "type": "string"
+    },
+    "raftstore-proxy.raft-engine.batch-compression-threshold": {
+      "value": "8KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raft-engine.bytes-per-sync": {
+      "value": null,
+      "type": "string"
+    },
+    "raftstore-proxy.raft-engine.dir": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.0-1765242670/tiflash-0/flash/raft-engine",
+      "type": "string"
+    },
+    "raftstore-proxy.raft-engine.enable": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.raft-engine.enable-log-recycle": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.raft-engine.format-version": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore-proxy.raft-engine.memory-limit": {
+      "value": 7916483635,
+      "type": "float"
+    },
+    "raftstore-proxy.raft-engine.purge-rewrite-garbage-ratio": {
+      "value": 0.6,
+      "type": "float"
+    },
+    "raftstore-proxy.raft-engine.purge-rewrite-threshold": {
+      "value": "1GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raft-engine.purge-threshold": {
+      "value": "10GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raft-engine.recovery-mode": {
+      "value": "tolerate-corrupted-tail-records",
+      "type": "string"
+    },
+    "raftstore-proxy.raft-engine.recovery-read-block-size": {
+      "value": "16KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raft-engine.recovery-threads": {
+      "value": 4,
+      "type": "float"
+    },
+    "raftstore-proxy.raft-engine.target-file-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.allow-concurrent-memtable-write": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.bytes-per-sync": {
+      "value": "1MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.compaction-readahead-size": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.create-if-missing": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.defaultcf.block-based-bloom-filter": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.defaultcf.block-cache-size": {
+      "value": "2516MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.block-size": {
+      "value": "64KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.bloom-filter-bits-per-key": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.defaultcf.bottommost-level-compression": {
+      "value": "disable",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.bottommost-zstd-compression-dict-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.defaultcf.bottommost-zstd-compression-sample-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.defaultcf.cache-index-and-filter-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.defaultcf.checksum": {
+      "value": "crc32c",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.compaction-guard-max-output-file-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.compaction-guard-min-output-file-size": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.compaction-pri": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.defaultcf.compaction-style": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.defaultcf.compression-per-level": {
+      "value": [
+        "no",
+        "no",
+        "lz4",
+        "lz4",
+        "lz4",
+        "zstd",
+        "zstd"
+      ],
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.disable-auto-compactions": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.defaultcf.disable-block-cache": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.defaultcf.disable-write-stall": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.defaultcf.dynamic-level-bytes": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.defaultcf.enable-compaction-guard": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.defaultcf.enable-doubly-skiplist": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.defaultcf.force-consistency-checks": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.defaultcf.format-version": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.defaultcf.hard-pending-compaction-bytes-limit": {
+      "value": "1TiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.level0-file-num-compaction-trigger": {
+      "value": 4,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.defaultcf.level0-slowdown-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.defaultcf.level0-stop-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.defaultcf.max-bytes-for-level-base": {
+      "value": "512MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.max-bytes-for-level-multiplier": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.defaultcf.max-compaction-bytes": {
+      "value": "2GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.max-write-buffer-number": {
+      "value": 5,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.defaultcf.min-write-buffer-number-to-merge": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.defaultcf.num-levels": {
+      "value": 7,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.defaultcf.optimize-filters-for-hits": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.defaultcf.pin-l0-filter-and-index-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.defaultcf.prepopulate-block-cache": {
+      "value": "disabled",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.prop-keys-index-distance": {
+      "value": 40960,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.defaultcf.prop-size-index-distance": {
+      "value": 4194304,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.defaultcf.read-amp-bytes-per-bit": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.defaultcf.soft-pending-compaction-bytes-limit": {
+      "value": "192GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.target-file-size-base": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.titan.blob-cache-size": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.titan.blob-file-compression": {
+      "value": "lz4",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.titan.blob-run-mode": {
+      "value": "normal",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.titan.discardable-ratio": {
+      "value": 0.5,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.defaultcf.titan.level-merge": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.defaultcf.titan.max-gc-batch-size": {
+      "value": "64MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.titan.max-sorted-runs": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.defaultcf.titan.merge-small-file-threshold": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.titan.min-blob-size": {
+      "value": "1KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.titan.min-gc-batch-size": {
+      "value": "16MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.defaultcf.titan.range-merge": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.defaultcf.use-bloom-filter": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.defaultcf.whole-key-filtering": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.defaultcf.write-buffer-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.enable-pipelined-write": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.enable-statistics": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.enable-unordered-write": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.info-log-dir": {
+      "value": "",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.info-log-keep-log-file-num": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.info-log-level": {
+      "value": "info",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.info-log-max-size": {
+      "value": "1GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.info-log-roll-time": {
+      "value": "0s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.max-background-flushes": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.max-background-jobs": {
+      "value": 4,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.max-manifest-file-size": {
+      "value": "20MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.max-open-files": {
+      "value": 256,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.max-sub-compactions": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.max-total-wal-size": {
+      "value": "4GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.stats-dump-period": {
+      "value": "10m",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.titan.dirname": {
+      "value": "",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.titan.disable-gc": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.titan.enabled": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.titan.max-background-gc": {
+      "value": 4,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.titan.purge-obsolete-files-period": {
+      "value": "10s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.use-direct-io-for-flush-and-compaction": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftdb.wal-bytes-per-sync": {
+      "value": "512KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.wal-dir": {
+      "value": "",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.wal-recovery-mode": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.wal-size-limit": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftdb.wal-ttl-seconds": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.raftdb.writable-file-max-buffer-size": {
+      "value": "1MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.abnormal-leader-missing-duration": {
+      "value": "10m",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.apply-low-priority-pool-size": {
+      "value": 3,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.apply-max-batch-size": {
+      "value": 256,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.apply-pool-size": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.apply-reschedule-duration": {
+      "value": "5s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.apply-yield-write-size": {
+      "value": "32KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.capacity": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.check-leader-lease-interval": {
+      "value": "2s250ms",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.check-long-uncommitted-interval": {
+      "value": "10s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.clean-stale-ranges-tick": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.cleanup-import-sst-interval": {
+      "value": "10m",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.cmd-batch": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftstore.cmd-batch-concurrent-ready-max-count": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.consistency-check-interval": {
+      "value": "0s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.evict-cache-on-memory-ratio": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.future-poll-size": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.hibernate-regions": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftstore.inspect-interval": {
+      "value": "500ms",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.io-reschedule-concurrent-max-count": {
+      "value": 4,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.io-reschedule-hotpot-duration": {
+      "value": "5s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.local-read-batch-size": {
+      "value": 1024,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.lock-cf-compact-bytes-threshold": {
+      "value": "256MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.lock-cf-compact-interval": {
+      "value": "10m",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.long-uncommitted-base-threshold": {
+      "value": "20s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.max-entry-cache-warmup-duration": {
+      "value": "1s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.max-leader-missing-duration": {
+      "value": "2h",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.max-peer-down-duration": {
+      "value": "10m",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.max-snapshot-file-raw-size": {
+      "value": "100MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.merge-check-tick-interval": {
+      "value": "2s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.messages-per-tick": {
+      "value": 4096,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.notify-capacity": {
+      "value": 40960,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.pd-heartbeat-tick-interval": {
+      "value": "1m",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.pd-store-heartbeat-tick-interval": {
+      "value": "10s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.peer-stale-state-check-interval": {
+      "value": "5m",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.perf-level": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.prevote": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.raftstore.raft-engine-purge-interval": {
+      "value": "10s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.raft-entry-cache-life-time": {
+      "value": "30s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.raft-entry-max-size": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.raft-log-compact-sync-interval": {
+      "value": "2s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.raft-log-gc-count-limit": {
+      "value": 73728,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.raft-log-gc-size-limit": {
+      "value": "72MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.raft-log-gc-threshold": {
+      "value": 50,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.raft-log-gc-tick-interval": {
+      "value": "3s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.raft-max-inflight-msgs": {
+      "value": 256,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.raft-max-size-per-msg": {
+      "value": "1MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.raft-store-max-leader-lease": {
+      "value": "9s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.raft-write-size-limit": {
+      "value": "1MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.raftdb-path": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.0-1765242670/tiflash-0/flash/raft",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.reactive-memory-lock-tick-interval": {
+      "value": "2s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.reactive-memory-lock-timeout-tick": {
+      "value": 5,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.region-compact-check-interval": {
+      "value": "5m",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.region-compact-check-step": {
+      "value": 100,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.region-compact-min-tombstones": {
+      "value": 10000,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.region-compact-tombstones-percent": {
+      "value": 30,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.region-split-check-diff": {
+      "value": "6MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.region-worker-tick-interval": {
+      "value": "500ms",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.renew-leader-lease-advance-duration": {
+      "value": "2s250ms",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.report-min-resolved-ts-interval": {
+      "value": "1s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.report-region-buckets-tick-interval": {
+      "value": "10s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.snap-apply-batch-size": {
+      "value": "10MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.snap-gc-timeout": {
+      "value": "4h",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.snap-generator-pool-size": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.snap-mgr-gc-tick-interval": {
+      "value": "1m",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.split-region-check-tick-interval": {
+      "value": "10s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.store-io-notify-capacity": {
+      "value": 40960,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.store-io-pool-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.store-low-priority-pool-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.store-max-batch-size": {
+      "value": 256,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.store-pool-size": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore-proxy.raftstore.store-reschedule-duration": {
+      "value": "5s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.unreachable-backoff": {
+      "value": "10s",
+      "type": "string"
+    },
+    "raftstore-proxy.raftstore.waterfall-metrics": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.readpool.coprocessor.high-concurrency": {
+      "value": 9,
+      "type": "float"
+    },
+    "raftstore-proxy.readpool.coprocessor.low-concurrency": {
+      "value": 9,
+      "type": "float"
+    },
+    "raftstore-proxy.readpool.coprocessor.max-tasks-per-worker-high": {
+      "value": 2000,
+      "type": "float"
+    },
+    "raftstore-proxy.readpool.coprocessor.max-tasks-per-worker-low": {
+      "value": 2000,
+      "type": "float"
+    },
+    "raftstore-proxy.readpool.coprocessor.max-tasks-per-worker-normal": {
+      "value": 2000,
+      "type": "float"
+    },
+    "raftstore-proxy.readpool.coprocessor.normal-concurrency": {
+      "value": 9,
+      "type": "float"
+    },
+    "raftstore-proxy.readpool.coprocessor.stack-size": {
+      "value": "10MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.readpool.coprocessor.use-unified-pool": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.readpool.storage.high-concurrency": {
+      "value": 6,
+      "type": "float"
+    },
+    "raftstore-proxy.readpool.storage.low-concurrency": {
+      "value": 6,
+      "type": "float"
+    },
+    "raftstore-proxy.readpool.storage.max-tasks-per-worker-high": {
+      "value": 2000,
+      "type": "float"
+    },
+    "raftstore-proxy.readpool.storage.max-tasks-per-worker-low": {
+      "value": 2000,
+      "type": "float"
+    },
+    "raftstore-proxy.readpool.storage.max-tasks-per-worker-normal": {
+      "value": 2000,
+      "type": "float"
+    },
+    "raftstore-proxy.readpool.storage.normal-concurrency": {
+      "value": 6,
+      "type": "float"
+    },
+    "raftstore-proxy.readpool.storage.stack-size": {
+      "value": "10MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.readpool.storage.use-unified-pool": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.readpool.unified.auto-adjust-pool-size": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.readpool.unified.max-tasks-per-worker": {
+      "value": 2000,
+      "type": "float"
+    },
+    "raftstore-proxy.readpool.unified.max-thread-count": {
+      "value": 4,
+      "type": "float"
+    },
+    "raftstore-proxy.readpool.unified.min-thread-count": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftstore-proxy.readpool.unified.stack-size": {
+      "value": "10MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.resolved-ts.advance-ts-interval": {
+      "value": "1s",
+      "type": "string"
+    },
+    "raftstore-proxy.resolved-ts.enable": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.resolved-ts.scan-lock-pool-size": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore-proxy.resource-metering.max-resource-groups": {
+      "value": 100,
+      "type": "float"
+    },
+    "raftstore-proxy.resource-metering.precision": {
+      "value": "1s",
+      "type": "string"
+    },
+    "raftstore-proxy.resource-metering.receiver-address": {
+      "value": "",
+      "type": "string"
+    },
+    "raftstore-proxy.resource-metering.report-receiver-interval": {
+      "value": "1m",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.bytes-per-sync": {
+      "value": "1MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.compaction-readahead-size": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.create-if-missing": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.block-based-bloom-filter": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.block-cache-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.block-size": {
+      "value": "64KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.bloom-filter-bits-per-key": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.bottommost-level-compression": {
+      "value": "zstd",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.bottommost-zstd-compression-dict-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.bottommost-zstd-compression-sample-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.cache-index-and-filter-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.checksum": {
+      "value": "crc32c",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.compaction-guard-max-output-file-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.compaction-guard-min-output-file-size": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.compaction-pri": {
+      "value": 3,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.compaction-style": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.compression-per-level": {
+      "value": [
+        "no",
+        "no",
+        "lz4",
+        "lz4",
+        "lz4",
+        "zstd",
+        "zstd"
+      ],
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.disable-auto-compactions": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.disable-block-cache": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.disable-write-stall": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.dynamic-level-bytes": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.enable-compaction-guard": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.enable-doubly-skiplist": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.force-consistency-checks": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.format-version": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.hard-pending-compaction-bytes-limit": {
+      "value": "1TiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.level0-file-num-compaction-trigger": {
+      "value": 4,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.level0-slowdown-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.level0-stop-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.max-bytes-for-level-base": {
+      "value": "512MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.max-bytes-for-level-multiplier": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.max-compaction-bytes": {
+      "value": "2GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.max-write-buffer-number": {
+      "value": 5,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.min-write-buffer-number-to-merge": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.num-levels": {
+      "value": 7,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.optimize-filters-for-hits": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.pin-l0-filter-and-index-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.prepopulate-block-cache": {
+      "value": "disabled",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.prop-keys-index-distance": {
+      "value": 40960,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.prop-size-index-distance": {
+      "value": 4194304,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.read-amp-bytes-per-bit": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.soft-pending-compaction-bytes-limit": {
+      "value": "192GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.target-file-size-base": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.titan.blob-cache-size": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.titan.blob-file-compression": {
+      "value": "lz4",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.titan.blob-run-mode": {
+      "value": "normal",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.titan.discardable-ratio": {
+      "value": 0.5,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.titan.level-merge": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.titan.max-gc-batch-size": {
+      "value": "64MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.titan.max-sorted-runs": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.titan.merge-small-file-threshold": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.titan.min-blob-size": {
+      "value": "1KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.titan.min-gc-batch-size": {
+      "value": "16MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.titan.range-merge": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.use-bloom-filter": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.whole-key-filtering": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.defaultcf.write-buffer-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.enable-pipelined-write": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.enable-statistics": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.enable-unordered-write": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.info-log-dir": {
+      "value": "",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.info-log-keep-log-file-num": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.info-log-level": {
+      "value": "info",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.info-log-max-size": {
+      "value": "1GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.info-log-roll-time": {
+      "value": "0s",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.block-based-bloom-filter": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.lockcf.block-cache-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.block-size": {
+      "value": "16KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.bloom-filter-bits-per-key": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.lockcf.bottommost-level-compression": {
+      "value": "disable",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.bottommost-zstd-compression-dict-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.lockcf.bottommost-zstd-compression-sample-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.lockcf.cache-index-and-filter-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.lockcf.checksum": {
+      "value": "crc32c",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.compaction-guard-max-output-file-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.compaction-guard-min-output-file-size": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.compaction-pri": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.lockcf.compaction-style": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.lockcf.compression-per-level": {
+      "value": [
+        "no",
+        "no",
+        "no",
+        "no",
+        "no",
+        "no",
+        "no"
+      ],
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.disable-auto-compactions": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.lockcf.disable-block-cache": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.lockcf.disable-write-stall": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.lockcf.dynamic-level-bytes": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.lockcf.enable-compaction-guard": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.lockcf.enable-doubly-skiplist": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.lockcf.force-consistency-checks": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.lockcf.format-version": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.lockcf.hard-pending-compaction-bytes-limit": {
+      "value": "1TiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.level0-file-num-compaction-trigger": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.lockcf.level0-slowdown-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.lockcf.level0-stop-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.lockcf.max-bytes-for-level-base": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.max-bytes-for-level-multiplier": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.lockcf.max-compaction-bytes": {
+      "value": "2GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.max-write-buffer-number": {
+      "value": 5,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.lockcf.min-write-buffer-number-to-merge": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.lockcf.num-levels": {
+      "value": 7,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.lockcf.optimize-filters-for-hits": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.lockcf.pin-l0-filter-and-index-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.lockcf.prepopulate-block-cache": {
+      "value": "disabled",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.prop-keys-index-distance": {
+      "value": 40960,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.lockcf.prop-size-index-distance": {
+      "value": 4194304,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.lockcf.read-amp-bytes-per-bit": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.lockcf.soft-pending-compaction-bytes-limit": {
+      "value": "192GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.target-file-size-base": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.titan.blob-cache-size": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.titan.blob-file-compression": {
+      "value": "lz4",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.titan.blob-run-mode": {
+      "value": "read-only",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.titan.discardable-ratio": {
+      "value": 0.5,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.lockcf.titan.level-merge": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.lockcf.titan.max-gc-batch-size": {
+      "value": "64MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.titan.max-sorted-runs": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.lockcf.titan.merge-small-file-threshold": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.titan.min-blob-size": {
+      "value": "1KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.titan.min-gc-batch-size": {
+      "value": "16MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.lockcf.titan.range-merge": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.lockcf.use-bloom-filter": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.lockcf.whole-key-filtering": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.lockcf.write-buffer-size": {
+      "value": "32MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.max-background-flushes": {
+      "value": 3,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.max-background-jobs": {
+      "value": 9,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.max-manifest-file-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.max-open-files": {
+      "value": 256,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.max-sub-compactions": {
+      "value": 3,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.max-total-wal-size": {
+      "value": "4GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.block-based-bloom-filter": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.raftcf.block-cache-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.block-size": {
+      "value": "16KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.bloom-filter-bits-per-key": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.raftcf.bottommost-level-compression": {
+      "value": "disable",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.bottommost-zstd-compression-dict-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.raftcf.bottommost-zstd-compression-sample-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.raftcf.cache-index-and-filter-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.raftcf.checksum": {
+      "value": "crc32c",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.compaction-guard-max-output-file-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.compaction-guard-min-output-file-size": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.compaction-pri": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.raftcf.compaction-style": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.raftcf.compression-per-level": {
+      "value": [
+        "no",
+        "no",
+        "no",
+        "no",
+        "no",
+        "no",
+        "no"
+      ],
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.disable-auto-compactions": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.raftcf.disable-block-cache": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.raftcf.disable-write-stall": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.raftcf.dynamic-level-bytes": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.raftcf.enable-compaction-guard": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.raftcf.enable-doubly-skiplist": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.raftcf.force-consistency-checks": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.raftcf.format-version": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.raftcf.hard-pending-compaction-bytes-limit": {
+      "value": "1TiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.level0-file-num-compaction-trigger": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.raftcf.level0-slowdown-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.raftcf.level0-stop-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.raftcf.max-bytes-for-level-base": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.max-bytes-for-level-multiplier": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.raftcf.max-compaction-bytes": {
+      "value": "2GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.max-write-buffer-number": {
+      "value": 5,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.raftcf.min-write-buffer-number-to-merge": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.raftcf.num-levels": {
+      "value": 7,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.raftcf.optimize-filters-for-hits": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.raftcf.pin-l0-filter-and-index-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.raftcf.prepopulate-block-cache": {
+      "value": "disabled",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.prop-keys-index-distance": {
+      "value": 40960,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.raftcf.prop-size-index-distance": {
+      "value": 4194304,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.raftcf.read-amp-bytes-per-bit": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.raftcf.soft-pending-compaction-bytes-limit": {
+      "value": "192GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.target-file-size-base": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.titan.blob-cache-size": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.titan.blob-file-compression": {
+      "value": "lz4",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.titan.blob-run-mode": {
+      "value": "read-only",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.titan.discardable-ratio": {
+      "value": 0.5,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.raftcf.titan.level-merge": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.raftcf.titan.max-gc-batch-size": {
+      "value": "64MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.titan.max-sorted-runs": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.raftcf.titan.merge-small-file-threshold": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.titan.min-blob-size": {
+      "value": "1KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.titan.min-gc-batch-size": {
+      "value": "16MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.raftcf.titan.range-merge": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.raftcf.use-bloom-filter": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.raftcf.whole-key-filtering": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.raftcf.write-buffer-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.rate-bytes-per-sec": {
+      "value": "10GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.rate-limiter-auto-tuned": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.rate-limiter-mode": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.rate-limiter-refill-period": {
+      "value": "100ms",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.stats-dump-period": {
+      "value": "10m",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.titan.dirname": {
+      "value": "",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.titan.disable-gc": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.titan.enabled": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.titan.max-background-gc": {
+      "value": 4,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.titan.purge-obsolete-files-period": {
+      "value": "10s",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.use-direct-io-for-flush-and-compaction": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.wal-bytes-per-sync": {
+      "value": "512KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.wal-dir": {
+      "value": "",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.wal-recovery-mode": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.wal-size-limit": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.wal-ttl-seconds": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writable-file-max-buffer-size": {
+      "value": "1MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.block-based-bloom-filter": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.writecf.block-cache-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.block-size": {
+      "value": "64KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.bloom-filter-bits-per-key": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writecf.bottommost-level-compression": {
+      "value": "zstd",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.bottommost-zstd-compression-dict-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writecf.bottommost-zstd-compression-sample-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writecf.cache-index-and-filter-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.writecf.checksum": {
+      "value": "crc32c",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.compaction-guard-max-output-file-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.compaction-guard-min-output-file-size": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.compaction-pri": {
+      "value": 3,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writecf.compaction-style": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writecf.compression-per-level": {
+      "value": [
+        "no",
+        "no",
+        "lz4",
+        "lz4",
+        "lz4",
+        "zstd",
+        "zstd"
+      ],
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.disable-auto-compactions": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.writecf.disable-block-cache": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.writecf.disable-write-stall": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.writecf.dynamic-level-bytes": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.writecf.enable-compaction-guard": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.writecf.enable-doubly-skiplist": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.writecf.force-consistency-checks": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.writecf.format-version": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writecf.hard-pending-compaction-bytes-limit": {
+      "value": "1TiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.level0-file-num-compaction-trigger": {
+      "value": 4,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writecf.level0-slowdown-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writecf.level0-stop-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writecf.max-bytes-for-level-base": {
+      "value": "512MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.max-bytes-for-level-multiplier": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writecf.max-compaction-bytes": {
+      "value": "2GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.max-write-buffer-number": {
+      "value": 5,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writecf.min-write-buffer-number-to-merge": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writecf.num-levels": {
+      "value": 7,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writecf.optimize-filters-for-hits": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.writecf.pin-l0-filter-and-index-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.writecf.prepopulate-block-cache": {
+      "value": "disabled",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.prop-keys-index-distance": {
+      "value": 40960,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writecf.prop-size-index-distance": {
+      "value": 4194304,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writecf.read-amp-bytes-per-bit": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writecf.soft-pending-compaction-bytes-limit": {
+      "value": "192GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.target-file-size-base": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.titan.blob-cache-size": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.titan.blob-file-compression": {
+      "value": "lz4",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.titan.blob-run-mode": {
+      "value": "read-only",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.titan.discardable-ratio": {
+      "value": 0.5,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writecf.titan.level-merge": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.writecf.titan.max-gc-batch-size": {
+      "value": "64MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.titan.max-sorted-runs": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftstore-proxy.rocksdb.writecf.titan.merge-small-file-threshold": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.titan.min-blob-size": {
+      "value": "1KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.titan.min-gc-batch-size": {
+      "value": "16MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.rocksdb.writecf.titan.range-merge": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.writecf.use-bloom-filter": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.writecf.whole-key-filtering": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.rocksdb.writecf.write-buffer-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.security.ca-path": {
+      "value": "",
+      "type": "string"
+    },
+    "raftstore-proxy.security.cert-allowed-cn": {
+      "value": [],
+      "type": "string"
+    },
+    "raftstore-proxy.security.cert-path": {
+      "value": "",
+      "type": "string"
+    },
+    "raftstore-proxy.security.encryption.data-encryption-method": {
+      "value": "plaintext",
+      "type": "string"
+    },
+    "raftstore-proxy.security.encryption.data-key-rotation-period": {
+      "value": "7d",
+      "type": "string"
+    },
+    "raftstore-proxy.security.encryption.enable-file-dictionary-log": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.security.encryption.file-dictionary-rewrite-threshold": {
+      "value": 1000000,
+      "type": "float"
+    },
+    "raftstore-proxy.security.encryption.master-key.type": {
+      "value": "plaintext",
+      "type": "string"
+    },
+    "raftstore-proxy.security.encryption.previous-master-key.type": {
+      "value": "plaintext",
+      "type": "string"
+    },
+    "raftstore-proxy.security.key-path": {
+      "value": "",
+      "type": "string"
+    },
+    "raftstore-proxy.security.redact-info-log": {
+      "value": null,
+      "type": "string"
+    },
+    "raftstore-proxy.server.addr": {
+      "value": "0.0.0.0:20170",
+      "type": "string"
+    },
+    "raftstore-proxy.server.advertise-addr": {
+      "value": "127.0.0.1:20170",
+      "type": "string"
+    },
+    "raftstore-proxy.server.advertise-status-addr": {
+      "value": "127.0.0.1:20292",
+      "type": "string"
+    },
+    "raftstore-proxy.server.background-thread-count": {
+      "value": 4,
+      "type": "float"
+    },
+    "raftstore-proxy.server.concurrent-recv-snap-limit": {
+      "value": 32,
+      "type": "float"
+    },
+    "raftstore-proxy.server.concurrent-send-snap-limit": {
+      "value": 32,
+      "type": "float"
+    },
+    "raftstore-proxy.server.enable-request-batch": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.server.end-point-batch-row-limit": {
+      "value": 64,
+      "type": "float"
+    },
+    "raftstore-proxy.server.end-point-enable-batch-if-possible": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.server.end-point-max-concurrency": {
+      "value": 12,
+      "type": "float"
+    },
+    "raftstore-proxy.server.end-point-perf-level": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore-proxy.server.end-point-recursion-limit": {
+      "value": 1000,
+      "type": "float"
+    },
+    "raftstore-proxy.server.end-point-request-max-handle-duration": {
+      "value": "1m",
+      "type": "string"
+    },
+    "raftstore-proxy.server.end-point-slow-log-threshold": {
+      "value": "1s",
+      "type": "string"
+    },
+    "raftstore-proxy.server.end-point-stream-batch-row-limit": {
+      "value": 128,
+      "type": "float"
+    },
+    "raftstore-proxy.server.end-point-stream-channel-size": {
+      "value": 8,
+      "type": "float"
+    },
+    "raftstore-proxy.server.forward-max-connections-per-address": {
+      "value": 4,
+      "type": "float"
+    },
+    "raftstore-proxy.server.grpc-compression-type": {
+      "value": "none",
+      "type": "string"
+    },
+    "raftstore-proxy.server.grpc-concurrency": {
+      "value": 5,
+      "type": "float"
+    },
+    "raftstore-proxy.server.grpc-concurrent-stream": {
+      "value": 1024,
+      "type": "float"
+    },
+    "raftstore-proxy.server.grpc-gzip-compression-level": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore-proxy.server.grpc-keepalive-time": {
+      "value": "10s",
+      "type": "string"
+    },
+    "raftstore-proxy.server.grpc-keepalive-timeout": {
+      "value": "3s",
+      "type": "string"
+    },
+    "raftstore-proxy.server.grpc-memory-pool-quota": {
+      "value": "9223372036854775807B",
+      "type": "string"
+    },
+    "raftstore-proxy.server.grpc-min-message-size-to-compress": {
+      "value": 4096,
+      "type": "float"
+    },
+    "raftstore-proxy.server.grpc-raft-conn-num": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftstore-proxy.server.grpc-stream-initial-window-size": {
+      "value": "2MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.server.heavy-load-threshold": {
+      "value": 75,
+      "type": "float"
+    },
+    "raftstore-proxy.server.heavy-load-wait-duration": {
+      "value": null,
+      "type": "string"
+    },
+    "raftstore-proxy.server.labels.engine": {
+      "value": "tiflash",
+      "type": "string"
+    },
+    "raftstore-proxy.server.max-grpc-send-msg-len": {
+      "value": 10485760,
+      "type": "float"
+    },
+    "raftstore-proxy.server.raft-client-grpc-send-msg-buffer": {
+      "value": 524288,
+      "type": "float"
+    },
+    "raftstore-proxy.server.raft-client-queue-size": {
+      "value": 8192,
+      "type": "float"
+    },
+    "raftstore-proxy.server.raft-msg-max-batch-size": {
+      "value": 128,
+      "type": "float"
+    },
+    "raftstore-proxy.server.reject-messages-on-memory-ratio": {
+      "value": 0.2,
+      "type": "float"
+    },
+    "raftstore-proxy.server.simplify-metrics": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.server.snap-max-total-size": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.server.snap-max-write-bytes-per-sec": {
+      "value": "100MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.server.stats-concurrency": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftstore-proxy.server.status-addr": {
+      "value": "0.0.0.0:20292",
+      "type": "string"
+    },
+    "raftstore-proxy.server.status-thread-pool-size": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore-proxy.slow-log-file": {
+      "value": "",
+      "type": "string"
+    },
+    "raftstore-proxy.slow-log-threshold": {
+      "value": "1s",
+      "type": "string"
+    },
+    "raftstore-proxy.split.byte-threshold": {
+      "value": 31457280,
+      "type": "float"
+    },
+    "raftstore-proxy.split.detect-times": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftstore-proxy.split.grpc-thread-cpu-overload-threshold-ratio": {
+      "value": 0.5,
+      "type": "float"
+    },
+    "raftstore-proxy.split.qps-threshold": {
+      "value": 3000,
+      "type": "float"
+    },
+    "raftstore-proxy.split.region-cpu-overload-threshold-ratio": {
+      "value": 0.25,
+      "type": "float"
+    },
+    "raftstore-proxy.split.sample-num": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftstore-proxy.split.sample-threshold": {
+      "value": 100,
+      "type": "float"
+    },
+    "raftstore-proxy.split.split-balance-score": {
+      "value": 0.25,
+      "type": "float"
+    },
+    "raftstore-proxy.split.split-contained-score": {
+      "value": 0.5,
+      "type": "float"
+    },
+    "raftstore-proxy.split.unified-read-pool-thread-cpu-overload-threshold-ratio": {
+      "value": 0.8,
+      "type": "float"
+    },
+    "raftstore-proxy.storage.api-version": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftstore-proxy.storage.background-error-recovery-window": {
+      "value": "1h",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.block-cache.capacity": {
+      "value": "2900MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.block-cache.high-pri-pool-ratio": {
+      "value": 0.8,
+      "type": "float"
+    },
+    "raftstore-proxy.storage.block-cache.memory-allocator": {
+      "value": "nodump",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.block-cache.num-shard-bits": {
+      "value": 6,
+      "type": "float"
+    },
+    "raftstore-proxy.storage.block-cache.shared": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.storage.block-cache.strict-capacity-limit": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.storage.data-dir": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.0-1765242670/tiflash-0/flash",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.enable-async-apply-prewrite": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.storage.enable-ttl": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.storage.flow-control.enable": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore-proxy.storage.flow-control.hard-pending-compaction-bytes-limit": {
+      "value": "1TiB",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.flow-control.l0-files-threshold": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftstore-proxy.storage.flow-control.memtables-threshold": {
+      "value": 5,
+      "type": "float"
+    },
+    "raftstore-proxy.storage.flow-control.soft-pending-compaction-bytes-limit": {
+      "value": "192GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.gc-ratio-threshold": {
+      "value": 1.1,
+      "type": "float"
+    },
+    "raftstore-proxy.storage.io-rate-limit.compaction-priority": {
+      "value": "low",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.io-rate-limit.export-priority": {
+      "value": "medium",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.io-rate-limit.flush-priority": {
+      "value": "high",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.io-rate-limit.foreground-read-priority": {
+      "value": "high",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.io-rate-limit.foreground-write-priority": {
+      "value": "high",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.io-rate-limit.gc-priority": {
+      "value": "high",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.io-rate-limit.import-priority": {
+      "value": "medium",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.io-rate-limit.level-zero-compaction-priority": {
+      "value": "medium",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.io-rate-limit.load-balance-priority": {
+      "value": "high",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.io-rate-limit.max-bytes-per-sec": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.io-rate-limit.mode": {
+      "value": "write-only",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.io-rate-limit.other-priority": {
+      "value": "high",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.io-rate-limit.replication-priority": {
+      "value": "high",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.io-rate-limit.strict": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore-proxy.storage.max-key-size": {
+      "value": 8192,
+      "type": "float"
+    },
+    "raftstore-proxy.storage.reserve-raft-space": {
+      "value": "1GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.reserve-space": {
+      "value": "1GiB",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.scheduler-concurrency": {
+      "value": 524288,
+      "type": "float"
+    },
+    "raftstore-proxy.storage.scheduler-pending-write-threshold": {
+      "value": "100MiB",
+      "type": "string"
+    },
+    "raftstore-proxy.storage.scheduler-worker-pool-size": {
+      "value": 4,
+      "type": "float"
+    },
+    "raftstore-proxy.storage.ttl-check-poll-interval": {
+      "value": "12h",
+      "type": "string"
+    },
+    "status.metrics_port": {
+      "value": 8234,
+      "type": "int"
+    },
+    "tcp_port": {
+      "value": 9100,
+      "type": "int"
+    },
+    "tmp_path": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.0-1765242670/tiflash-0/tmp",
+      "type": "string"
+    },
+    "users.default.networks.ip": {
+      "value": "::/0",
+      "type": "string"
+    },
+    "users.default.password": {
+      "value": "",
+      "type": "string"
+    },
+    "users.default.profile": {
+      "value": "default",
+      "type": "string"
+    },
+    "users.default.quota": {
+      "value": "default",
+      "type": "string"
+    },
+    "users.readonly.networks.ip": {
+      "value": "::/0",
+      "type": "string"
+    },
+    "users.readonly.password": {
+      "value": "",
+      "type": "string"
+    },
+    "users.readonly.profile": {
+      "value": "readonly",
+      "type": "string"
+    },
+    "users.readonly.quota": {
+      "value": "default",
+      "type": "string"
+    }
+  },
+  "bootstrap_version": 0
+}

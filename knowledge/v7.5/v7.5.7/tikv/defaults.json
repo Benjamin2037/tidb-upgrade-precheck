@@ -1,0 +1,3672 @@
+{
+  "component": "tikv",
+  "version": "v7.5.7",
+  "config_defaults": {
+    "abort-on-panic": {
+      "value": false,
+      "type": "bool"
+    },
+    "backup": {
+      "value": {
+        "auto-tune-refresh-interval": "1m",
+        "auto-tune-remain-threads": 2,
+        "batch-size": 8,
+        "enable-auto-tune": true,
+        "hadoop": {
+          "home": "",
+          "linux-user": ""
+        },
+        "io-thread-size": 2,
+        "num-threads": 6,
+        "s3-multi-part-size": "5MiB",
+        "sst-max-size": "144MiB"
+      },
+      "type": "map"
+    },
+    "backup.auto-tune-refresh-interval": {
+      "value": "1m",
+      "type": "string"
+    },
+    "backup.auto-tune-remain-threads": {
+      "value": 2,
+      "type": "float"
+    },
+    "backup.batch-size": {
+      "value": 8,
+      "type": "float"
+    },
+    "backup.enable-auto-tune": {
+      "value": true,
+      "type": "bool"
+    },
+    "backup.hadoop.home": {
+      "value": "",
+      "type": "string"
+    },
+    "backup.hadoop.linux-user": {
+      "value": "",
+      "type": "string"
+    },
+    "backup.io-thread-size": {
+      "value": 2,
+      "type": "float"
+    },
+    "backup.num-threads": {
+      "value": 6,
+      "type": "float"
+    },
+    "backup.s3-multi-part-size": {
+      "value": "5MiB",
+      "type": "string"
+    },
+    "backup.sst-max-size": {
+      "value": "144MiB",
+      "type": "string"
+    },
+    "causal-ts": {
+      "value": {
+        "alloc-ahead-buffer": "3s",
+        "renew-batch-max-size": 8192,
+        "renew-batch-min-size": 100,
+        "renew-interval": "100ms"
+      },
+      "type": "map"
+    },
+    "causal-ts.alloc-ahead-buffer": {
+      "value": "3s",
+      "type": "string"
+    },
+    "causal-ts.renew-batch-max-size": {
+      "value": 8192,
+      "type": "float"
+    },
+    "causal-ts.renew-batch-min-size": {
+      "value": 100,
+      "type": "float"
+    },
+    "causal-ts.renew-interval": {
+      "value": "100ms",
+      "type": "string"
+    },
+    "cdc": {
+      "value": {
+        "hibernate-regions-compatible": true,
+        "incremental-fetch-speed-limit": "512MiB",
+        "incremental-scan-concurrency": 6,
+        "incremental-scan-speed-limit": "128MiB",
+        "incremental-scan-threads": 4,
+        "incremental-scan-ts-filter-ratio": 0.2,
+        "min-ts-interval": "1s",
+        "old-value-cache-memory-quota": "512MiB",
+        "sink-memory-quota": "512MiB",
+        "tso-worker-threads": 1
+      },
+      "type": "map"
+    },
+    "cdc.hibernate-regions-compatible": {
+      "value": true,
+      "type": "bool"
+    },
+    "cdc.incremental-fetch-speed-limit": {
+      "value": "512MiB",
+      "type": "string"
+    },
+    "cdc.incremental-scan-concurrency": {
+      "value": 6,
+      "type": "float"
+    },
+    "cdc.incremental-scan-speed-limit": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "cdc.incremental-scan-threads": {
+      "value": 4,
+      "type": "float"
+    },
+    "cdc.incremental-scan-ts-filter-ratio": {
+      "value": 0.2,
+      "type": "float"
+    },
+    "cdc.min-ts-interval": {
+      "value": "1s",
+      "type": "string"
+    },
+    "cdc.old-value-cache-memory-quota": {
+      "value": "512MiB",
+      "type": "string"
+    },
+    "cdc.sink-memory-quota": {
+      "value": "512MiB",
+      "type": "string"
+    },
+    "cdc.tso-worker-threads": {
+      "value": 1,
+      "type": "float"
+    },
+    "coprocessor": {
+      "value": {
+        "batch-split-limit": 10,
+        "consistency-check-method": "mvcc",
+        "prefer-approximate-bucket": true,
+        "region-bucket-merge-size-ratio": 0.33,
+        "region-bucket-size": "50MiB",
+        "region-max-keys": 1440000,
+        "region-max-size": "144MiB",
+        "region-size-threshold-for-approximate": "750MiB",
+        "region-split-keys": 960000,
+        "region-split-size": "96MiB",
+        "split-region-on-table": false
+      },
+      "type": "map"
+    },
+    "coprocessor-v2": {
+      "value": {},
+      "type": "map"
+    },
+    "coprocessor-v2.coprocessor-plugin-directory": {
+      "value": null,
+      "type": "string"
+    },
+    "coprocessor.batch-split-limit": {
+      "value": 10,
+      "type": "float"
+    },
+    "coprocessor.consistency-check-method": {
+      "value": "mvcc",
+      "type": "string"
+    },
+    "coprocessor.enable-region-bucket": {
+      "value": null,
+      "type": "string"
+    },
+    "coprocessor.prefer-approximate-bucket": {
+      "value": true,
+      "type": "bool"
+    },
+    "coprocessor.region-bucket-merge-size-ratio": {
+      "value": 0.33,
+      "type": "float"
+    },
+    "coprocessor.region-bucket-size": {
+      "value": "50MiB",
+      "type": "string"
+    },
+    "coprocessor.region-max-keys": {
+      "value": 1440000,
+      "type": "float"
+    },
+    "coprocessor.region-max-size": {
+      "value": "144MiB",
+      "type": "string"
+    },
+    "coprocessor.region-size-threshold-for-approximate": {
+      "value": "750MiB",
+      "type": "string"
+    },
+    "coprocessor.region-split-keys": {
+      "value": 960000,
+      "type": "float"
+    },
+    "coprocessor.region-split-size": {
+      "value": "96MiB",
+      "type": "string"
+    },
+    "coprocessor.split-region-on-table": {
+      "value": false,
+      "type": "bool"
+    },
+    "gc": {
+      "value": {
+        "auto-compaction": {
+          "bottommost-level-force": false,
+          "check-interval": "5m",
+          "redundant-rows-percent-threshold": 20,
+          "redundant-rows-threshold": 50000,
+          "tombstones-num-threshold": 10000,
+          "tombstones-percent-threshold": 30
+        },
+        "batch-keys": 512,
+        "compaction-filter-skip-version-check": false,
+        "enable-compaction-filter": true,
+        "max-write-bytes-per-sec": "0KiB",
+        "num-threads": 1,
+        "ratio-threshold": 1.1
+      },
+      "type": "map"
+    },
+    "gc.auto-compaction.bottommost-level-force": {
+      "value": false,
+      "type": "bool"
+    },
+    "gc.auto-compaction.check-interval": {
+      "value": "5m",
+      "type": "string"
+    },
+    "gc.auto-compaction.redundant-rows-percent-threshold": {
+      "value": 20,
+      "type": "float"
+    },
+    "gc.auto-compaction.redundant-rows-threshold": {
+      "value": 50000,
+      "type": "float"
+    },
+    "gc.auto-compaction.tombstones-num-threshold": {
+      "value": 10000,
+      "type": "float"
+    },
+    "gc.auto-compaction.tombstones-percent-threshold": {
+      "value": 30,
+      "type": "float"
+    },
+    "gc.batch-keys": {
+      "value": 512,
+      "type": "float"
+    },
+    "gc.compaction-filter-skip-version-check": {
+      "value": false,
+      "type": "bool"
+    },
+    "gc.enable-compaction-filter": {
+      "value": true,
+      "type": "bool"
+    },
+    "gc.max-write-bytes-per-sec": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "gc.num-threads": {
+      "value": 1,
+      "type": "float"
+    },
+    "gc.ratio-threshold": {
+      "value": 1.1,
+      "type": "float"
+    },
+    "import": {
+      "value": {
+        "import-mode-timeout": "10m",
+        "memory-use-ratio": 0.3,
+        "num-threads": 8,
+        "stream-channel-window": 128
+      },
+      "type": "map"
+    },
+    "import.import-mode-timeout": {
+      "value": "10m",
+      "type": "string"
+    },
+    "import.memory-use-ratio": {
+      "value": 0.3,
+      "type": "float"
+    },
+    "import.num-threads": {
+      "value": 8,
+      "type": "float"
+    },
+    "import.stream-channel-window": {
+      "value": 128,
+      "type": "float"
+    },
+    "log": {
+      "value": {
+        "enable-timestamp": true,
+        "file": {
+          "filename": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.7-1765243933/tikv-0/tikv.log",
+          "max-backups": 0,
+          "max-days": 0,
+          "max-size": 300
+        },
+        "format": "text",
+        "level": "info"
+      },
+      "type": "map"
+    },
+    "log-backup": {
+      "value": {
+        "enable": true,
+        "file-size-limit": "256MiB",
+        "initial-scan-concurrency": 6,
+        "initial-scan-pending-memory-quota": "512MiB",
+        "initial-scan-rate-limit": "60MiB",
+        "max-flush-interval": "3m",
+        "min-ts-interval": "10s",
+        "num-threads": 6,
+        "temp-path": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.7-1765243933/tikv-0/data/log-backup-temp"
+      },
+      "type": "map"
+    },
+    "log-backup.enable": {
+      "value": true,
+      "type": "bool"
+    },
+    "log-backup.file-size-limit": {
+      "value": "256MiB",
+      "type": "string"
+    },
+    "log-backup.initial-scan-concurrency": {
+      "value": 6,
+      "type": "float"
+    },
+    "log-backup.initial-scan-pending-memory-quota": {
+      "value": "512MiB",
+      "type": "string"
+    },
+    "log-backup.initial-scan-rate-limit": {
+      "value": "60MiB",
+      "type": "string"
+    },
+    "log-backup.max-flush-interval": {
+      "value": "3m",
+      "type": "string"
+    },
+    "log-backup.min-ts-interval": {
+      "value": "10s",
+      "type": "string"
+    },
+    "log-backup.num-threads": {
+      "value": 6,
+      "type": "float"
+    },
+    "log-backup.temp-path": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.7-1765243933/tikv-0/data/log-backup-temp",
+      "type": "string"
+    },
+    "log.enable-timestamp": {
+      "value": true,
+      "type": "bool"
+    },
+    "log.file.filename": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.7-1765243933/tikv-0/tikv.log",
+      "type": "string"
+    },
+    "log.file.max-backups": {
+      "value": 0,
+      "type": "float"
+    },
+    "log.file.max-days": {
+      "value": 0,
+      "type": "float"
+    },
+    "log.file.max-size": {
+      "value": 300,
+      "type": "float"
+    },
+    "log.format": {
+      "value": "text",
+      "type": "string"
+    },
+    "log.level": {
+      "value": "info",
+      "type": "string"
+    },
+    "memory": {
+      "value": {
+        "enable-heap-profiling": true,
+        "enable-thread-exclusive-arena": true,
+        "profiling-sample-per-bytes": "512KiB"
+      },
+      "type": "map"
+    },
+    "memory-usage-high-water": {
+      "value": 0.9,
+      "type": "float"
+    },
+    "memory-usage-limit": {
+      "value": "38654705663B",
+      "type": "string"
+    },
+    "memory.enable-heap-profiling": {
+      "value": true,
+      "type": "bool"
+    },
+    "memory.enable-thread-exclusive-arena": {
+      "value": true,
+      "type": "bool"
+    },
+    "memory.profiling-sample-per-bytes": {
+      "value": "512KiB",
+      "type": "string"
+    },
+    "metric": {
+      "value": {
+        "job": "tikv"
+      },
+      "type": "map"
+    },
+    "panic-when-unexpected-key-or-data": {
+      "value": false,
+      "type": "bool"
+    },
+    "pd": {
+      "value": {
+        "enable-forwarding": false,
+        "endpoints": [
+          "http://127.0.0.1:2379"
+        ],
+        "retry-interval": "300ms",
+        "retry-log-every": 10,
+        "retry-max-count": 9223372036854775807,
+        "update-interval": "10m"
+      },
+      "type": "map"
+    },
+    "pd.enable-forwarding": {
+      "value": false,
+      "type": "bool"
+    },
+    "pd.endpoints": {
+      "value": [
+        "http://127.0.0.1:2379"
+      ],
+      "type": "string"
+    },
+    "pd.retry-interval": {
+      "value": "300ms",
+      "type": "string"
+    },
+    "pd.retry-log-every": {
+      "value": 10,
+      "type": "float"
+    },
+    "pd.retry-max-count": {
+      "value": 9223372036854776000,
+      "type": "float"
+    },
+    "pd.update-interval": {
+      "value": "10m",
+      "type": "string"
+    },
+    "pessimistic-txn": {
+      "value": {
+        "in-memory": true,
+        "pipelined": true,
+        "wait-for-lock-timeout": "1s",
+        "wake-up-delay-duration": "20ms"
+      },
+      "type": "map"
+    },
+    "pessimistic-txn.in-memory": {
+      "value": true,
+      "type": "bool"
+    },
+    "pessimistic-txn.pipelined": {
+      "value": true,
+      "type": "bool"
+    },
+    "pessimistic-txn.wait-for-lock-timeout": {
+      "value": "1s",
+      "type": "string"
+    },
+    "pessimistic-txn.wake-up-delay-duration": {
+      "value": "20ms",
+      "type": "string"
+    },
+    "quota": {
+      "value": {
+        "background-cpu-time": 0,
+        "background-read-bandwidth": "0KiB",
+        "background-write-bandwidth": "0KiB",
+        "enable-auto-tune": false,
+        "foreground-cpu-time": 0,
+        "foreground-read-bandwidth": "0KiB",
+        "foreground-write-bandwidth": "0KiB",
+        "max-delay-duration": "500ms"
+      },
+      "type": "map"
+    },
+    "quota.background-cpu-time": {
+      "value": 0,
+      "type": "float"
+    },
+    "quota.background-read-bandwidth": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "quota.background-write-bandwidth": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "quota.enable-auto-tune": {
+      "value": false,
+      "type": "bool"
+    },
+    "quota.foreground-cpu-time": {
+      "value": 0,
+      "type": "float"
+    },
+    "quota.foreground-read-bandwidth": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "quota.foreground-write-bandwidth": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "quota.max-delay-duration": {
+      "value": "500ms",
+      "type": "string"
+    },
+    "raft-engine": {
+      "value": {
+        "batch-compression-threshold": "8KiB",
+        "dir": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.7-1765243933/tikv-0/data/raft-engine",
+        "enable": true,
+        "enable-log-recycle": true,
+        "format-version": 2,
+        "memory-limit": "7730941132B",
+        "prefill-for-recycle": false,
+        "purge-rewrite-garbage-ratio": 0.6,
+        "purge-rewrite-threshold": "1GiB",
+        "purge-threshold": "10GiB",
+        "recovery-mode": "tolerate-corrupted-tail-records",
+        "recovery-read-block-size": "16KiB",
+        "recovery-threads": 4,
+        "target-file-size": "128MiB"
+      },
+      "type": "map"
+    },
+    "raft-engine.batch-compression-threshold": {
+      "value": "8KiB",
+      "type": "string"
+    },
+    "raft-engine.bytes-per-sync": {
+      "value": null,
+      "type": "string"
+    },
+    "raft-engine.compression-level": {
+      "value": null,
+      "type": "string"
+    },
+    "raft-engine.dir": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.7-1765243933/tikv-0/data/raft-engine",
+      "type": "string"
+    },
+    "raft-engine.enable": {
+      "value": true,
+      "type": "bool"
+    },
+    "raft-engine.enable-log-recycle": {
+      "value": true,
+      "type": "bool"
+    },
+    "raft-engine.format-version": {
+      "value": 2,
+      "type": "float"
+    },
+    "raft-engine.memory-limit": {
+      "value": "7730941132B",
+      "type": "string"
+    },
+    "raft-engine.prefill-for-recycle": {
+      "value": false,
+      "type": "bool"
+    },
+    "raft-engine.prefill-limit": {
+      "value": null,
+      "type": "string"
+    },
+    "raft-engine.purge-rewrite-garbage-ratio": {
+      "value": 0.6,
+      "type": "float"
+    },
+    "raft-engine.purge-rewrite-threshold": {
+      "value": "1GiB",
+      "type": "string"
+    },
+    "raft-engine.purge-threshold": {
+      "value": "10GiB",
+      "type": "string"
+    },
+    "raft-engine.recovery-mode": {
+      "value": "tolerate-corrupted-tail-records",
+      "type": "string"
+    },
+    "raft-engine.recovery-read-block-size": {
+      "value": "16KiB",
+      "type": "string"
+    },
+    "raft-engine.recovery-threads": {
+      "value": 4,
+      "type": "float"
+    },
+    "raft-engine.spill-dir": {
+      "value": null,
+      "type": "string"
+    },
+    "raft-engine.target-file-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftdb": {
+      "value": {
+        "allow-concurrent-memtable-write": true,
+        "bytes-per-sync": "1MiB",
+        "compaction-readahead-size": "0KiB",
+        "create-if-missing": true,
+        "defaultcf": {
+          "block-based-bloom-filter": false,
+          "block-size": "64KiB",
+          "bloom-filter-bits-per-key": 10,
+          "bottommost-level-compression": "disable",
+          "bottommost-zstd-compression-dict-size": 0,
+          "bottommost-zstd-compression-sample-size": 0,
+          "cache-index-and-filter-blocks": true,
+          "checksum": "crc32c",
+          "compaction-guard-max-output-file-size": "128MiB",
+          "compaction-guard-min-output-file-size": "8MiB",
+          "compaction-pri": 0,
+          "compaction-style": 0,
+          "compression-per-level": [
+            "no",
+            "no",
+            "lz4",
+            "lz4",
+            "lz4",
+            "zstd",
+            "zstd"
+          ],
+          "disable-auto-compactions": false,
+          "disable-block-cache": false,
+          "disable-write-stall": false,
+          "dynamic-level-bytes": true,
+          "enable-doubly-skiplist": true,
+          "force-consistency-checks": false,
+          "format-version": 2,
+          "hard-pending-compaction-bytes-limit": "1TiB",
+          "level0-file-num-compaction-trigger": 4,
+          "level0-slowdown-writes-trigger": 20,
+          "level0-stop-writes-trigger": 20,
+          "max-bytes-for-level-base": "512MiB",
+          "max-bytes-for-level-multiplier": 10,
+          "max-compaction-bytes": "2GiB",
+          "max-write-buffer-number": 5,
+          "min-write-buffer-number-to-merge": 1,
+          "num-levels": 7,
+          "optimize-filters-for-hits": true,
+          "optimize-filters-for-memory": false,
+          "pin-l0-filter-and-index-blocks": true,
+          "prepopulate-block-cache": "disabled",
+          "prop-keys-index-distance": 40960,
+          "prop-size-index-distance": 4194304,
+          "read-amp-bytes-per-bit": 0,
+          "soft-pending-compaction-bytes-limit": "192GiB",
+          "titan": {
+            "blob-cache-size": "0KiB",
+            "blob-file-compression": "lz4",
+            "blob-run-mode": "normal",
+            "discardable-ratio": 0.5,
+            "level-merge": false,
+            "max-gc-batch-size": "64MiB",
+            "max-sorted-runs": 20,
+            "merge-small-file-threshold": "8MiB",
+            "min-blob-size": "1KiB",
+            "min-gc-batch-size": "16MiB",
+            "range-merge": true
+          },
+          "use-bloom-filter": false,
+          "whole-key-filtering": true,
+          "write-buffer-size": "128MiB"
+        },
+        "enable-pipelined-write": true,
+        "enable-unordered-write": false,
+        "info-log-dir": "",
+        "info-log-keep-log-file-num": 10,
+        "info-log-level": "info",
+        "info-log-max-size": "1GiB",
+        "info-log-roll-time": "0s",
+        "max-background-flushes": 1,
+        "max-background-jobs": 4,
+        "max-manifest-file-size": "20MiB",
+        "max-open-files": 256,
+        "max-sub-compactions": 2,
+        "max-total-wal-size": "4GiB",
+        "stats-dump-period": "10m",
+        "titan": {
+          "dirname": "",
+          "disable-gc": false,
+          "enabled": false,
+          "max-background-gc": 4,
+          "purge-obsolete-files-period": "10s"
+        },
+        "use-direct-io-for-flush-and-compaction": false,
+        "wal-bytes-per-sync": "512KiB",
+        "wal-dir": "",
+        "wal-recovery-mode": 2,
+        "wal-size-limit": "0KiB",
+        "wal-ttl-seconds": 0,
+        "writable-file-max-buffer-size": "1MiB"
+      },
+      "type": "map"
+    },
+    "raftdb.allow-concurrent-memtable-write": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftdb.bytes-per-sync": {
+      "value": "1MiB",
+      "type": "string"
+    },
+    "raftdb.compaction-readahead-size": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftdb.create-if-missing": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftdb.defaultcf.block-based-bloom-filter": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftdb.defaultcf.block-cache-size": {
+      "value": null,
+      "type": "string"
+    },
+    "raftdb.defaultcf.block-size": {
+      "value": "64KiB",
+      "type": "string"
+    },
+    "raftdb.defaultcf.bloom-filter-bits-per-key": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftdb.defaultcf.bottommost-level-compression": {
+      "value": "disable",
+      "type": "string"
+    },
+    "raftdb.defaultcf.bottommost-zstd-compression-dict-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftdb.defaultcf.bottommost-zstd-compression-sample-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftdb.defaultcf.cache-index-and-filter-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftdb.defaultcf.checksum": {
+      "value": "crc32c",
+      "type": "string"
+    },
+    "raftdb.defaultcf.compaction-guard-max-output-file-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftdb.defaultcf.compaction-guard-min-output-file-size": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftdb.defaultcf.compaction-pri": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftdb.defaultcf.compaction-style": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftdb.defaultcf.compression-per-level": {
+      "value": [
+        "no",
+        "no",
+        "lz4",
+        "lz4",
+        "lz4",
+        "zstd",
+        "zstd"
+      ],
+      "type": "string"
+    },
+    "raftdb.defaultcf.disable-auto-compactions": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftdb.defaultcf.disable-block-cache": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftdb.defaultcf.disable-write-stall": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftdb.defaultcf.dynamic-level-bytes": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftdb.defaultcf.enable-compaction-guard": {
+      "value": null,
+      "type": "string"
+    },
+    "raftdb.defaultcf.enable-doubly-skiplist": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftdb.defaultcf.force-consistency-checks": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftdb.defaultcf.format-version": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftdb.defaultcf.hard-pending-compaction-bytes-limit": {
+      "value": "1TiB",
+      "type": "string"
+    },
+    "raftdb.defaultcf.level0-file-num-compaction-trigger": {
+      "value": 4,
+      "type": "float"
+    },
+    "raftdb.defaultcf.level0-slowdown-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftdb.defaultcf.level0-stop-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftdb.defaultcf.max-bytes-for-level-base": {
+      "value": "512MiB",
+      "type": "string"
+    },
+    "raftdb.defaultcf.max-bytes-for-level-multiplier": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftdb.defaultcf.max-compaction-bytes": {
+      "value": "2GiB",
+      "type": "string"
+    },
+    "raftdb.defaultcf.max-compactions": {
+      "value": null,
+      "type": "string"
+    },
+    "raftdb.defaultcf.max-write-buffer-number": {
+      "value": 5,
+      "type": "float"
+    },
+    "raftdb.defaultcf.min-write-buffer-number-to-merge": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftdb.defaultcf.num-levels": {
+      "value": 7,
+      "type": "float"
+    },
+    "raftdb.defaultcf.optimize-filters-for-hits": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftdb.defaultcf.optimize-filters-for-memory": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftdb.defaultcf.periodic-compaction-seconds": {
+      "value": null,
+      "type": "string"
+    },
+    "raftdb.defaultcf.pin-l0-filter-and-index-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftdb.defaultcf.prepopulate-block-cache": {
+      "value": "disabled",
+      "type": "string"
+    },
+    "raftdb.defaultcf.prop-keys-index-distance": {
+      "value": 40960,
+      "type": "float"
+    },
+    "raftdb.defaultcf.prop-size-index-distance": {
+      "value": 4194304,
+      "type": "float"
+    },
+    "raftdb.defaultcf.read-amp-bytes-per-bit": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftdb.defaultcf.ribbon-filter-above-level": {
+      "value": null,
+      "type": "string"
+    },
+    "raftdb.defaultcf.soft-pending-compaction-bytes-limit": {
+      "value": "192GiB",
+      "type": "string"
+    },
+    "raftdb.defaultcf.target-file-size-base": {
+      "value": null,
+      "type": "string"
+    },
+    "raftdb.defaultcf.titan.blob-cache-size": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftdb.defaultcf.titan.blob-file-compression": {
+      "value": "lz4",
+      "type": "string"
+    },
+    "raftdb.defaultcf.titan.blob-run-mode": {
+      "value": "normal",
+      "type": "string"
+    },
+    "raftdb.defaultcf.titan.discardable-ratio": {
+      "value": 0.5,
+      "type": "float"
+    },
+    "raftdb.defaultcf.titan.level-merge": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftdb.defaultcf.titan.max-gc-batch-size": {
+      "value": "64MiB",
+      "type": "string"
+    },
+    "raftdb.defaultcf.titan.max-sorted-runs": {
+      "value": 20,
+      "type": "float"
+    },
+    "raftdb.defaultcf.titan.merge-small-file-threshold": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftdb.defaultcf.titan.min-blob-size": {
+      "value": "1KiB",
+      "type": "string"
+    },
+    "raftdb.defaultcf.titan.min-gc-batch-size": {
+      "value": "16MiB",
+      "type": "string"
+    },
+    "raftdb.defaultcf.titan.range-merge": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftdb.defaultcf.ttl": {
+      "value": null,
+      "type": "string"
+    },
+    "raftdb.defaultcf.use-bloom-filter": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftdb.defaultcf.whole-key-filtering": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftdb.defaultcf.write-buffer-limit": {
+      "value": null,
+      "type": "string"
+    },
+    "raftdb.defaultcf.write-buffer-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "raftdb.enable-pipelined-write": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftdb.enable-unordered-write": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftdb.info-log-dir": {
+      "value": "",
+      "type": "string"
+    },
+    "raftdb.info-log-keep-log-file-num": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftdb.info-log-level": {
+      "value": "info",
+      "type": "string"
+    },
+    "raftdb.info-log-max-size": {
+      "value": "1GiB",
+      "type": "string"
+    },
+    "raftdb.info-log-roll-time": {
+      "value": "0s",
+      "type": "string"
+    },
+    "raftdb.max-background-flushes": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftdb.max-background-jobs": {
+      "value": 4,
+      "type": "float"
+    },
+    "raftdb.max-manifest-file-size": {
+      "value": "20MiB",
+      "type": "string"
+    },
+    "raftdb.max-open-files": {
+      "value": 256,
+      "type": "float"
+    },
+    "raftdb.max-sub-compactions": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftdb.max-total-wal-size": {
+      "value": "4GiB",
+      "type": "string"
+    },
+    "raftdb.stats-dump-period": {
+      "value": "10m",
+      "type": "string"
+    },
+    "raftdb.titan.dirname": {
+      "value": "",
+      "type": "string"
+    },
+    "raftdb.titan.disable-gc": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftdb.titan.enabled": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftdb.titan.max-background-gc": {
+      "value": 4,
+      "type": "float"
+    },
+    "raftdb.titan.purge-obsolete-files-period": {
+      "value": "10s",
+      "type": "string"
+    },
+    "raftdb.use-direct-io-for-flush-and-compaction": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftdb.wal-bytes-per-sync": {
+      "value": "512KiB",
+      "type": "string"
+    },
+    "raftdb.wal-dir": {
+      "value": "",
+      "type": "string"
+    },
+    "raftdb.wal-recovery-mode": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftdb.wal-size-limit": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftdb.wal-ttl-seconds": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftdb.writable-file-max-buffer-size": {
+      "value": "1MiB",
+      "type": "string"
+    },
+    "raftstore": {
+      "value": {
+        "abnormal-leader-missing-duration": "10m",
+        "apply-low-priority-pool-size": 1,
+        "apply-max-batch-size": 256,
+        "apply-pool-size": 2,
+        "apply-reschedule-duration": "5s",
+        "apply-yield-duration": "500ms",
+        "apply-yield-write-size": "32KiB",
+        "capacity": "0KiB",
+        "check-leader-lease-interval": "2s250ms",
+        "check-long-uncommitted-interval": "10s",
+        "clean-stale-ranges-tick": 10,
+        "cleanup-import-sst-interval": "10m",
+        "cmd-batch": true,
+        "cmd-batch-concurrent-ready-max-count": 1,
+        "consistency-check-interval": "0s",
+        "dev-assert": false,
+        "enable-v2-compatible-learner": false,
+        "evict-cache-on-memory-ratio": 0.1,
+        "follower-read-max-log-gap": 100,
+        "future-poll-size": 1,
+        "gc-peer-check-interval": "1m",
+        "hibernate-regions": true,
+        "inspect-cpu-util-thd": 0.4,
+        "inspect-interval": "100ms",
+        "inspect-kvdb-interval": "100ms",
+        "io-reschedule-concurrent-max-count": 4,
+        "io-reschedule-hotpot-duration": "5s",
+        "leader-transfer-max-log-lag": 128,
+        "local-read-batch-size": 1024,
+        "lock-cf-compact-bytes-threshold": "256MiB",
+        "lock-cf-compact-interval": "10m",
+        "long-uncommitted-base-threshold": "20s",
+        "max-entry-cache-warmup-duration": "1s",
+        "max-leader-missing-duration": "2h",
+        "max-manual-flush-rate": 3,
+        "max-peer-down-duration": "10m",
+        "max-snapshot-file-raw-size": "100MiB",
+        "merge-check-tick-interval": "2s",
+        "merge-max-log-gap": 10,
+        "messages-per-tick": 4096,
+        "min-pending-apply-region-count": 10,
+        "notify-capacity": 40960,
+        "pd-heartbeat-tick-interval": "1m",
+        "pd-store-heartbeat-tick-interval": "10s",
+        "peer-stale-state-check-interval": "5m",
+        "perf-level": 0,
+        "prevote": true,
+        "raft-base-tick-interval": "1s",
+        "raft-election-timeout-ticks": 10,
+        "raft-engine-purge-interval": "10s",
+        "raft-entry-cache-life-time": "30s",
+        "raft-entry-max-size": "8MiB",
+        "raft-heartbeat-ticks": 2,
+        "raft-log-compact-sync-interval": "2s",
+        "raft-log-gc-count-limit": 73728,
+        "raft-log-gc-size-limit": "72MiB",
+        "raft-log-gc-threshold": 50,
+        "raft-log-gc-tick-interval": "3s",
+        "raft-log-reserve-max-ticks": 6,
+        "raft-max-election-timeout-ticks": 20,
+        "raft-max-inflight-msgs": 256,
+        "raft-max-size-per-msg": "1MiB",
+        "raft-min-election-timeout-ticks": 10,
+        "raft-store-max-leader-lease": "9s",
+        "raft-write-size-limit": "1MiB",
+        "raftdb-path": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.7-1765243933/tikv-0/data/raft",
+        "reactive-memory-lock-tick-interval": "2s",
+        "reactive-memory-lock-timeout-tick": 5,
+        "region-split-check-diff": "6MiB",
+        "region-worker-tick-interval": "1s",
+        "renew-leader-lease-advance-duration": "2s250ms",
+        "report-min-resolved-ts-interval": "1s",
+        "report-region-buckets-tick-interval": "10s",
+        "report-region-flow-interval": "1m",
+        "request-voter-replicated-index-interval": "5m",
+        "right-derive-when-split": true,
+        "slow-trend-unsensitive-cause": 10,
+        "slow-trend-unsensitive-result": 0.5,
+        "snap-apply-batch-size": "10MiB",
+        "snap-apply-copy-symlink": false,
+        "snap-gc-timeout": "4h",
+        "snap-generator-pool-size": 2,
+        "snap-mgr-gc-tick-interval": "1m",
+        "snap-wait-split-duration": "34s",
+        "split-region-check-tick-interval": "10s",
+        "store-io-notify-capacity": 40960,
+        "store-io-pool-size": 0,
+        "store-low-priority-pool-size": 0,
+        "store-max-batch-size": 256,
+        "store-pool-size": 2,
+        "store-reschedule-duration": "5s",
+        "unreachable-backoff": "10s",
+        "use-delete-range": false,
+        "waterfall-metrics": true
+      },
+      "type": "map"
+    },
+    "raftstore.abnormal-leader-missing-duration": {
+      "value": "10m",
+      "type": "string"
+    },
+    "raftstore.apply-low-priority-pool-size": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftstore.apply-max-batch-size": {
+      "value": 256,
+      "type": "float"
+    },
+    "raftstore.apply-pool-size": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore.apply-reschedule-duration": {
+      "value": "5s",
+      "type": "string"
+    },
+    "raftstore.apply-yield-write-size": {
+      "value": "32KiB",
+      "type": "string"
+    },
+    "raftstore.capacity": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "raftstore.check-leader-lease-interval": {
+      "value": "2s250ms",
+      "type": "string"
+    },
+    "raftstore.check-long-uncommitted-interval": {
+      "value": "10s",
+      "type": "string"
+    },
+    "raftstore.clean-stale-ranges-tick": {
+      "value": 10,
+      "type": "float"
+    },
+    "raftstore.cleanup-import-sst-interval": {
+      "value": "10m",
+      "type": "string"
+    },
+    "raftstore.cmd-batch": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore.cmd-batch-concurrent-ready-max-count": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftstore.consistency-check-interval": {
+      "value": "0s",
+      "type": "string"
+    },
+    "raftstore.evict-cache-on-memory-ratio": {
+      "value": 0.1,
+      "type": "float"
+    },
+    "raftstore.follower-read-max-log-gap": {
+      "value": 100,
+      "type": "float"
+    },
+    "raftstore.future-poll-size": {
+      "value": 1,
+      "type": "float"
+    },
+    "raftstore.gc-peer-check-interval": {
+      "value": "1m",
+      "type": "string"
+    },
+    "raftstore.hibernate-regions": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore.io-reschedule-concurrent-max-count": {
+      "value": 4,
+      "type": "float"
+    },
+    "raftstore.io-reschedule-hotpot-duration": {
+      "value": "5s",
+      "type": "string"
+    },
+    "raftstore.local-read-batch-size": {
+      "value": 1024,
+      "type": "float"
+    },
+    "raftstore.lock-cf-compact-bytes-threshold": {
+      "value": "256MiB",
+      "type": "string"
+    },
+    "raftstore.lock-cf-compact-interval": {
+      "value": "10m",
+      "type": "string"
+    },
+    "raftstore.long-uncommitted-base-threshold": {
+      "value": "20s",
+      "type": "string"
+    },
+    "raftstore.max-entry-cache-warmup-duration": {
+      "value": "1s",
+      "type": "string"
+    },
+    "raftstore.max-leader-missing-duration": {
+      "value": "2h",
+      "type": "string"
+    },
+    "raftstore.max-peer-down-duration": {
+      "value": "10m",
+      "type": "string"
+    },
+    "raftstore.max-snapshot-file-raw-size": {
+      "value": "100MiB",
+      "type": "string"
+    },
+    "raftstore.merge-check-tick-interval": {
+      "value": "2s",
+      "type": "string"
+    },
+    "raftstore.messages-per-tick": {
+      "value": 4096,
+      "type": "float"
+    },
+    "raftstore.notify-capacity": {
+      "value": 40960,
+      "type": "float"
+    },
+    "raftstore.pd-heartbeat-tick-interval": {
+      "value": "1m",
+      "type": "string"
+    },
+    "raftstore.pd-store-heartbeat-tick-interval": {
+      "value": "10s",
+      "type": "string"
+    },
+    "raftstore.peer-stale-state-check-interval": {
+      "value": "5m",
+      "type": "string"
+    },
+    "raftstore.perf-level": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore.prevote": {
+      "value": true,
+      "type": "bool"
+    },
+    "raftstore.raft-engine-purge-interval": {
+      "value": "10s",
+      "type": "string"
+    },
+    "raftstore.raft-entry-cache-life-time": {
+      "value": "30s",
+      "type": "string"
+    },
+    "raftstore.raft-entry-max-size": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "raftstore.raft-log-compact-sync-interval": {
+      "value": "2s",
+      "type": "string"
+    },
+    "raftstore.raft-log-gc-count-limit": {
+      "value": 73728,
+      "type": "float"
+    },
+    "raftstore.raft-log-gc-size-limit": {
+      "value": "72MiB",
+      "type": "string"
+    },
+    "raftstore.raft-log-gc-threshold": {
+      "value": 50,
+      "type": "float"
+    },
+    "raftstore.raft-log-gc-tick-interval": {
+      "value": "3s",
+      "type": "string"
+    },
+    "raftstore.raft-max-inflight-msgs": {
+      "value": 256,
+      "type": "float"
+    },
+    "raftstore.raft-max-size-per-msg": {
+      "value": "1MiB",
+      "type": "string"
+    },
+    "raftstore.raft-store-max-leader-lease": {
+      "value": "9s",
+      "type": "string"
+    },
+    "raftstore.raft-write-size-limit": {
+      "value": "1MiB",
+      "type": "string"
+    },
+    "raftstore.raftdb-path": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.7-1765243933/tikv-0/data/raft",
+      "type": "string"
+    },
+    "raftstore.reactive-memory-lock-tick-interval": {
+      "value": "2s",
+      "type": "string"
+    },
+    "raftstore.reactive-memory-lock-timeout-tick": {
+      "value": 5,
+      "type": "float"
+    },
+    "raftstore.region-split-check-diff": {
+      "value": "6MiB",
+      "type": "string"
+    },
+    "raftstore.region-worker-tick-interval": {
+      "value": "1s",
+      "type": "string"
+    },
+    "raftstore.renew-leader-lease-advance-duration": {
+      "value": "2s250ms",
+      "type": "string"
+    },
+    "raftstore.report-min-resolved-ts-interval": {
+      "value": "1s",
+      "type": "string"
+    },
+    "raftstore.report-region-buckets-tick-interval": {
+      "value": "10s",
+      "type": "string"
+    },
+    "raftstore.request-voter-replicated-index-interval": {
+      "value": "5m",
+      "type": "string"
+    },
+    "raftstore.snap-apply-batch-size": {
+      "value": "10MiB",
+      "type": "string"
+    },
+    "raftstore.snap-apply-copy-symlink": {
+      "value": false,
+      "type": "bool"
+    },
+    "raftstore.snap-gc-timeout": {
+      "value": "4h",
+      "type": "string"
+    },
+    "raftstore.snap-generator-pool-size": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore.snap-mgr-gc-tick-interval": {
+      "value": "1m",
+      "type": "string"
+    },
+    "raftstore.snap-wait-split-duration": {
+      "value": "34s",
+      "type": "string"
+    },
+    "raftstore.split-region-check-tick-interval": {
+      "value": "10s",
+      "type": "string"
+    },
+    "raftstore.store-io-notify-capacity": {
+      "value": 40960,
+      "type": "float"
+    },
+    "raftstore.store-io-pool-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore.store-low-priority-pool-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "raftstore.store-max-batch-size": {
+      "value": 256,
+      "type": "float"
+    },
+    "raftstore.store-pool-size": {
+      "value": 2,
+      "type": "float"
+    },
+    "raftstore.store-reschedule-duration": {
+      "value": "5s",
+      "type": "string"
+    },
+    "raftstore.unreachable-backoff": {
+      "value": "10s",
+      "type": "string"
+    },
+    "raftstore.waterfall-metrics": {
+      "value": true,
+      "type": "bool"
+    },
+    "readpool": {
+      "value": {
+        "coprocessor": {
+          "high-concurrency": 9,
+          "low-concurrency": 9,
+          "max-tasks-per-worker-high": 2000,
+          "max-tasks-per-worker-low": 2000,
+          "max-tasks-per-worker-normal": 2000,
+          "normal-concurrency": 9,
+          "stack-size": "10MiB",
+          "use-unified-pool": true
+        },
+        "storage": {
+          "high-concurrency": 6,
+          "low-concurrency": 6,
+          "max-tasks-per-worker-high": 2000,
+          "max-tasks-per-worker-low": 2000,
+          "max-tasks-per-worker-normal": 2000,
+          "normal-concurrency": 6,
+          "stack-size": "10MiB",
+          "use-unified-pool": true
+        },
+        "unified": {
+          "auto-adjust-pool-size": false,
+          "max-tasks-per-worker": 2000,
+          "max-thread-count": 9,
+          "min-thread-count": 1,
+          "stack-size": "10MiB"
+        }
+      },
+      "type": "map"
+    },
+    "readpool.coprocessor.high-concurrency": {
+      "value": 9,
+      "type": "float"
+    },
+    "readpool.coprocessor.low-concurrency": {
+      "value": 9,
+      "type": "float"
+    },
+    "readpool.coprocessor.max-tasks-per-worker-high": {
+      "value": 2000,
+      "type": "float"
+    },
+    "readpool.coprocessor.max-tasks-per-worker-low": {
+      "value": 2000,
+      "type": "float"
+    },
+    "readpool.coprocessor.max-tasks-per-worker-normal": {
+      "value": 2000,
+      "type": "float"
+    },
+    "readpool.coprocessor.normal-concurrency": {
+      "value": 9,
+      "type": "float"
+    },
+    "readpool.coprocessor.stack-size": {
+      "value": "10MiB",
+      "type": "string"
+    },
+    "readpool.coprocessor.use-unified-pool": {
+      "value": true,
+      "type": "bool"
+    },
+    "readpool.storage.high-concurrency": {
+      "value": 6,
+      "type": "float"
+    },
+    "readpool.storage.low-concurrency": {
+      "value": 6,
+      "type": "float"
+    },
+    "readpool.storage.max-tasks-per-worker-high": {
+      "value": 2000,
+      "type": "float"
+    },
+    "readpool.storage.max-tasks-per-worker-low": {
+      "value": 2000,
+      "type": "float"
+    },
+    "readpool.storage.max-tasks-per-worker-normal": {
+      "value": 2000,
+      "type": "float"
+    },
+    "readpool.storage.normal-concurrency": {
+      "value": 6,
+      "type": "float"
+    },
+    "readpool.storage.stack-size": {
+      "value": "10MiB",
+      "type": "string"
+    },
+    "readpool.storage.use-unified-pool": {
+      "value": true,
+      "type": "bool"
+    },
+    "readpool.unified.auto-adjust-pool-size": {
+      "value": false,
+      "type": "bool"
+    },
+    "readpool.unified.max-tasks-per-worker": {
+      "value": 2000,
+      "type": "float"
+    },
+    "readpool.unified.max-thread-count": {
+      "value": 9,
+      "type": "float"
+    },
+    "readpool.unified.min-thread-count": {
+      "value": 1,
+      "type": "float"
+    },
+    "readpool.unified.stack-size": {
+      "value": "10MiB",
+      "type": "string"
+    },
+    "resolved-ts": {
+      "value": {
+        "advance-ts-interval": "20s",
+        "enable": true,
+        "incremental-scan-concurrency": 6,
+        "memory-quota": "256MiB",
+        "scan-lock-pool-size": 2
+      },
+      "type": "map"
+    },
+    "resolved-ts.advance-ts-interval": {
+      "value": "20s",
+      "type": "string"
+    },
+    "resolved-ts.enable": {
+      "value": true,
+      "type": "bool"
+    },
+    "resolved-ts.incremental-scan-concurrency": {
+      "value": 6,
+      "type": "float"
+    },
+    "resolved-ts.memory-quota": {
+      "value": "256MiB",
+      "type": "string"
+    },
+    "resolved-ts.scan-lock-pool-size": {
+      "value": 2,
+      "type": "float"
+    },
+    "resource-control": {
+      "value": {
+        "enabled": true
+      },
+      "type": "map"
+    },
+    "resource-control.enabled": {
+      "value": true,
+      "type": "bool"
+    },
+    "resource-metering": {
+      "value": {
+        "max-resource-groups": 100,
+        "precision": "1s",
+        "receiver-address": "",
+        "report-receiver-interval": "1m"
+      },
+      "type": "map"
+    },
+    "resource-metering.max-resource-groups": {
+      "value": 100,
+      "type": "float"
+    },
+    "resource-metering.precision": {
+      "value": "1s",
+      "type": "string"
+    },
+    "resource-metering.receiver-address": {
+      "value": "",
+      "type": "string"
+    },
+    "resource-metering.report-receiver-interval": {
+      "value": "1m",
+      "type": "string"
+    },
+    "rocksdb": {
+      "value": {
+        "allow-concurrent-memtable-write": true,
+        "bytes-per-sync": "1MiB",
+        "compaction-readahead-size": "0KiB",
+        "create-if-missing": true,
+        "defaultcf": {
+          "block-based-bloom-filter": false,
+          "block-size": "32KiB",
+          "bloom-filter-bits-per-key": 10,
+          "bottommost-level-compression": "zstd",
+          "bottommost-zstd-compression-dict-size": 0,
+          "bottommost-zstd-compression-sample-size": 0,
+          "cache-index-and-filter-blocks": true,
+          "checksum": "crc32c",
+          "compaction-guard-max-output-file-size": "128MiB",
+          "compaction-guard-min-output-file-size": "8MiB",
+          "compaction-pri": 3,
+          "compaction-style": 0,
+          "compression-per-level": [
+            "no",
+            "no",
+            "lz4",
+            "lz4",
+            "lz4",
+            "zstd",
+            "zstd"
+          ],
+          "disable-auto-compactions": false,
+          "disable-block-cache": false,
+          "disable-write-stall": true,
+          "dynamic-level-bytes": true,
+          "enable-compaction-guard": true,
+          "enable-doubly-skiplist": true,
+          "force-consistency-checks": false,
+          "hard-pending-compaction-bytes-limit": "1TiB",
+          "level0-file-num-compaction-trigger": 4,
+          "level0-slowdown-writes-trigger": 20,
+          "level0-stop-writes-trigger": 20,
+          "max-bytes-for-level-base": "512MiB",
+          "max-bytes-for-level-multiplier": 10,
+          "max-compaction-bytes": "2GiB",
+          "max-write-buffer-number": 5,
+          "min-write-buffer-number-to-merge": 1,
+          "num-levels": 7,
+          "optimize-filters-for-hits": true,
+          "optimize-filters-for-memory": false,
+          "pin-l0-filter-and-index-blocks": true,
+          "prepopulate-block-cache": "disabled",
+          "prop-keys-index-distance": 40960,
+          "prop-size-index-distance": 4194304,
+          "read-amp-bytes-per-bit": 0,
+          "soft-pending-compaction-bytes-limit": "192GiB",
+          "titan": {
+            "blob-cache-size": "0KiB",
+            "blob-file-compression": "lz4",
+            "blob-run-mode": "normal",
+            "discardable-ratio": 0.5,
+            "level-merge": false,
+            "max-gc-batch-size": "64MiB",
+            "max-sorted-runs": 20,
+            "merge-small-file-threshold": "8MiB",
+            "min-blob-size": "1KiB",
+            "min-gc-batch-size": "16MiB",
+            "range-merge": true
+          },
+          "use-bloom-filter": true,
+          "whole-key-filtering": true,
+          "write-buffer-size": "128MiB"
+        },
+        "enable-pipelined-write": false,
+        "enable-unordered-write": false,
+        "info-log-dir": "",
+        "info-log-keep-log-file-num": 10,
+        "info-log-level": "info",
+        "info-log-max-size": "1GiB",
+        "info-log-roll-time": "0s",
+        "lockcf": {
+          "block-based-bloom-filter": false,
+          "block-size": "16KiB",
+          "bloom-filter-bits-per-key": 10,
+          "bottommost-level-compression": "disable",
+          "bottommost-zstd-compression-dict-size": 0,
+          "bottommost-zstd-compression-sample-size": 0,
+          "cache-index-and-filter-blocks": true,
+          "checksum": "crc32c",
+          "compaction-guard-max-output-file-size": "128MiB",
+          "compaction-guard-min-output-file-size": "8MiB",
+          "compaction-pri": 0,
+          "compaction-style": 0,
+          "compression-per-level": [
+            "no",
+            "no",
+            "no",
+            "no",
+            "no",
+            "no",
+            "no"
+          ],
+          "disable-auto-compactions": false,
+          "disable-block-cache": false,
+          "disable-write-stall": true,
+          "dynamic-level-bytes": true,
+          "enable-doubly-skiplist": true,
+          "force-consistency-checks": false,
+          "hard-pending-compaction-bytes-limit": "1TiB",
+          "level0-file-num-compaction-trigger": 1,
+          "level0-slowdown-writes-trigger": 20,
+          "level0-stop-writes-trigger": 20,
+          "max-bytes-for-level-base": "128MiB",
+          "max-bytes-for-level-multiplier": 10,
+          "max-compaction-bytes": "2GiB",
+          "max-write-buffer-number": 5,
+          "min-write-buffer-number-to-merge": 1,
+          "num-levels": 7,
+          "optimize-filters-for-hits": false,
+          "optimize-filters-for-memory": false,
+          "pin-l0-filter-and-index-blocks": true,
+          "prepopulate-block-cache": "disabled",
+          "prop-keys-index-distance": 40960,
+          "prop-size-index-distance": 4194304,
+          "read-amp-bytes-per-bit": 0,
+          "soft-pending-compaction-bytes-limit": "192GiB",
+          "titan": {
+            "blob-cache-size": "0KiB",
+            "blob-file-compression": "lz4",
+            "blob-run-mode": "read-only",
+            "discardable-ratio": 0.5,
+            "level-merge": false,
+            "max-gc-batch-size": "64MiB",
+            "max-sorted-runs": 20,
+            "merge-small-file-threshold": "8MiB",
+            "min-blob-size": "1KiB",
+            "min-gc-batch-size": "16MiB",
+            "range-merge": true
+          },
+          "use-bloom-filter": true,
+          "whole-key-filtering": true,
+          "write-buffer-size": "32MiB"
+        },
+        "max-background-flushes": 3,
+        "max-background-jobs": 9,
+        "max-manifest-file-size": "128MiB",
+        "max-open-files": 256,
+        "max-sub-compactions": 3,
+        "max-total-wal-size": "4GiB",
+        "raftcf": {
+          "block-based-bloom-filter": false,
+          "block-size": "16KiB",
+          "bloom-filter-bits-per-key": 10,
+          "bottommost-level-compression": "disable",
+          "bottommost-zstd-compression-dict-size": 0,
+          "bottommost-zstd-compression-sample-size": 0,
+          "cache-index-and-filter-blocks": true,
+          "checksum": "crc32c",
+          "compaction-guard-max-output-file-size": "128MiB",
+          "compaction-guard-min-output-file-size": "8MiB",
+          "compaction-pri": 0,
+          "compaction-style": 0,
+          "compression-per-level": [
+            "no",
+            "no",
+            "no",
+            "no",
+            "no",
+            "no",
+            "no"
+          ],
+          "disable-auto-compactions": false,
+          "disable-block-cache": false,
+          "disable-write-stall": true,
+          "dynamic-level-bytes": true,
+          "enable-doubly-skiplist": true,
+          "force-consistency-checks": false,
+          "hard-pending-compaction-bytes-limit": "1TiB",
+          "level0-file-num-compaction-trigger": 1,
+          "level0-slowdown-writes-trigger": 20,
+          "level0-stop-writes-trigger": 20,
+          "max-bytes-for-level-base": "128MiB",
+          "max-bytes-for-level-multiplier": 10,
+          "max-compaction-bytes": "2GiB",
+          "max-write-buffer-number": 5,
+          "min-write-buffer-number-to-merge": 1,
+          "num-levels": 7,
+          "optimize-filters-for-hits": true,
+          "optimize-filters-for-memory": false,
+          "pin-l0-filter-and-index-blocks": true,
+          "prepopulate-block-cache": "disabled",
+          "prop-keys-index-distance": 40960,
+          "prop-size-index-distance": 4194304,
+          "read-amp-bytes-per-bit": 0,
+          "soft-pending-compaction-bytes-limit": "192GiB",
+          "titan": {
+            "blob-cache-size": "0KiB",
+            "blob-file-compression": "lz4",
+            "blob-run-mode": "read-only",
+            "discardable-ratio": 0.5,
+            "level-merge": false,
+            "max-gc-batch-size": "64MiB",
+            "max-sorted-runs": 20,
+            "merge-small-file-threshold": "8MiB",
+            "min-blob-size": "1KiB",
+            "min-gc-batch-size": "16MiB",
+            "range-merge": true
+          },
+          "use-bloom-filter": true,
+          "whole-key-filtering": true,
+          "write-buffer-size": "128MiB"
+        },
+        "rate-bytes-per-sec": "10GiB",
+        "rate-limiter-auto-tuned": true,
+        "rate-limiter-mode": 2,
+        "rate-limiter-refill-period": "100ms",
+        "stats-dump-period": "10m",
+        "titan": {
+          "dirname": "",
+          "disable-gc": false,
+          "enabled": false,
+          "max-background-gc": 4,
+          "purge-obsolete-files-period": "10s"
+        },
+        "track-and-verify-wals-in-manifest": false,
+        "use-direct-io-for-flush-and-compaction": false,
+        "wal-bytes-per-sync": "512KiB",
+        "wal-dir": "",
+        "wal-recovery-mode": 2,
+        "wal-size-limit": "0KiB",
+        "wal-ttl-seconds": 0,
+        "writable-file-max-buffer-size": "1MiB",
+        "writecf": {
+          "block-based-bloom-filter": false,
+          "block-size": "32KiB",
+          "bloom-filter-bits-per-key": 10,
+          "bottommost-level-compression": "zstd",
+          "bottommost-zstd-compression-dict-size": 0,
+          "bottommost-zstd-compression-sample-size": 0,
+          "cache-index-and-filter-blocks": true,
+          "checksum": "crc32c",
+          "compaction-guard-max-output-file-size": "128MiB",
+          "compaction-guard-min-output-file-size": "8MiB",
+          "compaction-pri": 3,
+          "compaction-style": 0,
+          "compression-per-level": [
+            "no",
+            "no",
+            "lz4",
+            "lz4",
+            "lz4",
+            "zstd",
+            "zstd"
+          ],
+          "disable-auto-compactions": false,
+          "disable-block-cache": false,
+          "disable-write-stall": true,
+          "dynamic-level-bytes": true,
+          "enable-compaction-guard": true,
+          "enable-doubly-skiplist": true,
+          "force-consistency-checks": false,
+          "hard-pending-compaction-bytes-limit": "1TiB",
+          "level0-file-num-compaction-trigger": 4,
+          "level0-slowdown-writes-trigger": 20,
+          "level0-stop-writes-trigger": 20,
+          "max-bytes-for-level-base": "512MiB",
+          "max-bytes-for-level-multiplier": 10,
+          "max-compaction-bytes": "2GiB",
+          "max-write-buffer-number": 5,
+          "min-write-buffer-number-to-merge": 1,
+          "num-levels": 7,
+          "optimize-filters-for-hits": false,
+          "optimize-filters-for-memory": false,
+          "pin-l0-filter-and-index-blocks": true,
+          "prepopulate-block-cache": "disabled",
+          "prop-keys-index-distance": 40960,
+          "prop-size-index-distance": 4194304,
+          "read-amp-bytes-per-bit": 0,
+          "soft-pending-compaction-bytes-limit": "192GiB",
+          "titan": {
+            "blob-cache-size": "0KiB",
+            "blob-file-compression": "lz4",
+            "blob-run-mode": "read-only",
+            "discardable-ratio": 0.5,
+            "level-merge": false,
+            "max-gc-batch-size": "64MiB",
+            "max-sorted-runs": 20,
+            "merge-small-file-threshold": "8MiB",
+            "min-blob-size": "1KiB",
+            "min-gc-batch-size": "16MiB",
+            "range-merge": true
+          },
+          "use-bloom-filter": true,
+          "whole-key-filtering": false,
+          "write-buffer-size": "128MiB"
+        }
+      },
+      "type": "map"
+    },
+    "rocksdb.allow-concurrent-memtable-write": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.bytes-per-sync": {
+      "value": "1MiB",
+      "type": "string"
+    },
+    "rocksdb.compaction-readahead-size": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "rocksdb.create-if-missing": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.defaultcf.block-based-bloom-filter": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.defaultcf.block-cache-size": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.defaultcf.block-size": {
+      "value": "32KiB",
+      "type": "string"
+    },
+    "rocksdb.defaultcf.bloom-filter-bits-per-key": {
+      "value": 10,
+      "type": "float"
+    },
+    "rocksdb.defaultcf.bottommost-level-compression": {
+      "value": "zstd",
+      "type": "string"
+    },
+    "rocksdb.defaultcf.bottommost-zstd-compression-dict-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.defaultcf.bottommost-zstd-compression-sample-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.defaultcf.cache-index-and-filter-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.defaultcf.checksum": {
+      "value": "crc32c",
+      "type": "string"
+    },
+    "rocksdb.defaultcf.compaction-guard-max-output-file-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "rocksdb.defaultcf.compaction-guard-min-output-file-size": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "rocksdb.defaultcf.compaction-pri": {
+      "value": 3,
+      "type": "float"
+    },
+    "rocksdb.defaultcf.compaction-style": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.defaultcf.compression-per-level": {
+      "value": [
+        "no",
+        "no",
+        "lz4",
+        "lz4",
+        "lz4",
+        "zstd",
+        "zstd"
+      ],
+      "type": "string"
+    },
+    "rocksdb.defaultcf.disable-auto-compactions": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.defaultcf.disable-block-cache": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.defaultcf.disable-write-stall": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.defaultcf.dynamic-level-bytes": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.defaultcf.enable-compaction-guard": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.defaultcf.enable-doubly-skiplist": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.defaultcf.force-consistency-checks": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.defaultcf.format-version": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.defaultcf.hard-pending-compaction-bytes-limit": {
+      "value": "1TiB",
+      "type": "string"
+    },
+    "rocksdb.defaultcf.level0-file-num-compaction-trigger": {
+      "value": 4,
+      "type": "float"
+    },
+    "rocksdb.defaultcf.level0-slowdown-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "rocksdb.defaultcf.level0-stop-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "rocksdb.defaultcf.max-bytes-for-level-base": {
+      "value": "512MiB",
+      "type": "string"
+    },
+    "rocksdb.defaultcf.max-bytes-for-level-multiplier": {
+      "value": 10,
+      "type": "float"
+    },
+    "rocksdb.defaultcf.max-compaction-bytes": {
+      "value": "2GiB",
+      "type": "string"
+    },
+    "rocksdb.defaultcf.max-compactions": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.defaultcf.max-write-buffer-number": {
+      "value": 5,
+      "type": "float"
+    },
+    "rocksdb.defaultcf.min-write-buffer-number-to-merge": {
+      "value": 1,
+      "type": "float"
+    },
+    "rocksdb.defaultcf.num-levels": {
+      "value": 7,
+      "type": "float"
+    },
+    "rocksdb.defaultcf.optimize-filters-for-hits": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.defaultcf.optimize-filters-for-memory": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.defaultcf.periodic-compaction-seconds": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.defaultcf.pin-l0-filter-and-index-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.defaultcf.prepopulate-block-cache": {
+      "value": "disabled",
+      "type": "string"
+    },
+    "rocksdb.defaultcf.prop-keys-index-distance": {
+      "value": 40960,
+      "type": "float"
+    },
+    "rocksdb.defaultcf.prop-size-index-distance": {
+      "value": 4194304,
+      "type": "float"
+    },
+    "rocksdb.defaultcf.read-amp-bytes-per-bit": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.defaultcf.ribbon-filter-above-level": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.defaultcf.soft-pending-compaction-bytes-limit": {
+      "value": "192GiB",
+      "type": "string"
+    },
+    "rocksdb.defaultcf.target-file-size-base": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.defaultcf.titan.blob-cache-size": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "rocksdb.defaultcf.titan.blob-file-compression": {
+      "value": "lz4",
+      "type": "string"
+    },
+    "rocksdb.defaultcf.titan.blob-run-mode": {
+      "value": "normal",
+      "type": "string"
+    },
+    "rocksdb.defaultcf.titan.discardable-ratio": {
+      "value": 0.5,
+      "type": "float"
+    },
+    "rocksdb.defaultcf.titan.level-merge": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.defaultcf.titan.max-gc-batch-size": {
+      "value": "64MiB",
+      "type": "string"
+    },
+    "rocksdb.defaultcf.titan.max-sorted-runs": {
+      "value": 20,
+      "type": "float"
+    },
+    "rocksdb.defaultcf.titan.merge-small-file-threshold": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "rocksdb.defaultcf.titan.min-blob-size": {
+      "value": "1KiB",
+      "type": "string"
+    },
+    "rocksdb.defaultcf.titan.min-gc-batch-size": {
+      "value": "16MiB",
+      "type": "string"
+    },
+    "rocksdb.defaultcf.titan.range-merge": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.defaultcf.ttl": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.defaultcf.use-bloom-filter": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.defaultcf.whole-key-filtering": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.defaultcf.write-buffer-limit": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.defaultcf.write-buffer-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "rocksdb.enable-multi-batch-write": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.enable-pipelined-write": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.enable-unordered-write": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.info-log-dir": {
+      "value": "",
+      "type": "string"
+    },
+    "rocksdb.info-log-keep-log-file-num": {
+      "value": 10,
+      "type": "float"
+    },
+    "rocksdb.info-log-level": {
+      "value": "info",
+      "type": "string"
+    },
+    "rocksdb.info-log-max-size": {
+      "value": "1GiB",
+      "type": "string"
+    },
+    "rocksdb.info-log-roll-time": {
+      "value": "0s",
+      "type": "string"
+    },
+    "rocksdb.lockcf.block-based-bloom-filter": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.lockcf.block-cache-size": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.lockcf.block-size": {
+      "value": "16KiB",
+      "type": "string"
+    },
+    "rocksdb.lockcf.bloom-filter-bits-per-key": {
+      "value": 10,
+      "type": "float"
+    },
+    "rocksdb.lockcf.bottommost-level-compression": {
+      "value": "disable",
+      "type": "string"
+    },
+    "rocksdb.lockcf.bottommost-zstd-compression-dict-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.lockcf.bottommost-zstd-compression-sample-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.lockcf.cache-index-and-filter-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.lockcf.checksum": {
+      "value": "crc32c",
+      "type": "string"
+    },
+    "rocksdb.lockcf.compaction-guard-max-output-file-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "rocksdb.lockcf.compaction-guard-min-output-file-size": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "rocksdb.lockcf.compaction-pri": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.lockcf.compaction-style": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.lockcf.compression-per-level": {
+      "value": [
+        "no",
+        "no",
+        "no",
+        "no",
+        "no",
+        "no",
+        "no"
+      ],
+      "type": "string"
+    },
+    "rocksdb.lockcf.disable-auto-compactions": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.lockcf.disable-block-cache": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.lockcf.disable-write-stall": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.lockcf.dynamic-level-bytes": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.lockcf.enable-compaction-guard": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.lockcf.enable-doubly-skiplist": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.lockcf.force-consistency-checks": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.lockcf.format-version": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.lockcf.hard-pending-compaction-bytes-limit": {
+      "value": "1TiB",
+      "type": "string"
+    },
+    "rocksdb.lockcf.level0-file-num-compaction-trigger": {
+      "value": 1,
+      "type": "float"
+    },
+    "rocksdb.lockcf.level0-slowdown-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "rocksdb.lockcf.level0-stop-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "rocksdb.lockcf.max-bytes-for-level-base": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "rocksdb.lockcf.max-bytes-for-level-multiplier": {
+      "value": 10,
+      "type": "float"
+    },
+    "rocksdb.lockcf.max-compaction-bytes": {
+      "value": "2GiB",
+      "type": "string"
+    },
+    "rocksdb.lockcf.max-compactions": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.lockcf.max-write-buffer-number": {
+      "value": 5,
+      "type": "float"
+    },
+    "rocksdb.lockcf.min-write-buffer-number-to-merge": {
+      "value": 1,
+      "type": "float"
+    },
+    "rocksdb.lockcf.num-levels": {
+      "value": 7,
+      "type": "float"
+    },
+    "rocksdb.lockcf.optimize-filters-for-hits": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.lockcf.optimize-filters-for-memory": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.lockcf.periodic-compaction-seconds": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.lockcf.pin-l0-filter-and-index-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.lockcf.prepopulate-block-cache": {
+      "value": "disabled",
+      "type": "string"
+    },
+    "rocksdb.lockcf.prop-keys-index-distance": {
+      "value": 40960,
+      "type": "float"
+    },
+    "rocksdb.lockcf.prop-size-index-distance": {
+      "value": 4194304,
+      "type": "float"
+    },
+    "rocksdb.lockcf.read-amp-bytes-per-bit": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.lockcf.ribbon-filter-above-level": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.lockcf.soft-pending-compaction-bytes-limit": {
+      "value": "192GiB",
+      "type": "string"
+    },
+    "rocksdb.lockcf.target-file-size-base": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.lockcf.titan.blob-cache-size": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "rocksdb.lockcf.titan.blob-file-compression": {
+      "value": "lz4",
+      "type": "string"
+    },
+    "rocksdb.lockcf.titan.blob-run-mode": {
+      "value": "read-only",
+      "type": "string"
+    },
+    "rocksdb.lockcf.titan.discardable-ratio": {
+      "value": 0.5,
+      "type": "float"
+    },
+    "rocksdb.lockcf.titan.level-merge": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.lockcf.titan.max-gc-batch-size": {
+      "value": "64MiB",
+      "type": "string"
+    },
+    "rocksdb.lockcf.titan.max-sorted-runs": {
+      "value": 20,
+      "type": "float"
+    },
+    "rocksdb.lockcf.titan.merge-small-file-threshold": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "rocksdb.lockcf.titan.min-blob-size": {
+      "value": "1KiB",
+      "type": "string"
+    },
+    "rocksdb.lockcf.titan.min-gc-batch-size": {
+      "value": "16MiB",
+      "type": "string"
+    },
+    "rocksdb.lockcf.titan.range-merge": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.lockcf.ttl": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.lockcf.use-bloom-filter": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.lockcf.whole-key-filtering": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.lockcf.write-buffer-limit": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.lockcf.write-buffer-size": {
+      "value": "32MiB",
+      "type": "string"
+    },
+    "rocksdb.max-background-flushes": {
+      "value": 3,
+      "type": "float"
+    },
+    "rocksdb.max-background-jobs": {
+      "value": 9,
+      "type": "float"
+    },
+    "rocksdb.max-manifest-file-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "rocksdb.max-open-files": {
+      "value": 256,
+      "type": "float"
+    },
+    "rocksdb.max-sub-compactions": {
+      "value": 3,
+      "type": "float"
+    },
+    "rocksdb.max-total-wal-size": {
+      "value": "4GiB",
+      "type": "string"
+    },
+    "rocksdb.raftcf.block-based-bloom-filter": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.raftcf.block-cache-size": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.raftcf.block-size": {
+      "value": "16KiB",
+      "type": "string"
+    },
+    "rocksdb.raftcf.bloom-filter-bits-per-key": {
+      "value": 10,
+      "type": "float"
+    },
+    "rocksdb.raftcf.bottommost-level-compression": {
+      "value": "disable",
+      "type": "string"
+    },
+    "rocksdb.raftcf.bottommost-zstd-compression-dict-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.raftcf.bottommost-zstd-compression-sample-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.raftcf.cache-index-and-filter-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.raftcf.checksum": {
+      "value": "crc32c",
+      "type": "string"
+    },
+    "rocksdb.raftcf.compaction-guard-max-output-file-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "rocksdb.raftcf.compaction-guard-min-output-file-size": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "rocksdb.raftcf.compaction-pri": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.raftcf.compaction-style": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.raftcf.compression-per-level": {
+      "value": [
+        "no",
+        "no",
+        "no",
+        "no",
+        "no",
+        "no",
+        "no"
+      ],
+      "type": "string"
+    },
+    "rocksdb.raftcf.disable-auto-compactions": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.raftcf.disable-block-cache": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.raftcf.disable-write-stall": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.raftcf.dynamic-level-bytes": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.raftcf.enable-compaction-guard": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.raftcf.enable-doubly-skiplist": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.raftcf.force-consistency-checks": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.raftcf.format-version": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.raftcf.hard-pending-compaction-bytes-limit": {
+      "value": "1TiB",
+      "type": "string"
+    },
+    "rocksdb.raftcf.level0-file-num-compaction-trigger": {
+      "value": 1,
+      "type": "float"
+    },
+    "rocksdb.raftcf.level0-slowdown-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "rocksdb.raftcf.level0-stop-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "rocksdb.raftcf.max-bytes-for-level-base": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "rocksdb.raftcf.max-bytes-for-level-multiplier": {
+      "value": 10,
+      "type": "float"
+    },
+    "rocksdb.raftcf.max-compaction-bytes": {
+      "value": "2GiB",
+      "type": "string"
+    },
+    "rocksdb.raftcf.max-compactions": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.raftcf.max-write-buffer-number": {
+      "value": 5,
+      "type": "float"
+    },
+    "rocksdb.raftcf.min-write-buffer-number-to-merge": {
+      "value": 1,
+      "type": "float"
+    },
+    "rocksdb.raftcf.num-levels": {
+      "value": 7,
+      "type": "float"
+    },
+    "rocksdb.raftcf.optimize-filters-for-hits": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.raftcf.optimize-filters-for-memory": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.raftcf.periodic-compaction-seconds": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.raftcf.pin-l0-filter-and-index-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.raftcf.prepopulate-block-cache": {
+      "value": "disabled",
+      "type": "string"
+    },
+    "rocksdb.raftcf.prop-keys-index-distance": {
+      "value": 40960,
+      "type": "float"
+    },
+    "rocksdb.raftcf.prop-size-index-distance": {
+      "value": 4194304,
+      "type": "float"
+    },
+    "rocksdb.raftcf.read-amp-bytes-per-bit": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.raftcf.ribbon-filter-above-level": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.raftcf.soft-pending-compaction-bytes-limit": {
+      "value": "192GiB",
+      "type": "string"
+    },
+    "rocksdb.raftcf.target-file-size-base": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.raftcf.titan.blob-cache-size": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "rocksdb.raftcf.titan.blob-file-compression": {
+      "value": "lz4",
+      "type": "string"
+    },
+    "rocksdb.raftcf.titan.blob-run-mode": {
+      "value": "read-only",
+      "type": "string"
+    },
+    "rocksdb.raftcf.titan.discardable-ratio": {
+      "value": 0.5,
+      "type": "float"
+    },
+    "rocksdb.raftcf.titan.level-merge": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.raftcf.titan.max-gc-batch-size": {
+      "value": "64MiB",
+      "type": "string"
+    },
+    "rocksdb.raftcf.titan.max-sorted-runs": {
+      "value": 20,
+      "type": "float"
+    },
+    "rocksdb.raftcf.titan.merge-small-file-threshold": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "rocksdb.raftcf.titan.min-blob-size": {
+      "value": "1KiB",
+      "type": "string"
+    },
+    "rocksdb.raftcf.titan.min-gc-batch-size": {
+      "value": "16MiB",
+      "type": "string"
+    },
+    "rocksdb.raftcf.titan.range-merge": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.raftcf.ttl": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.raftcf.use-bloom-filter": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.raftcf.whole-key-filtering": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.raftcf.write-buffer-limit": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.raftcf.write-buffer-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "rocksdb.rate-bytes-per-sec": {
+      "value": "10GiB",
+      "type": "string"
+    },
+    "rocksdb.rate-limiter-auto-tuned": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.rate-limiter-mode": {
+      "value": 2,
+      "type": "float"
+    },
+    "rocksdb.rate-limiter-refill-period": {
+      "value": "100ms",
+      "type": "string"
+    },
+    "rocksdb.stats-dump-period": {
+      "value": "10m",
+      "type": "string"
+    },
+    "rocksdb.titan.dirname": {
+      "value": "",
+      "type": "string"
+    },
+    "rocksdb.titan.disable-gc": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.titan.enabled": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.titan.max-background-gc": {
+      "value": 4,
+      "type": "float"
+    },
+    "rocksdb.titan.purge-obsolete-files-period": {
+      "value": "10s",
+      "type": "string"
+    },
+    "rocksdb.track-and-verify-wals-in-manifest": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.use-direct-io-for-flush-and-compaction": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.wal-bytes-per-sync": {
+      "value": "512KiB",
+      "type": "string"
+    },
+    "rocksdb.wal-dir": {
+      "value": "",
+      "type": "string"
+    },
+    "rocksdb.wal-recovery-mode": {
+      "value": 2,
+      "type": "float"
+    },
+    "rocksdb.wal-size-limit": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "rocksdb.wal-ttl-seconds": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.writable-file-max-buffer-size": {
+      "value": "1MiB",
+      "type": "string"
+    },
+    "rocksdb.write-buffer-limit": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.writecf.block-based-bloom-filter": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.writecf.block-cache-size": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.writecf.block-size": {
+      "value": "32KiB",
+      "type": "string"
+    },
+    "rocksdb.writecf.bloom-filter-bits-per-key": {
+      "value": 10,
+      "type": "float"
+    },
+    "rocksdb.writecf.bottommost-level-compression": {
+      "value": "zstd",
+      "type": "string"
+    },
+    "rocksdb.writecf.bottommost-zstd-compression-dict-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.writecf.bottommost-zstd-compression-sample-size": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.writecf.cache-index-and-filter-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.writecf.checksum": {
+      "value": "crc32c",
+      "type": "string"
+    },
+    "rocksdb.writecf.compaction-guard-max-output-file-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "rocksdb.writecf.compaction-guard-min-output-file-size": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "rocksdb.writecf.compaction-pri": {
+      "value": 3,
+      "type": "float"
+    },
+    "rocksdb.writecf.compaction-style": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.writecf.compression-per-level": {
+      "value": [
+        "no",
+        "no",
+        "lz4",
+        "lz4",
+        "lz4",
+        "zstd",
+        "zstd"
+      ],
+      "type": "string"
+    },
+    "rocksdb.writecf.disable-auto-compactions": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.writecf.disable-block-cache": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.writecf.disable-write-stall": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.writecf.dynamic-level-bytes": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.writecf.enable-compaction-guard": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.writecf.enable-doubly-skiplist": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.writecf.force-consistency-checks": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.writecf.format-version": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.writecf.hard-pending-compaction-bytes-limit": {
+      "value": "1TiB",
+      "type": "string"
+    },
+    "rocksdb.writecf.level0-file-num-compaction-trigger": {
+      "value": 4,
+      "type": "float"
+    },
+    "rocksdb.writecf.level0-slowdown-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "rocksdb.writecf.level0-stop-writes-trigger": {
+      "value": 20,
+      "type": "float"
+    },
+    "rocksdb.writecf.max-bytes-for-level-base": {
+      "value": "512MiB",
+      "type": "string"
+    },
+    "rocksdb.writecf.max-bytes-for-level-multiplier": {
+      "value": 10,
+      "type": "float"
+    },
+    "rocksdb.writecf.max-compaction-bytes": {
+      "value": "2GiB",
+      "type": "string"
+    },
+    "rocksdb.writecf.max-compactions": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.writecf.max-write-buffer-number": {
+      "value": 5,
+      "type": "float"
+    },
+    "rocksdb.writecf.min-write-buffer-number-to-merge": {
+      "value": 1,
+      "type": "float"
+    },
+    "rocksdb.writecf.num-levels": {
+      "value": 7,
+      "type": "float"
+    },
+    "rocksdb.writecf.optimize-filters-for-hits": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.writecf.optimize-filters-for-memory": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.writecf.periodic-compaction-seconds": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.writecf.pin-l0-filter-and-index-blocks": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.writecf.prepopulate-block-cache": {
+      "value": "disabled",
+      "type": "string"
+    },
+    "rocksdb.writecf.prop-keys-index-distance": {
+      "value": 40960,
+      "type": "float"
+    },
+    "rocksdb.writecf.prop-size-index-distance": {
+      "value": 4194304,
+      "type": "float"
+    },
+    "rocksdb.writecf.read-amp-bytes-per-bit": {
+      "value": 0,
+      "type": "float"
+    },
+    "rocksdb.writecf.ribbon-filter-above-level": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.writecf.soft-pending-compaction-bytes-limit": {
+      "value": "192GiB",
+      "type": "string"
+    },
+    "rocksdb.writecf.target-file-size-base": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.writecf.titan.blob-cache-size": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "rocksdb.writecf.titan.blob-file-compression": {
+      "value": "lz4",
+      "type": "string"
+    },
+    "rocksdb.writecf.titan.blob-run-mode": {
+      "value": "read-only",
+      "type": "string"
+    },
+    "rocksdb.writecf.titan.discardable-ratio": {
+      "value": 0.5,
+      "type": "float"
+    },
+    "rocksdb.writecf.titan.level-merge": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.writecf.titan.max-gc-batch-size": {
+      "value": "64MiB",
+      "type": "string"
+    },
+    "rocksdb.writecf.titan.max-sorted-runs": {
+      "value": 20,
+      "type": "float"
+    },
+    "rocksdb.writecf.titan.merge-small-file-threshold": {
+      "value": "8MiB",
+      "type": "string"
+    },
+    "rocksdb.writecf.titan.min-blob-size": {
+      "value": "1KiB",
+      "type": "string"
+    },
+    "rocksdb.writecf.titan.min-gc-batch-size": {
+      "value": "16MiB",
+      "type": "string"
+    },
+    "rocksdb.writecf.titan.range-merge": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.writecf.ttl": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.writecf.use-bloom-filter": {
+      "value": true,
+      "type": "bool"
+    },
+    "rocksdb.writecf.whole-key-filtering": {
+      "value": false,
+      "type": "bool"
+    },
+    "rocksdb.writecf.write-buffer-limit": {
+      "value": null,
+      "type": "string"
+    },
+    "rocksdb.writecf.write-buffer-size": {
+      "value": "128MiB",
+      "type": "string"
+    },
+    "security": {
+      "value": {
+        "ca-path": "",
+        "cert-allowed-cn": [],
+        "cert-path": "",
+        "encryption": {
+          "data-encryption-method": "plaintext",
+          "data-key-rotation-period": "7d",
+          "enable-file-dictionary-log": true,
+          "file-dictionary-rewrite-threshold": 1000000,
+          "master-key": {
+            "type": "plaintext"
+          },
+          "previous-master-key": {
+            "type": "plaintext"
+          }
+        },
+        "key-path": ""
+      },
+      "type": "map"
+    },
+    "security.ca-path": {
+      "value": "",
+      "type": "string"
+    },
+    "security.cert-allowed-cn": {
+      "value": [],
+      "type": "string"
+    },
+    "security.cert-path": {
+      "value": "",
+      "type": "string"
+    },
+    "security.encryption.data-encryption-method": {
+      "value": "plaintext",
+      "type": "string"
+    },
+    "security.encryption.data-key-rotation-period": {
+      "value": "7d",
+      "type": "string"
+    },
+    "security.encryption.enable-file-dictionary-log": {
+      "value": true,
+      "type": "bool"
+    },
+    "security.encryption.file-dictionary-rewrite-threshold": {
+      "value": 1000000,
+      "type": "float"
+    },
+    "security.encryption.master-key.type": {
+      "value": "plaintext",
+      "type": "string"
+    },
+    "security.encryption.previous-master-key.type": {
+      "value": "plaintext",
+      "type": "string"
+    },
+    "security.key-path": {
+      "value": "",
+      "type": "string"
+    },
+    "security.redact-info-log": {
+      "value": null,
+      "type": "string"
+    },
+    "server": {
+      "value": {
+        "addr": "127.0.0.1:20160",
+        "advertise-addr": "127.0.0.1:20160",
+        "advertise-status-addr": "127.0.0.1:20180",
+        "background-thread-count": 2,
+        "concurrent-recv-snap-limit": 32,
+        "concurrent-send-snap-limit": 32,
+        "enable-request-batch": true,
+        "end-point-batch-row-limit": 64,
+        "end-point-enable-batch-if-possible": true,
+        "end-point-max-concurrency": 12,
+        "end-point-memory-quota": "6GiB",
+        "end-point-perf-level": 0,
+        "end-point-recursion-limit": 1000,
+        "end-point-request-max-handle-duration": "1m",
+        "end-point-slow-log-threshold": "1s",
+        "end-point-stream-batch-row-limit": 128,
+        "end-point-stream-channel-size": 8,
+        "forward-max-connections-per-address": 4,
+        "grpc-compression-type": "none",
+        "grpc-concurrency": 5,
+        "grpc-concurrent-stream": 1024,
+        "grpc-gzip-compression-level": 2,
+        "grpc-keepalive-time": "10s",
+        "grpc-keepalive-timeout": "3s",
+        "grpc-memory-pool-quota": "9223372036854775807B",
+        "grpc-min-message-size-to-compress": 4096,
+        "grpc-raft-conn-num": 1,
+        "grpc-stream-initial-window-size": "2MiB",
+        "heavy-load-threshold": 75,
+        "labels": {},
+        "max-grpc-send-msg-len": 10485760,
+        "raft-client-grpc-send-msg-buffer": 524288,
+        "raft-client-queue-size": 16384,
+        "raft-msg-max-batch-size": 256,
+        "reject-messages-on-memory-ratio": 0.2,
+        "simplify-metrics": false,
+        "snap-io-max-bytes-per-sec": "100MiB",
+        "snap-max-total-size": "0KiB",
+        "snap-min-ingest-size": "2MiB",
+        "stats-concurrency": 1,
+        "status-addr": "127.0.0.1:20180",
+        "status-thread-pool-size": 1
+      },
+      "type": "map"
+    },
+    "server.addr": {
+      "value": "127.0.0.1:20160",
+      "type": "string"
+    },
+    "server.advertise-addr": {
+      "value": "127.0.0.1:20160",
+      "type": "string"
+    },
+    "server.advertise-status-addr": {
+      "value": "127.0.0.1:20180",
+      "type": "string"
+    },
+    "server.background-thread-count": {
+      "value": 2,
+      "type": "float"
+    },
+    "server.concurrent-recv-snap-limit": {
+      "value": 32,
+      "type": "float"
+    },
+    "server.concurrent-send-snap-limit": {
+      "value": 32,
+      "type": "float"
+    },
+    "server.enable-request-batch": {
+      "value": true,
+      "type": "bool"
+    },
+    "server.end-point-batch-row-limit": {
+      "value": 64,
+      "type": "float"
+    },
+    "server.end-point-enable-batch-if-possible": {
+      "value": true,
+      "type": "bool"
+    },
+    "server.end-point-max-concurrency": {
+      "value": 12,
+      "type": "float"
+    },
+    "server.end-point-memory-quota": {
+      "value": "6GiB",
+      "type": "string"
+    },
+    "server.end-point-perf-level": {
+      "value": 0,
+      "type": "float"
+    },
+    "server.end-point-recursion-limit": {
+      "value": 1000,
+      "type": "float"
+    },
+    "server.end-point-request-max-handle-duration": {
+      "value": "1m",
+      "type": "string"
+    },
+    "server.end-point-slow-log-threshold": {
+      "value": "1s",
+      "type": "string"
+    },
+    "server.end-point-stream-batch-row-limit": {
+      "value": 128,
+      "type": "float"
+    },
+    "server.end-point-stream-channel-size": {
+      "value": 8,
+      "type": "float"
+    },
+    "server.forward-max-connections-per-address": {
+      "value": 4,
+      "type": "float"
+    },
+    "server.grpc-compression-type": {
+      "value": "none",
+      "type": "string"
+    },
+    "server.grpc-concurrency": {
+      "value": 5,
+      "type": "float"
+    },
+    "server.grpc-concurrent-stream": {
+      "value": 1024,
+      "type": "float"
+    },
+    "server.grpc-gzip-compression-level": {
+      "value": 2,
+      "type": "float"
+    },
+    "server.grpc-keepalive-time": {
+      "value": "10s",
+      "type": "string"
+    },
+    "server.grpc-keepalive-timeout": {
+      "value": "3s",
+      "type": "string"
+    },
+    "server.grpc-memory-pool-quota": {
+      "value": "9223372036854775807B",
+      "type": "string"
+    },
+    "server.grpc-min-message-size-to-compress": {
+      "value": 4096,
+      "type": "float"
+    },
+    "server.grpc-raft-conn-num": {
+      "value": 1,
+      "type": "float"
+    },
+    "server.grpc-stream-initial-window-size": {
+      "value": "2MiB",
+      "type": "string"
+    },
+    "server.heavy-load-threshold": {
+      "value": 75,
+      "type": "float"
+    },
+    "server.heavy-load-wait-duration": {
+      "value": null,
+      "type": "string"
+    },
+    "server.max-grpc-send-msg-len": {
+      "value": 10485760,
+      "type": "float"
+    },
+    "server.raft-client-grpc-send-msg-buffer": {
+      "value": 524288,
+      "type": "float"
+    },
+    "server.raft-client-queue-size": {
+      "value": 16384,
+      "type": "float"
+    },
+    "server.raft-msg-max-batch-size": {
+      "value": 256,
+      "type": "float"
+    },
+    "server.reject-messages-on-memory-ratio": {
+      "value": 0.2,
+      "type": "float"
+    },
+    "server.simplify-metrics": {
+      "value": false,
+      "type": "bool"
+    },
+    "server.snap-io-max-bytes-per-sec": {
+      "value": "100MiB",
+      "type": "string"
+    },
+    "server.snap-max-total-size": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "server.snap-min-ingest-size": {
+      "value": "2MiB",
+      "type": "string"
+    },
+    "server.stats-concurrency": {
+      "value": 1,
+      "type": "float"
+    },
+    "server.status-addr": {
+      "value": "127.0.0.1:20180",
+      "type": "string"
+    },
+    "server.status-thread-pool-size": {
+      "value": 1,
+      "type": "float"
+    },
+    "slow-log-file": {
+      "value": "",
+      "type": "string"
+    },
+    "slow-log-threshold": {
+      "value": "1s",
+      "type": "string"
+    },
+    "split": {
+      "value": {
+        "byte-threshold": 31457280,
+        "detect-times": 10,
+        "grpc-thread-cpu-overload-threshold-ratio": 0.5,
+        "qps-threshold": 3000,
+        "region-cpu-overload-threshold-ratio": 0.25,
+        "sample-num": 20,
+        "sample-threshold": 100,
+        "split-balance-score": 0.25,
+        "split-contained-score": 0.5,
+        "unified-read-pool-thread-cpu-overload-threshold-ratio": 0.8
+      },
+      "type": "map"
+    },
+    "split.byte-threshold": {
+      "value": 31457280,
+      "type": "float"
+    },
+    "split.detect-times": {
+      "value": 10,
+      "type": "float"
+    },
+    "split.grpc-thread-cpu-overload-threshold-ratio": {
+      "value": 0.5,
+      "type": "float"
+    },
+    "split.qps-threshold": {
+      "value": 3000,
+      "type": "float"
+    },
+    "split.region-cpu-overload-threshold-ratio": {
+      "value": 0.25,
+      "type": "float"
+    },
+    "split.sample-num": {
+      "value": 20,
+      "type": "float"
+    },
+    "split.sample-threshold": {
+      "value": 100,
+      "type": "float"
+    },
+    "split.split-balance-score": {
+      "value": 0.25,
+      "type": "float"
+    },
+    "split.split-contained-score": {
+      "value": 0.5,
+      "type": "float"
+    },
+    "split.unified-read-pool-thread-cpu-overload-threshold-ratio": {
+      "value": 0.8,
+      "type": "float"
+    },
+    "storage": {
+      "value": {
+        "api-version": 1,
+        "background-error-recovery-window": "1h",
+        "block-cache": {
+          "capacity": "23192823398B",
+          "high-pri-pool-ratio": 0.8,
+          "memory-allocator": "nodump",
+          "num-shard-bits": 6,
+          "strict-capacity-limit": false
+        },
+        "data-dir": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.7-1765243933/tikv-0/data",
+        "enable-async-apply-prewrite": false,
+        "enable-ttl": false,
+        "engine": "raft-kv",
+        "flow-control": {
+          "enable": true,
+          "hard-pending-compaction-bytes-limit": "1TiB",
+          "l0-files-threshold": 20,
+          "memtables-threshold": 5,
+          "soft-pending-compaction-bytes-limit": "192GiB"
+        },
+        "gc-ratio-threshold": 1.1,
+        "io-rate-limit": {
+          "compaction-priority": "low",
+          "export-priority": "medium",
+          "flush-priority": "high",
+          "foreground-read-priority": "high",
+          "foreground-write-priority": "high",
+          "gc-priority": "high",
+          "import-priority": "medium",
+          "level-zero-compaction-priority": "medium",
+          "load-balance-priority": "high",
+          "max-bytes-per-sec": "0KiB",
+          "mode": "write-only",
+          "other-priority": "high",
+          "replication-priority": "high",
+          "strict": false
+        },
+        "max-key-size": 8192,
+        "reserve-raft-space": "0KiB",
+        "reserve-space": "0KiB",
+        "scheduler-concurrency": 524288,
+        "scheduler-pending-write-threshold": "100MiB",
+        "scheduler-worker-pool-size": 4,
+        "ttl-check-poll-interval": "12h",
+        "txn-status-cache-capacity": 5120000
+      },
+      "type": "map"
+    },
+    "storage.api-version": {
+      "value": 1,
+      "type": "float"
+    },
+    "storage.background-error-recovery-window": {
+      "value": "1h",
+      "type": "string"
+    },
+    "storage.block-cache.capacity": {
+      "value": "23192823398B",
+      "type": "string"
+    },
+    "storage.block-cache.high-pri-pool-ratio": {
+      "value": 0.8,
+      "type": "float"
+    },
+    "storage.block-cache.memory-allocator": {
+      "value": "nodump",
+      "type": "string"
+    },
+    "storage.block-cache.num-shard-bits": {
+      "value": 6,
+      "type": "float"
+    },
+    "storage.block-cache.shared": {
+      "value": null,
+      "type": "string"
+    },
+    "storage.block-cache.strict-capacity-limit": {
+      "value": false,
+      "type": "bool"
+    },
+    "storage.data-dir": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.7-1765243933/tikv-0/data",
+      "type": "string"
+    },
+    "storage.enable-async-apply-prewrite": {
+      "value": false,
+      "type": "bool"
+    },
+    "storage.enable-ttl": {
+      "value": false,
+      "type": "bool"
+    },
+    "storage.engine": {
+      "value": "raft-kv",
+      "type": "string"
+    },
+    "storage.flow-control.enable": {
+      "value": true,
+      "type": "bool"
+    },
+    "storage.flow-control.hard-pending-compaction-bytes-limit": {
+      "value": "1TiB",
+      "type": "string"
+    },
+    "storage.flow-control.l0-files-threshold": {
+      "value": 20,
+      "type": "float"
+    },
+    "storage.flow-control.memtables-threshold": {
+      "value": 5,
+      "type": "float"
+    },
+    "storage.flow-control.soft-pending-compaction-bytes-limit": {
+      "value": "192GiB",
+      "type": "string"
+    },
+    "storage.gc-ratio-threshold": {
+      "value": 1.1,
+      "type": "float"
+    },
+    "storage.io-rate-limit.compaction-priority": {
+      "value": "low",
+      "type": "string"
+    },
+    "storage.io-rate-limit.export-priority": {
+      "value": "medium",
+      "type": "string"
+    },
+    "storage.io-rate-limit.flush-priority": {
+      "value": "high",
+      "type": "string"
+    },
+    "storage.io-rate-limit.foreground-read-priority": {
+      "value": "high",
+      "type": "string"
+    },
+    "storage.io-rate-limit.foreground-write-priority": {
+      "value": "high",
+      "type": "string"
+    },
+    "storage.io-rate-limit.gc-priority": {
+      "value": "high",
+      "type": "string"
+    },
+    "storage.io-rate-limit.import-priority": {
+      "value": "medium",
+      "type": "string"
+    },
+    "storage.io-rate-limit.level-zero-compaction-priority": {
+      "value": "medium",
+      "type": "string"
+    },
+    "storage.io-rate-limit.load-balance-priority": {
+      "value": "high",
+      "type": "string"
+    },
+    "storage.io-rate-limit.max-bytes-per-sec": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "storage.io-rate-limit.mode": {
+      "value": "write-only",
+      "type": "string"
+    },
+    "storage.io-rate-limit.other-priority": {
+      "value": "high",
+      "type": "string"
+    },
+    "storage.io-rate-limit.replication-priority": {
+      "value": "high",
+      "type": "string"
+    },
+    "storage.io-rate-limit.strict": {
+      "value": false,
+      "type": "bool"
+    },
+    "storage.max-key-size": {
+      "value": 8192,
+      "type": "float"
+    },
+    "storage.reserve-raft-space": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "storage.reserve-space": {
+      "value": "0KiB",
+      "type": "string"
+    },
+    "storage.scheduler-concurrency": {
+      "value": 524288,
+      "type": "float"
+    },
+    "storage.scheduler-pending-write-threshold": {
+      "value": "100MiB",
+      "type": "string"
+    },
+    "storage.scheduler-worker-pool-size": {
+      "value": 4,
+      "type": "float"
+    },
+    "storage.ttl-check-poll-interval": {
+      "value": "12h",
+      "type": "string"
+    },
+    "storage.txn-status-cache-capacity": {
+      "value": 5120000,
+      "type": "float"
+    }
+  },
+  "bootstrap_version": 0
+}

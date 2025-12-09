@@ -1,9 +1,0 @@
-[
-  {
-    "description": "Parameter storage.reserve-space was modified from 2GB to 0",
-    "from_value": "2GB",
-    "key": "storage.reserve-space",
-    "to_value": "0",
-    "type": "modified"
-  }
-]
