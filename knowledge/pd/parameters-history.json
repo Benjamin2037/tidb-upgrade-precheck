@@ -1,0 +1,441 @@
+{
+  "component": "pd",
+  "parameters": [
+    {
+      "name": "log.level",
+      "type": "string",
+      "history": [
+        {
+          "version": "v6.5.0",
+          "default": "info",
+          "description": ""
+        },
+        {
+          "version": "v7.1.0",
+          "default": "info",
+          "description": ""
+        },
+        {
+          "version": "v7.5.0",
+          "default": "info",
+          "description": ""
+        },
+        {
+          "version": "v8.1.0",
+          "default": "info",
+          "description": ""
+        },
+        {
+          "version": "v8.5.0",
+          "default": "info",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "security.cacert-path",
+      "type": "string",
+      "history": [
+        {
+          "version": "v6.5.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v7.1.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v7.5.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v8.1.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v8.5.0",
+          "default": "",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "schedule.replica-schedule-limit",
+      "type": "number",
+      "history": [
+        {
+          "version": "v6.5.0",
+          "default": 64,
+          "description": ""
+        },
+        {
+          "version": "v7.1.0",
+          "default": 64,
+          "description": ""
+        },
+        {
+          "version": "v7.5.0",
+          "default": 64,
+          "description": ""
+        },
+        {
+          "version": "v8.1.0",
+          "default": 64,
+          "description": ""
+        },
+        {
+          "version": "v8.5.0",
+          "default": 64,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "replication.location-labels",
+      "type": "array",
+      "history": [
+        {
+          "version": "v6.5.0",
+          "default": [],
+          "description": ""
+        },
+        {
+          "version": "v7.1.0",
+          "default": [],
+          "description": ""
+        },
+        {
+          "version": "v7.5.0",
+          "default": [],
+          "description": ""
+        },
+        {
+          "version": "v8.1.0",
+          "default": [],
+          "description": ""
+        },
+        {
+          "version": "v8.5.0",
+          "default": [],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "replication.max-replicas",
+      "type": "number",
+      "history": [
+        {
+          "version": "v6.5.0",
+          "default": 3,
+          "description": ""
+        },
+        {
+          "version": "v7.1.0",
+          "default": 3,
+          "description": ""
+        },
+        {
+          "version": "v7.5.0",
+          "default": 3,
+          "description": ""
+        },
+        {
+          "version": "v8.1.0",
+          "default": 3,
+          "description": ""
+        },
+        {
+          "version": "v8.5.0",
+          "default": 3,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "log.file.filename",
+      "type": "string",
+      "history": [
+        {
+          "version": "v6.5.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v7.1.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v7.5.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v8.1.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v8.5.0",
+          "default": "",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "metric.address",
+      "type": "string",
+      "history": [
+        {
+          "version": "v6.5.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v7.1.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v7.5.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v8.1.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v8.5.0",
+          "default": "",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "schedule.leader-schedule-limit",
+      "type": "number",
+      "history": [
+        {
+          "version": "v6.5.0",
+          "default": 4,
+          "description": ""
+        },
+        {
+          "version": "v7.1.0",
+          "default": 4,
+          "description": ""
+        },
+        {
+          "version": "v7.5.0",
+          "default": 4,
+          "description": ""
+        },
+        {
+          "version": "v8.1.0",
+          "default": 4,
+          "description": ""
+        },
+        {
+          "version": "v8.5.0",
+          "default": 4,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "schedule.max-store-down-time",
+      "type": "string",
+      "history": [
+        {
+          "version": "v6.5.0",
+          "default": "30m",
+          "description": ""
+        },
+        {
+          "version": "v7.1.0",
+          "default": "30m",
+          "description": ""
+        },
+        {
+          "version": "v7.5.0",
+          "default": "30m",
+          "description": ""
+        },
+        {
+          "version": "v8.1.0",
+          "default": "30m",
+          "description": ""
+        },
+        {
+          "version": "v8.5.0",
+          "default": "30m",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "schedule.enable-joint-consensus",
+      "type": "bool",
+      "history": [
+        {
+          "version": "v6.5.0",
+          "default": true,
+          "description": ""
+        },
+        {
+          "version": "v7.1.0",
+          "default": true,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "schedule.enable-cross-table-merge",
+      "type": "bool",
+      "history": [
+        {
+          "version": "v6.5.0",
+          "default": true,
+          "description": ""
+        },
+        {
+          "version": "v7.1.0",
+          "default": true,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "schedule.enable-diagnostic",
+      "type": "bool",
+      "history": [
+        {
+          "version": "v6.5.0",
+          "default": false,
+          "description": ""
+        },
+        {
+          "version": "v7.1.0",
+          "default": true,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "security.key-path",
+      "type": "string",
+      "history": [
+        {
+          "version": "v6.5.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v7.1.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v7.5.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v8.1.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v8.5.0",
+          "default": "",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "schedule.enable-tikv-split-region",
+      "type": "bool",
+      "history": [
+        {
+          "version": "v6.5.0",
+          "default": true,
+          "description": ""
+        },
+        {
+          "version": "v7.1.0",
+          "default": true,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "security.cert-path",
+      "type": "string",
+      "history": [
+        {
+          "version": "v6.5.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v7.1.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v7.5.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v8.1.0",
+          "default": "",
+          "description": ""
+        },
+        {
+          "version": "v8.5.0",
+          "default": "",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "schedule.region-schedule-limit",
+      "type": "number",
+      "history": [
+        {
+          "version": "v6.5.0",
+          "default": 2048,
+          "description": ""
+        },
+        {
+          "version": "v7.1.0",
+          "default": 2048,
+          "description": ""
+        },
+        {
+          "version": "v7.5.0",
+          "default": 2048,
+          "description": ""
+        },
+        {
+          "version": "v8.1.0",
+          "default": 2048,
+          "description": ""
+        },
+        {
+          "version": "v8.5.0",
+          "default": 2048,
+          "description": ""
+        }
+      ]
+    }
+  ]
+}

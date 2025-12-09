@@ -4,6 +4,42 @@ import (
 	"testing"
 )
 
+func TestTiDBCollector_Collect(t *testing.T) {
+	// Create collector
+	collector := &TiDBCollector{
+		address: "127.0.0.1:4000",
+	}
+
+	// Test collection
+	instanceState, err := collector.Collect()
+	if err != nil {
+		t.Fatalf("Failed to collect from TiDB: %v", err)
+	}
+
+	// Check basic properties
+	if instanceState.Address != "127.0.0.1:4000" {
+		t.Errorf("Expected address 127.0.0.1:4000, got %s", instanceState.Address)
+	}
+
+	if instanceState.State.Type != TiDBComponent {
+		t.Errorf("Expected TiDB component type, got %s", instanceState.State.Type)
+	}
+}
+
+func TestTiDBCollector_ConnectString(t *testing.T) {
+	// Create collector
+	collector := &TiDBCollector{
+		address: "127.0.0.1:4000",
+	}
+
+	// Test connection string generation
+	connectStr := collector.ConnectString("root", "")
+	expected := "root:@tcp(127.0.0.1:4000)/information_schema"
+	if connectStr != expected {
+		t.Errorf("Expected connection string %s, got %s", expected, connectStr)
+	}
+}
+
 func TestSplitHostPort(t *testing.T) {
 	tests := []struct {
 		name        string

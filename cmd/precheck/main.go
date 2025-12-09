@@ -1,224 +1,214 @@
 package main
 
 import (
-	"encoding/json"
-	"flag"
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/precheck"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/report"
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/rules"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/runtime"
+	"github.com/spf13/cobra"
 )
 
 func main() {
-	tidbAddr := flag.String("tidb-addr", "127.0.0.1:4000", "TiDB server address")
-	tikvAddrs := flag.String("tikv-addrs", "127.0.0.1:20180", "TiKV addresses (comma separated)")
-	pdAddrs := flag.String("pd-addrs", "127.0.0.1:2379", "PD addresses (comma separated)")
-	outputFormat := flag.String("format", "text", "Output format: text, json, markdown, html")
-	reportDir := flag.String("report-dir", "", "Report output directory")
-	clusterName := flag.String("cluster-name", "unknown", "Cluster name for report")
-	flag.Parse()
+	var (
+		targetVersion string
+		outputFormat  string
+		outputDir     string
+		// Topology file (alternative to individual connection parameters)
+		topologyFile string
+		// Cluster connection parameters (provided by TiUP/Operator)
+		// These are used if topology file is not provided
+		tidbAddr     string
+		tidbUser     string
+		tidbPassword string
+		tikvAddrs    string // Comma-separated list
+		pdAddrs      string // Comma-separated list
+	)
 
-	// Parse addresses
-	tikvAddrList := parseAddresses(*tikvAddrs)
-	pdAddrList := parseAddresses(*pdAddrs)
+	rootCmd := &cobra.Command{
+		Use:   "precheck",
+		Short: "TiDB Upgrade Precheck Tool",
+		Long: `A tool to check compatibility issues before upgrading TiDB cluster.
 
-	// Create runtime collector
-	collector := runtime.NewCollector()
+Connection information can be provided in two ways:
+1. Topology file (recommended): Use --topology-file to specify a TiUP/TiDB Operator topology YAML file
+2. Individual parameters: Use --tidb-addr, --tikv-addrs, --pd-addrs, etc.
 
-	// Define cluster endpoints
-	endpoints := runtime.ClusterEndpoints{
-		TiDBAddr:  *tidbAddr,
-		TiKVAddrs: tikvAddrList,
-		PDAddrs:   pdAddrList,
+Connection parameters are typically provided by TiUP or TiDB Operator.
+
+The knowledge base is located at ./knowledge in the tidb-upgrade-precheck directory.
+Source and target version numbers are used as keys to locate version-specific defaults.json files.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			runPrecheck(targetVersion, outputFormat, outputDir,
+				topologyFile, tidbAddr, tidbUser, tidbPassword, tikvAddrs, pdAddrs)
+		},
 	}
 
-	// Collect cluster snapshot
-	fmt.Println("Collecting cluster configuration...")
-	snapshot, err := collector.Collect(endpoints)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error collecting cluster info: %v\n", err)
+	// Required flags
+	rootCmd.Flags().StringVar(&targetVersion, "target-version", "", "Target TiDB version for upgrade (required)")
+	rootCmd.MarkFlagRequired("target-version")
+
+	// Topology file (alternative to individual parameters)
+	rootCmd.Flags().StringVar(&topologyFile, "topology-file", "", "Path to cluster topology YAML file (TiUP/TiDB Operator format)")
+
+	// Cluster connection parameters (provided by TiUP/Operator)
+	// These are used if topology file is not provided
+	rootCmd.Flags().StringVar(&tidbAddr, "tidb-addr", "", "TiDB MySQL protocol endpoint (host:port)")
+	rootCmd.Flags().StringVar(&tidbUser, "tidb-user", "", "TiDB MySQL username (provided by TiUP/Operator)")
+	rootCmd.Flags().StringVar(&tidbPassword, "tidb-password", "", "TiDB MySQL password (provided by TiUP/Operator)")
+	rootCmd.Flags().StringVar(&tikvAddrs, "tikv-addrs", "", "TiKV HTTP API endpoints (comma-separated, provided by TiUP/Operator)")
+	rootCmd.Flags().StringVar(&pdAddrs, "pd-addrs", "", "PD HTTP API endpoints (comma-separated, provided by TiUP/Operator)")
+
+	// Output options
+	rootCmd.Flags().StringVar(&outputFormat, "format", "text", "Output format (text, markdown, html, json)")
+	rootCmd.Flags().StringVar(&outputDir, "output-dir", ".", "Output directory for reports")
+
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
+}
 
-	// Create checkers
-	checkers := []rules.Checker{
-		rules.NewConfigChecker(),
-		rules.NewSysVarChecker(),
-		// Add more checkers here as they are implemented
-	}
+func runPrecheck(targetVersion, outputFormat, outputDir,
+	topologyFile, tidbAddr, tidbUser, tidbPassword, tikvAddrs, pdAddrs string) {
 
-	// Create check runner
-	checkRunner := rules.NewCheckRunner(checkers)
+	// Knowledge base is fixed at ./knowledge in the tidb-upgrade-precheck directory
+	// Source and target version numbers are used as keys to locate version-specific defaults.json files
+	const knowledgeBasePath = "knowledge"
 
-	// Run checks
-	fmt.Println("Running upgrade compatibility checks...")
-	results, err := checkRunner.Run(snapshot)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error running checks: %v\n", err)
-		os.Exit(1)
-	}
+	var endpoints *runtime.ClusterEndpoints
+	var err error
 
-	// Convert results to report
-	r := convertResultsToReport(results, *clusterName, snapshot)
-
-	// Generate report based on format
-	switch *outputFormat {
-	case "json":
-		outputResultsJSON(results)
-	case "markdown", "html":
-		// Generate report using report generator
-		generator := report.NewGenerator()
-		format := report.TextFormat
-		if *outputFormat == "markdown" {
-			format = report.MarkdownFormat
-		} else if *outputFormat == "html" {
-			format = report.HTMLFormat
-		}
-		
-		reportResult, err := generator.Generate(r, &report.Options{
-			Format:    format,
-			OutputDir: *reportDir,
-		})
+	// Step 0: Load cluster connection information
+	// Priority: topology file > individual parameters
+	if topologyFile != "" {
+		// Load from topology file (TiUP/TiDB Operator format)
+		fmt.Printf("Loading topology from file: %s\n", topologyFile)
+		endpoints, err = runtime.LoadTopologyFromFile(topologyFile)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error generating report: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Error loading topology file: %v\n", err)
 			os.Exit(1)
 		}
-		
-		if reportResult.Path != "" {
-			fmt.Printf("Report generated at: %s\n", reportResult.Path)
-		} else {
-			fmt.Println(reportResult.Data)
+
+		// Override credentials if provided via command line (for security, passwords are not in topology)
+		if tidbUser != "" {
+			endpoints.TiDBUser = tidbUser
 		}
-	default:
-		outputResultsText(results)
-	}
-}
-
-func parseAddresses(addrStr string) []string {
-	if addrStr == "" {
-		return []string{}
-	}
-	
-	// Split by comma and trim spaces
-	addrs := strings.Split(addrStr, ",")
-	for i, addr := range addrs {
-		addrs[i] = strings.TrimSpace(addr)
-	}
-	
-	return addrs
-}
-
-func outputResultsText(results []rules.CheckResult) {
-	if len(results) == 0 {
-		fmt.Println("No compatibility issues found.")
-		return
-	}
-
-	fmt.Printf("Found %d compatibility issues:\n\n", len(results))
-	
-	for i, result := range results {
-		fmt.Printf("%d. [%s] %s\n", i+1, result.Severity, result.Message)
-		if result.Details != "" {
-			fmt.Printf("   Details: %s\n", result.Details)
+		if tidbPassword != "" {
+			endpoints.TiDBPassword = tidbPassword
 		}
-		fmt.Println()
-	}
-}
+	} else {
+		// Build ClusterEndpoints from individual command line arguments
+		endpoints = &runtime.ClusterEndpoints{
+			TiDBAddr:     tidbAddr,
+			TiDBUser:     tidbUser,
+			TiDBPassword: tidbPassword,
+		}
 
-func outputResultsJSON(results []rules.CheckResult) {
-	data, err := json.MarshalIndent(results, "", "  ")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error marshaling results: %v\n", err)
+		// Parse comma-separated addresses
+		if tikvAddrs != "" {
+			endpoints.TiKVAddrs = strings.Split(tikvAddrs, ",")
+			for i := range endpoints.TiKVAddrs {
+				endpoints.TiKVAddrs[i] = strings.TrimSpace(endpoints.TiKVAddrs[i])
+			}
+		}
+
+		if pdAddrs != "" {
+			endpoints.PDAddrs = strings.Split(pdAddrs, ",")
+			for i := range endpoints.PDAddrs {
+				endpoints.PDAddrs[i] = strings.TrimSpace(endpoints.PDAddrs[i])
+			}
+		}
+	}
+
+	// Validate that we have at least some connection information
+	if endpoints.TiDBAddr == "" && len(endpoints.TiKVAddrs) == 0 && len(endpoints.PDAddrs) == 0 {
+		fmt.Fprintf(os.Stderr, "Error: No cluster connection information provided.\n")
+		fmt.Fprintf(os.Stderr, "Please provide either --topology-file or connection parameters (--tidb-addr, --tikv-addrs, --pd-addrs)\n")
 		os.Exit(1)
 	}
-	
-	fmt.Println(string(data))
-}
 
-func convertResultsToReport(results []rules.CheckResult, clusterName string, snapshot *runtime.ClusterSnapshot) *report.Report {
-	// Create a basic report structure
-	r := &report.Report{
-		ClusterName: clusterName,
-		UpgradePath: "unknown -> unknown", // In a real implementation, this would be determined from the snapshot
-		Summary:     make(map[report.RiskLevel]int),
-		Risks:       []report.RiskItem{},
-		Audits:      []report.AuditItem{},
+	// Step 1: Collect runtime configuration from cluster
+	fmt.Println("Collecting cluster configuration...")
+	collector := runtime.NewCollector()
+	snapshot, err := collector.Collect(*endpoints)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error collecting cluster configuration: %v\n", err)
+		os.Exit(1)
 	}
-	
-	// Initialize summary counts
-	r.Summary[report.RiskHigh] = 0
-	r.Summary[report.RiskMedium] = 0
-	r.Summary[report.RiskInfo] = 0
-	
-	// Convert results to report items
-	for _, result := range results {
-		// Map severity to risk level
-		var level report.RiskLevel
-		switch result.Severity {
-		case "critical", "error":
-			level = report.RiskHigh
-			r.Summary[report.RiskHigh]++
-		case "warning":
-			level = report.RiskMedium
-			r.Summary[report.RiskMedium]++
-		case "info":
-			level = report.RiskInfo
-			r.Summary[report.RiskInfo]++
-		default:
-			level = report.RiskInfo
-			r.Summary[report.RiskInfo]++
-		}
-		
-		// Add to risks list
-		riskItem := report.RiskItem{
-			Component:  "unknown", // In a real implementation, this would be determined from the result
-			Parameter:  result.RuleID,
-			Current:    "unknown",
-			Target:     "unknown",
-			Level:      level,
-			Impact:     result.Message,
-			Suggestion: "Review the configuration",
-			RDComment:  result.Details,
-		}
-		r.Risks = append(r.Risks, riskItem)
+
+	if snapshot == nil {
+		fmt.Fprintf(os.Stderr, "Error: failed to collect cluster snapshot\n")
+		os.Exit(1)
 	}
-	
-	// Add some basic audit items from the snapshot
-	for componentName, component := range snapshot.Components {
-		// Add config items to audit
-		for key, value := range component.Config {
-			var valueStr string
-			if s, ok := value.(string); ok {
-				valueStr = s
-			} else {
-				valueStr = fmt.Sprintf("%v", value)
-			}
-			
-			auditItem := report.AuditItem{
-				Component: component.Type,
-				Parameter: key,
-				Current:   valueStr,
-				Target:    "default",
-				Status:    fmt.Sprintf("From %s", componentName),
-			}
-			r.Audits = append(r.Audits, auditItem)
-		}
-		
-		// Add variable items to audit
-		for key, value := range component.Variables {
-			auditItem := report.AuditItem{
-				Component: component.Type,
-				Parameter: key,
-				Current:   value,
-				Target:    "default",
-				Status:    fmt.Sprintf("From %s", componentName),
-			}
-			r.Audits = append(r.Audits, auditItem)
-		}
+
+	// Set target version
+	snapshot.TargetVersion = targetVersion
+
+	// Determine source version from collected snapshot
+	if snapshot.SourceVersion == "" {
+		fmt.Fprintf(os.Stderr, "Warning: could not determine source version from cluster. Using 'unknown'.\n")
+		snapshot.SourceVersion = "unknown"
 	}
-	
-	return r
+
+	fmt.Printf("Cluster version: %s -> Target version: %s\n", snapshot.SourceVersion, targetVersion)
+
+	// Step 2: Load knowledge base for source and target versions
+	fmt.Println("Loading knowledge base...")
+	sourceKB, err := precheck.LoadKnowledgeBase(knowledgeBasePath, "tidb", snapshot.SourceVersion)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to load source knowledge base: %v\n", err)
+		sourceKB = make(map[string]interface{})
+	}
+
+	targetKB, err := precheck.LoadKnowledgeBase(knowledgeBasePath, "tidb", targetVersion)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: failed to load target knowledge base: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Please ensure knowledge base is generated for version %s\n", targetVersion)
+		os.Exit(1)
+	}
+
+	// Step 3: Create analyzer with knowledge base
+	fmt.Println("Initializing analyzer...")
+	factory := precheck.NewFactory()
+	analyzer := factory.CreateAnalyzerWithKB(sourceKB, targetKB)
+
+	// Step 4: Run analysis
+	fmt.Println("Running compatibility checks...")
+	ctx := context.Background()
+	precheckReport, err := analyzer.Analyze(ctx, snapshot, targetVersion)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error running analysis: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Step 5: Generate report
+	fmt.Println("Generating report...")
+	generator := report.NewGenerator()
+	options := &report.Options{
+		Format:    report.Format(outputFormat),
+		OutputDir: outputDir,
+	}
+
+	reportPath, err := generator.Generate(precheckReport, options)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error generating report: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Step 6: Print summary
+	fmt.Printf("\n=== Precheck Summary ===\n")
+	fmt.Printf("Total issues: %d\n", precheckReport.Summary.Total)
+	fmt.Printf("Blocking issues: %d\n", precheckReport.Summary.Blocking)
+	fmt.Printf("Warnings: %d\n", precheckReport.Summary.Warnings)
+	fmt.Printf("Info: %d\n", precheckReport.Summary.Infos)
+
+	if precheckReport.Summary.Blocking > 0 {
+		fmt.Printf("\n⚠️  WARNING: %d blocking issue(s) found. Please review before upgrading.\n", precheckReport.Summary.Blocking)
+	}
+
+	fmt.Printf("\nReport generated successfully: %s\n", reportPath)
 }

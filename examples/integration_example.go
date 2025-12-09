@@ -131,7 +131,7 @@ func main() {
 
 	// Generate markdown report
 	generator := report.NewGenerator()
-	reportResult, err := generator.Generate(reportData, &report.Options{
+	reportPath, err := generator.Generate(reportData, &report.Options{
 		Format:    report.MarkdownFormat,
 		OutputDir: "./out",
 	})
@@ -140,7 +140,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Report generated successfully: %s\n", reportResult.Path)
+	fmt.Printf("Report generated successfully: %s\n", reportPath)
 	fmt.Println("\nIntegration example completed!")
 }
 

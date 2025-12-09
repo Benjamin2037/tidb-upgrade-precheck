@@ -149,8 +149,8 @@ func (pa *ParamAnalyzer) assessRisk(analysis *ParameterAnalysis, forcedChanges m
 			Level:     RiskHigh,
 			Parameter: analysis.Name,
 			Component: analysis.Component,
-			Impact:    fmt.Sprintf("Parameter will be forcibly changed during upgrade from '%v' to '%v'", analysis.CurrentValue, forcedChanges[analysis.Name]),
-			Detail:    "This is a forced change during the upgrade process and cannot be overridden",
+			Message:   fmt.Sprintf("Parameter will be forcibly changed during upgrade from '%v' to '%v'", analysis.CurrentValue, forcedChanges[analysis.Name]),
+			Details:   "This is a forced change during the upgrade process and cannot be overridden",
 		}
 	}
 
@@ -163,8 +163,8 @@ func (pa *ParamAnalyzer) assessRisk(analysis *ParameterAnalysis, forcedChanges m
 			Level:     RiskMedium,
 			Parameter: analysis.Name,
 			Component: analysis.Component,
-			Impact:    fmt.Sprintf("Default value changes from '%v' to '%v' in target version", analysis.SourceDefault, analysis.TargetDefault),
-			Detail:    "You have customized this parameter and the default is changing in the target version",
+			Message:   fmt.Sprintf("Default value changes from '%v' to '%v' in target version", analysis.SourceDefault, analysis.TargetDefault),
+			Details:   "You have customized this parameter and the default is changing in the target version",
 		}
 	}
 
@@ -177,8 +177,8 @@ func (pa *ParamAnalyzer) assessRisk(analysis *ParameterAnalysis, forcedChanges m
 			Level:     RiskInfo,
 			Parameter: analysis.Name,
 			Component: analysis.Component,
-			Impact:    fmt.Sprintf("Default value changes from '%v' to '%v' in target version", analysis.SourceDefault, analysis.TargetDefault),
-			Detail:    "The default value for this parameter is changing in the target version",
+			Message:   fmt.Sprintf("Default value changes from '%v' to '%v' in target version", analysis.SourceDefault, analysis.TargetDefault),
+			Details:   "The default value for this parameter is changing in the target version",
 		}
 	}
 

@@ -1,37 +1,119 @@
-# TiDB Upgrade Precheck - Detailed Design Document
+# Detailed Design for TiDB Upgrade Precheck System
 
-## 1. Overview
+This document provides a comprehensive overview of the TiDB upgrade precheck system's architecture, components, and implementation details.
 
-This document provides a detailed design for the third phase of the tidb-upgrade-precheck system, focusing on:
-1. Collection of current configuration and system variables from target clusters
-2. Comparison of current values with current default values to determine user-modified parameters
-3. Final comparison with target version parameters to identify upgrade risks
+## Table of Contents
 
-## 2. Collector Design
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Core Components](#core-components)
+   - [Knowledge Base Generator](#knowledge-base-generator)
+   - [Runtime Collector](#runtime-collector)
+   - [Analyzer](#analyzer)
+   - [Report Generator](#report-generator)
+4. [Data Structures](#data-structures)
+5. [Implementation Plan](#implementation-plan)
+6. [TiUP Integration](#tiup-integration)
+7. [Testing Strategy](#testing-strategy)
 
-### 2.1. Data Collection Components
+## Overview
 
-The collector module is responsible for gathering real-time configuration data from a running TiDB cluster. It consists of the following components:
+The TiDB upgrade precheck system is designed to identify potential compatibility issues before upgrading a TiDB cluster. It analyzes both static knowledge from TiDB source code and runtime configuration from the actual cluster to provide comprehensive risk assessment.
 
-#### 2.1.1. TiDB Configuration Collector
-- Collects TiDB configuration via HTTP API endpoint `/config`
-- Retrieves global system variables via SQL query `SHOW GLOBAL VARIABLES`
-- Stores data in structured format for further processing
+## Architecture
 
-#### 2.1.2. TiKV Configuration Collector
-- Collects TiKV configuration via HTTP API endpoint `/config`
-- Retrieves relevant metrics and settings
-- Maps configuration to standardized format
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Consumer Layer                              │
+├─────────────────────────────────────────────────────────────────────┤
+│  TiUP CLI    │  TiDB Operator    │  Other Tools                     │
+└─────────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────────┐
+│                       Integration Layer                            │
+├─────────────────────────────────────────────────────────────────────┤
+│                   tidb-upgrade-precheck Library                    │
+└─────────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Analysis Layer                              │
+├─────────────────────────────────────────────────────────────────────┤
+│   Analyzer   │  Report Generator  │  Rules Engine  │  Data Models   │
+└─────────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Collection Layer                           │
+├─────────────────────────────────────────────────────────────────────┤
+│           Runtime Collector          │        KB Generator         │
+└─────────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Data Sources                                │
+├─────────────────────────────────────────────────────────────────────┤
+│  TiDB Source  │  TiDB Cluster  │  GitHub Metadata  │  Manual Input  │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
-#### 2.1.3. PD Configuration Collector
-- Collects PD configuration via HTTP API endpoint `/pd/api/v1/config`
-- Retrieves schedule configuration and replication settings
-- Standardizes collected data
+## Core Components
 
-### 2.2. Collector Data Structures
+### Knowledge Base Generator
 
+The Knowledge Base Generator extracts historical parameter and upgrade logic information from TiDB source code. It consists of:
+
+1. **Parameter History Collector**:
+   - Extracts parameter definitions and their evolution across versions
+   - Focuses on TiDB system variables, TiKV/PD configuration parameters
+   - Outputs structured JSON with parameter history
+
+2. **Upgrade Logic Collector**:
+   - Parses upgrade.go to extract upgrade operations
+   - Identifies INSERT/UPDATE/DELETE operations on system tables
+   - Records forced value changes during upgrades
+
+### Runtime Collector
+
+The Runtime Collector connects to live TiDB clusters to collect current configuration state:
+
+1. **TiDB Collector**:
+   - Connects via MySQL protocol
+   - Retrieves GLOBAL_VARIABLES
+   - Collects configuration via SHOW CONFIG
+
+2. **TiKV Collector**:
+   - Connects via HTTP API
+   - Retrieves configuration information
+
+3. **PD Collector**:
+   - Connects via HTTP API
+   - Retrieves configuration information
+
+### Analyzer
+
+The Analyzer compares runtime configuration against the knowledge base to identify risks:
+
+1. **Configuration Analysis**:
+   - Compares current values with version-specific defaults
+   - Identifies user-modified parameters
+   - Detects parameters with changing defaults
+
+2. **Upgrade Logic Analysis**:
+   - Identifies parameters that will be forcibly changed
+   - Warns about deprecated features
+   - Checks for incompatible changes
+
+### Report Generator
+
+The Report Generator produces actionable reports in various formats:
+
+1. **Text Reports**: Simple console output
+2. **JSON Reports**: Structured data for programmatic consumption
+3. **Markdown Reports**: Human-readable formatted output
+4. **HTML Reports**: Rich interactive reports
+
+## Data Structures
+
+### Cluster Snapshot
 ```go
-// ClusterSnapshot represents the complete configuration state of a cluster
 type ClusterSnapshot struct {
     Timestamp     time.Time              `json:"timestamp"`
     SourceVersion string                 `json:"source_version"`
@@ -39,305 +121,98 @@ type ClusterSnapshot struct {
     Components    map[string]ComponentState `json:"components"`
 }
 
-// ComponentState represents the configuration state of a single component
 type ComponentState struct {
-    Type       string                 `json:"type"`        // tidb, tikv, pd, tiflash
-    Version    string                 `json:"version"`
-    Config     map[string]interface{} `json:"config"`      // Configuration parameters
-    Variables  map[string]string      `json:"variables"`   // System variables (for TiDB)
-    Status     map[string]interface{} `json:"status"`      // Runtime status information
-}
-
-// CollectedData represents the raw data collected from a cluster
-type CollectedData struct {
-    Component string      `json:"component"`
-    Type      string      `json:"type"`
-    Data      interface{} `json:"data"`
+    Type      string                 `json:"type"`        
+    Version   string                 `json:"version"`
+    Config    map[string]interface{} `json:"config"`      
+    Variables map[string]string      `json:"variables"`   
+    Status    map[string]interface{} `json:"status"`      
 }
 ```
 
-### 2.3. Collection Process
-
-1. **Connection Establishment**
-   - Establish connection to TiDB (MySQL protocol)
-   - Establish HTTP connections to TiKV and PD endpoints
-
-2. **Data Retrieval**
-   - Query TiDB system variables: `SHOW GLOBAL VARIABLES`
-   - Retrieve TiDB configuration: HTTP GET to `/config`
-   - Retrieve TiKV configuration: HTTP GET to `/config`
-   - Retrieve PD configuration: HTTP GET to `/pd/api/v1/config`
-
-3. **Data Processing**
-   - Normalize parameter names across components
-   - Convert values to appropriate types
-   - Store in structured format
-
-## 3. Analyzer Design
-
-### 3.1. Analysis Components
-
-The analyzer compares the current cluster state with knowledge base data to identify potential upgrade risks.
-
-#### 3.1.1. Parameter State Determination
-Determines whether each parameter is using its default value or has been modified by the user:
-
-```go
-type ParameterState string
-
-const (
-    UseDefault ParameterState = "use_default"  // Using default value
-    UserSet    ParameterState = "user_set"     // Modified by user
-)
-
-type ParameterAnalysis struct {
-    Name          string          `json:"name"`
-    Component     string          `json:"component"`
-    CurrentValue  interface{}     `json:"current_value"`
-    SourceDefault interface{}     `json:"source_default"`
-    TargetDefault interface{}     `json:"target_default"`
-    State         ParameterState  `json:"state"`
-}
-```
-
-#### 3.1.2. Risk Identification
-Identifies risks based on the comparison matrix:
-
-| Source State | Target State           | Risk Level | Action           |
-|--------------|------------------------|------------|------------------|
-| UseDefault   | Default Changed        | MEDIUM     | Recommendation   |
-| UseDefault   | Forced Upgrade         | HIGH       | Must Handle      |
-| UserSet      | Default Changed        | INFO       | Configuration Audit |
-| UserSet      | Forced Upgrade         | HIGH       | Must Handle      |
-
-### 3.2. Analysis Process
-
-1. **Load Knowledge Base**
-   - Load `defaults.json` for source and target versions
-   - Load `upgrade_logic.json` for forced changes
-
-2. **Parameter State Analysis**
-   - For each parameter in the cluster:
-     - Compare current value with source version default
-     - Determine if it's `UseDefault` or `UserSet`
-
-3. **Risk Assessment**
-   - For `UserSet` parameters:
-     - Check if target default differs from source default
-     - Check if parameter is forcibly changed in upgrade
-   - For `UseDefault` parameters:
-     - Check if default value changes in target version
-     - Check if parameter is forcibly changed in upgrade
-
-4. **Result Compilation**
-   - Group findings by risk level
-   - Prepare detailed information for each finding
-
-## 4. Knowledge Base Structure
-
-### 4.1. Defaults Knowledge Base
-
+### Knowledge Base
 ```json
 {
-  "version": "v7.5.0",
-  "bootstrap_version": 180,
-  "components": {
-    "tidb": {
-      "config": {
-        "performance.max-procs": 0,
-        "log.level": "info"
-      },
-      "variables": {
-        "tidb_enable_clustered_index": "INT_ONLY",
-        "max_connections": "151"
-      }
-    },
-    "tikv": {
-      "config": {
-        "raftstore.apply-pool-size": 2,
-        "server.grpc-concurrency": 5
-      }
-    },
-    "pd": {
-      "config": {
-        "schedule.replica-schedule-limit": 64,
-        "schedule.region-schedule-limit": 2048
-      }
+  "parameters": [
+    {
+      "component": "tidb",
+      "name": "tidb_enable_async_commit",
+      "history": [
+        {
+          "version": "5.0.0",
+          "default": "false",
+          "type": "bool",
+          "scope": "global",
+          "dynamic": true,
+          "description": "Enables async commit for the transaction"
+        },
+        {
+          "version": "5.1.0",
+          "default": "true",
+          "type": "bool",
+          "scope": "global",
+          "dynamic": true,
+          "description": "Enables async commit for the transaction"
+        }
+      ]
     }
-  }
-}
-```
-
-### 4.2. Upgrade Logic Knowledge Base
-
-```json
-[
-  {
-    "version": 180,
-    "function": "upgradeToVer180",
-    "changes": [
-      {
-        "type": "variable_change",
-        "variable": "tidb_enable_clustered_index",
-        "forced_value": "ON",
-        "scope": "global",
-        "description": "Enable clustered index by default"
-      }
-    ]
-  }
-]
-```
-
-## 5. Comparator Design
-
-### 5.1. Comparison Logic
-
-The comparator performs three-level comparisons:
-
-1. **Current vs Source Default**
-   - Determines if parameter is user-modified
-   
-2. **Source Default vs Target Default**
-   - Identifies default value changes
-   
-3. **Forced Changes Check**
-   - Checks if parameter is forcibly modified during upgrade
-
-### 5.2. Comparison Algorithm
-
-```go
-func analyzeParameter(
-    paramName string,
-    currentValue interface{},
-    sourceDefault interface{},
-    targetDefault interface{},
-    forcedChanges map[string]interface{}
-) *ParameterAnalysis {
-    analysis := &ParameterAnalysis{
-        Name:          paramName,
-        CurrentValue:  currentValue,
-        SourceDefault: sourceDefault,
-        TargetDefault: targetDefault,
+  ],
+  "upgrade_logic": [
+    {
+      "version": 66,
+      "changes": [
+        {
+          "from_version": 65,
+          "to_version": 66,
+          "kind": "sysvar",
+          "target": "tidb_track_aggregate_memory_usage",
+          "default_value": "ON",
+          "force": true,
+          "summary": "Enable aggregate memory usage tracking",
+          "scope": "global",
+          "optional_hints": ["Confirm whether workloads rely on the legacy behavior"]
+        }
+      ]
     }
-    
-    // Step 1: Determine parameter state
-    if isDefaultValue(currentValue, sourceDefault) {
-        analysis.State = UseDefault
-    } else {
-        analysis.State = UserSet
-    }
-    
-    // Step 2: Check for risks
-    // ... risk assessment logic ...
-    
-    return analysis
+  ]
 }
 ```
 
-## 6. Risk Classification
+## Implementation Plan
 
-### 6.1. HIGH Risk (P0)
-- Parameters that will be forcibly changed during upgrade regardless of current value
-- Potential for service disruption or data inconsistency
+See [Collector Implementation Plan](collector_implementation_plan.md) and [Analyzer Implementation Plan](analyzer_implementation_plan.md).
 
-### 6.2. MEDIUM Risk (P1)
-- Default value changes that may impact performance or behavior
-- User-set values that differ from new defaults but won't be forcibly changed
+## TiUP Integration
 
-### 6.3. LOW Risk (P2)
-- Configuration audit items
-- User-set values that differ from defaults but pose minimal risk
+There are multiple ways to integrate tidb-upgrade-precheck with TiUP:
 
-## 7. Implementation Plan
+1. [TiUP Integration Design](tiup_integration_design.md) - Creating a new dedicated command for prechecks
+2. [TiUP Upgrade Command Integration](tiup_upgrade_integration.md) - Integrating prechecks into the existing `tiup cluster upgrade` command
+3. [TiUP Cluster Precheck Command Design](tiup_cluster_precheck_command.md) - Detailed design of the precheck command in TiUP Cluster
+4. [TiUP Integration Implementation Guide](tiup_integration_implementation_guide.md) - Detailed implementation guide for integrating tidb-upgrade-precheck into TiUP
+5. [TiUP Implementation Steps](tiup_implementation_steps.md) - Step-by-step implementation guide for integrating tidb-upgrade-precheck into TiUP
+6. [TiUP Integration Manual](tiup_integration_manual.md) - Complete manual for implementing TiUP integration
 
-### 7.1. Phase 1: Collector Implementation
-- [ ] Implement TiDB configuration collector
-- [ ] Implement TiKV configuration collector
-- [ ] Implement PD configuration collector
-- [ ] Create unified collection interface
-- [ ] Add error handling and retry logic
+## Testing Strategy
 
-### 7.2. Phase 2: Analyzer Implementation
-- [ ] Implement parameter state determination
-- [ ] Implement risk assessment logic
-- [ ] Create knowledge base loading utilities
-- [ ] Add comparison algorithms
+The testing strategy includes:
 
-### 7.3. Phase 3: Integration and Testing
-- [ ] Integrate collector and analyzer
-- [ ] Create end-to-end tests
-- [ ] Performance optimization
-- [ ] Documentation and examples
+1. **Unit Tests**:
+   - Test individual functions and methods
+   - Mock external dependencies
+   - Achieve high code coverage
 
-## 8. API Design
+2. **Integration Tests**:
+   - Test component interactions
+   - Validate data flow between modules
+   - Test with real cluster data
 
-### 8.1. Collector Interface
+3. **End-to-End Tests**:
+   - Full workflow testing
+   - Validate output formats
+   - Test error conditions
 
-```go
-type Collector interface {
-    Collect(ctx context.Context, endpoints ClusterEndpoints) (*ClusterSnapshot, error)
-}
-
-type ClusterEndpoints struct {
-    TiDBAddr string   // MySQL protocol endpoint
-    TiKVAddrs []string // HTTP API endpoints
-    PDAddrs   []string // HTTP API endpoints
-}
-```
-
-### 8.2. Analyzer Interface
-
-```go
-type Analyzer interface {
-    Analyze(ctx context.Context, snapshot *ClusterSnapshot, sourceKB, targetKB *KnowledgeBase) (*AnalysisResult, error)
-}
-
-type AnalysisResult struct {
-    HighRiskItems   []RiskItem `json:"high_risk_items"`
-    MediumRiskItems []RiskItem `json:"medium_risk_items"`
-    LowRiskItems    []RiskItem `json:"low_risk_items"`
-    AuditItems      []AuditItem `json:"audit_items"`
-}
-```
-
-## 9. Error Handling
-
-### 9.1. Collection Errors
-- Network connectivity issues
-- Authentication failures
-- API endpoint unavailability
-- Data parsing errors
-
-### 9.2. Analysis Errors
-- Missing knowledge base data
-- Version mismatch errors
-- Data inconsistency issues
-
-### 9.3. Recovery Strategies
-- Retry mechanisms for transient errors
-- Graceful degradation for partial data
-- Clear error reporting for user action
-
-## 10. Performance Considerations
-
-### 10.1. Collection Optimization
-- Parallel collection from multiple components
-- Connection pooling for HTTP clients
-- Efficient data serialization
-
-### 10.2. Analysis Optimization
-- Caching of knowledge base data
-- Early termination of risk checks
-- Memory-efficient data structures
-
-## 11. Security Considerations
-
-### 11.1. Data Protection
-- Secure storage of credentials
-- Encryption of sensitive data in transit
-- Minimal privilege principle for database connections
-
-### 11.2. Access Control
-- Role-based access to cluster information
-- Audit logging of collection activities
-- Compliance with data protection regulations
+4. **Performance Tests**:
+   - Measure collection performance
+   - Validate scalability
+   - Test with large clusters

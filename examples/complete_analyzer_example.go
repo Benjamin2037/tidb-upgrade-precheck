@@ -63,8 +63,8 @@ func main() {
 	if len(risks) > 0 {
 		fmt.Printf("Identified %d risks:\n", len(risks))
 		for _, risk := range risks {
-			fmt.Printf("[%s] %s.%s: %s\n", risk.Level, risk.Component, risk.Parameter, risk.Impact)
-			fmt.Printf("  Detail: %s\n", risk.Detail)
+			fmt.Printf("[%s] %s.%s: %s\n", risk.Level, risk.Component, risk.Parameter, risk.Message)
+			fmt.Printf("  Details: %s\n", risk.Details)
 		}
 	} else {
 		fmt.Println("No risks identified")

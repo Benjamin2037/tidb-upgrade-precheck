@@ -206,25 +206,27 @@ func (c *tidbCollector) getVersion(addr string) (string, error) {
 }
 
 func (c *tidbCollector) getConfig(addr string) (map[string]interface{}, error) {
-    // Assuming TiDB HTTP API is available on the same host but different port
-    hostPort := addr
-    // TODO: Determine HTTP API port from MySQL port or configuration
-    // For now, assuming standard setup where MySQL is on 4000 and HTTP on 10080
-    // This needs to be configurable
-    
-    resp, err := c.httpClient.Get(fmt.Sprintf("http://%s/config", hostPort))
+    host, port, err := splitHostPort(addr)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("invalid address format: %w", err)
+    }
+
+    // Try to connect to HTTP API (usually port+10000)
+    httpAddr := fmt.Sprintf("http://%s:%d/config", host, port+10000)
+    
+    resp, err := c.httpClient.Get(httpAddr)
+    if err != nil {
+        return nil, fmt.Errorf("failed to get config from %s: %w", httpAddr, err)
     }
     defer resp.Body.Close()
 
     if resp.StatusCode != http.StatusOK {
-        return nil, fmt.Errorf("HTTP request failed with status: %d", resp.StatusCode)
+        return nil, fmt.Errorf("unexpected status code %d from %s", resp.StatusCode, httpAddr)
     }
 
     var config map[string]interface{}
     if err := json.NewDecoder(resp.Body).Decode(&config); err != nil {
-        return nil, err
+        return nil, fmt.Errorf("failed to decode config JSON: %w", err)
     }
 
     return config, nil
@@ -252,7 +254,43 @@ func (c *tidbCollector) getVariables(addr string) (map[string]string, error) {
         variables[name] = value
     }
 
-    return variables, rows.Err()
+    return variables, nil
+}
+
+// splitHostPort parses a network address of the form "host:port" into host and port.
+// It handles both IPv4 and IPv6 addresses.
+func splitHostPort(addr string) (host string, port int, err error) {
+    // Handle IPv6 addresses with square brackets
+    if strings.HasPrefix(addr, "[") {
+        end := strings.Index(addr, "]")
+        if end == -1 {
+            return "", 0, fmt.Errorf("missing closing bracket in address: %s", addr)
+        }
+        host = addr[1:end]
+        if len(addr) > end+1 && addr[end+1] == ':' {
+            portStr := addr[end+2:]
+            portNum, err := strconv.Atoi(portStr)
+            if err != nil {
+                return "", 0, fmt.Errorf("invalid port number: %s", portStr)
+            }
+            port = portNum
+        } else {
+            return "", 0, fmt.Errorf("missing port after IPv6 address: %s", addr)
+        }
+    } else {
+        // Handle IPv4 addresses
+        parts := strings.Split(addr, ":")
+        if len(parts) != 2 {
+            return "", 0, fmt.Errorf("address must be in format host:port: %s", addr)
+        }
+        host = parts[0]
+        portNum, err := strconv.Atoi(parts[1])
+        if err != nil {
+            return "", 0, fmt.Errorf("invalid port number: %s", parts[1])
+        }
+        port = portNum
+    }
+    return host, port, nil
 }
 ```
 
@@ -481,67 +519,103 @@ func (c *pdCollector) getConfig(addr string) (map[string]interface{}, error) {
 }
 ```
 
-## 4. Usage Example
+## 4. TiUP Integration Considerations
+
+### 4.1. Integration Approach
+
+The collector module is designed to be used as a library by TiUP. TiUP should:
+
+1. Obtain cluster topology information from its inventory
+2. Extract connection information for TiDB, TiKV, and PD components
+3. Call the collector APIs to gather configuration data
+4. Pass the collected data to the analyzer module
+
+### 4.2. Connection Information Handling
+
+TiUP will need to provide the following connection information:
+
+- TiDB MySQL protocol address (host:port)
+- TiKV HTTP API addresses (host:port list)
+- PD HTTP API addresses (host:port list)
+
+The collector will handle:
+- Converting TiDB MySQL port to HTTP API port (typically MySQL port + 10000)
+- Trying multiple PD instances until one responds
+- Gracefully handling unreachable or misconfigured components
+
+### 4.3. Error Handling
+
+The collector is designed to be resilient:
+- Failure to collect from one component doesn't prevent collection from others
+- Detailed error messages are returned for troubleshooting
+- Timeouts are enforced to prevent hanging on unreachable components
+
+### 4.4. Data Format
+
+The collector returns data in a standardized format that can be:
+- Serialized to JSON for file storage or transmission
+- Used directly in-memory by the analyzer
+- Extended in the future without breaking existing integrations
+
+## 5. Testing Plan
+
+### 5.1. Unit Tests
+
+- Test data structure serialization/deserialization
+- Test component collectors with mock HTTP servers
+- Test error handling for various failure scenarios
+- Test IPv6 address handling
+
+### 5.2. Integration Tests
+
+- Test end-to-end collection with real TiDB components
+- Test behavior with partially available clusters
+- Test performance with large configurations
+
+### 5.3. Mock Servers
+
+Create mock HTTP servers for TiKV and PD to enable testing without a full TiDB cluster:
 
 ```go
-package main
+// Example mock server for testing
+func TestTiKVCollector(t *testing.T) {
+    // Start mock server
+    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        switch r.URL.Path {
+        case "/config":
+            json.NewEncoder(w).Encode(mockConfig)
+        case "/status":
+            json.NewEncoder(w).Encode(mockStatus)
+        }
+    }))
+    defer server.Close()
 
-import (
-    "encoding/json"
-    "fmt"
-    "os"
-
-    "github.com/pingcap/tidb-upgrade-precheck/pkg/collector"
-)
-
-func main() {
-    // Create collector
-    c := collector.NewCollector()
-
-    // Define cluster endpoints
-    endpoints := collector.ClusterEndpoints{
-        TiDBAddr:  "127.0.0.1:4000",
-        TiKVAddrs: []string{"127.0.0.1:20180"},
-        PDAddrs:   []string{"127.0.0.1:2379"},
-    }
-
-    // Collect cluster snapshot
-    snapshot, err := c.Collect(endpoints)
-    if err != nil {
-        fmt.Printf("Error collecting cluster info: %v\n", err)
-        os.Exit(1)
-    }
-
-    // Output as JSON
-    data, err := json.MarshalIndent(snapshot, "", "  ")
-    if err != nil {
-        fmt.Printf("Error marshaling snapshot: %v\n", err)
-        os.Exit(1)
-    }
-
-    fmt.Println(string(data))
+    // Test collector
+    collector := NewTiKVCollector()
+    states, err := collector.Collect([]string{server.URL})
+    // Assert results
 }
 ```
 
-## 5. Implementation Considerations
+## 6. Implementation Considerations
 
-### 5.1. Error Handling
+### 6.1. Error Handling
 - Network timeouts and retries
 - Authentication failures
 - Partial collection (some components succeed, others fail)
 - Graceful degradation
 
-### 5.2. Configuration
+### 6.2. Configuration
 - Configurable timeouts
 - Multiple endpoint support
 - Secure connection support (TLS)
 
-### 5.3. Performance
+### 6.3. Performance
 - Parallel collection from components
 - Connection reuse
 - Efficient data structures
 
-### 5.4. Security
+### 6.4. Security
 - Secure credential handling
 - TLS support
 - Minimal privilege requirements

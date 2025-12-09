@@ -1,121 +1,83 @@
 package runtime
 
 import (
-	"net/http"
-	"net/http/httptest"
 	"testing"
 )
 
-func TestCollector(t *testing.T) {
-	// Create test servers to simulate cluster components
-	tikvServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/status":
-			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"version": "v6.5.0"}`))
-		case "/config":
-			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"server": {"grpc-concurrency": 5}}`))
-		default:
-			w.WriteHeader(http.StatusNotFound)
-		}
-	}))
-	defer tikvServer.Close()
+func TestCollector_Collect(t *testing.T) {
+	endpoints := []string{"127.0.0.1:2379"}
+	collector := NewCollector(endpoints)
 
-	pdServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/pd/api/v1/status":
-			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"version": "v6.5.0"}`))
-		case "/pd/api/v1/config":
-			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"schedule": {"max-snapshot-count": 3}}`))
-		default:
-			w.WriteHeader(http.StatusNotFound)
-		}
-	}))
-	defer pdServer.Close()
-
-	// Create collector
-	c := NewCollector()
-
-	// Define cluster endpoints
-	endpoints := ClusterEndpoints{
-		TiDBAddr:  "", // Empty to avoid trying to connect
-		TiKVAddrs: []string{tikvServer.Listener.Addr().String()},
-		PDAddrs:   []string{pdServer.Listener.Addr().String()},
-	}
-
-	// Collect cluster snapshot
-	snapshot, err := c.Collect(endpoints)
+	clusterState, err := collector.Collect()
 	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
+		t.Fatalf("Failed to collect cluster state: %v", err)
 	}
 
-	// Check that we got a snapshot
-	if snapshot == nil {
-		t.Fatal("Expected snapshot, got nil")
+	if len(clusterState.Instances) == 0 {
+		t.Error("Expected at least one instance in cluster state")
 	}
 
-	// Check timestamp
-	if snapshot.Timestamp.IsZero() {
-		t.Error("Expected timestamp to be set")
-	}
+	// Check that we have instances of each type
+	hasTiDB := false
+	hasPD := false
+	hasTiKV := false
 
-	// Check that we have at least some components
-	if len(snapshot.Components) == 0 {
-		t.Error("Expected at least some components")
-	}
-
-	// Check TiKV component
-	if tikvComponent, exists := snapshot.Components["tikv-0"]; exists {
-		if tikvComponent.Type != "tikv" {
-			t.Errorf("Expected TiKV type to be 'tikv', got %s", tikvComponent.Type)
+	for _, instance := range clusterState.Instances {
+		switch instance.State.Type {
+		case TiDBComponent:
+			hasTiDB = true
+		case PDComponent:
+			hasPD = true
+		case TiKVComponent:
+			hasTiKV = true
 		}
-		if len(tikvComponent.Config) == 0 {
-			t.Error("Expected TiKV config to be populated")
-		}
-	} else {
-		t.Error("Expected TiKV component")
 	}
 
-	// Check PD component
-	if pdComponent, exists := snapshot.Components["pd"]; exists {
-		if pdComponent.Type != "pd" {
-			t.Errorf("Expected PD type to be 'pd', got %s", pdComponent.Type)
-		}
-		if len(pdComponent.Config) == 0 {
-			t.Error("Expected PD config to be populated")
-		}
-	} else {
-		t.Error("Expected PD component")
+	if !hasTiDB {
+		t.Error("Expected TiDB instance in cluster state")
+	}
+
+	if !hasPD {
+		t.Error("Expected PD instance in cluster state")
+	}
+
+	if !hasTiKV {
+		t.Error("Expected TiKV instance in cluster state")
 	}
 }
 
-func TestCollectorWithNoEndpoints(t *testing.T) {
-	// Create collector
-	c := NewCollector()
+func TestCollector_CollectFromInstance(t *testing.T) {
+	endpoints := []string{"127.0.0.1:2379"}
+	collector := NewCollector(endpoints)
 
-	// Define empty cluster endpoints
-	endpoints := ClusterEndpoints{
-		TiDBAddr:  "",
-		TiKVAddrs: []string{},
-		PDAddrs:   []string{},
-	}
-
-	// Collect cluster snapshot
-	snapshot, err := c.Collect(endpoints)
+	// Test collecting from TiDB instance
+	tidbInstance, err := collector.CollectFromInstance("127.0.0.1:4000", TiDBComponent)
 	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
+		t.Fatalf("Failed to collect from TiDB instance: %v", err)
 	}
 
-	// Check that we got a snapshot
-	if snapshot == nil {
-		t.Fatal("Expected snapshot, got nil")
+	if tidbInstance.State.Type != TiDBComponent {
+		t.Errorf("Expected TiDB component type, got %s", tidbInstance.State.Type)
 	}
 
-	// Check that we have no components
-	if len(snapshot.Components) != 0 {
-		t.Errorf("Expected no components, got %d", len(snapshot.Components))
+	// Test collecting from PD instance
+	pdInstance, err := collector.CollectFromInstance("127.0.0.1:2379", PDComponent)
+	if err != nil {
+		t.Fatalf("Failed to collect from PD instance: %v", err)
+	}
+
+	if pdInstance.State.Type != PDComponent {
+		t.Errorf("Expected PD component type, got %s", pdInstance.State.Type)
+	}
+
+	// Test collecting from TiKV instance
+	tikvInstance, err := collector.CollectFromInstance("127.0.0.1:20160", TiKVComponent)
+	if err != nil {
+		t.Fatalf("Failed to collect from TiKV instance: %v", err)
+	}
+
+	if tikvInstance.State.Type != TiKVComponent {
+		t.Errorf("Expected TiKV component type, got %s", tikvInstance.State.Type)
 	}
 }
+

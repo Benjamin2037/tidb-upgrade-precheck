@@ -35,6 +35,24 @@ type RuntimeSnapshot struct {
 	VariablesCurrent map[string]string `json:"variables_current"`
 }
 
+// SaveTiDBSnapshot saves a TiDB KB snapshot to a file
+func SaveTiDBSnapshot(snapshot *KBSnapshot, outputPath string) error {
+	data, err := json.MarshalIndent(snapshot, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal snapshot: %v", err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+		return fmt.Errorf("failed to create directory: %v", err)
+	}
+
+	if err := os.WriteFile(outputPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write file: %v", err)
+	}
+
+	return nil
+}
+
 // CollectFromTidbSource collects TiDB parameters and system variables from source code
 // This is used for knowledge base generation
 func CollectFromTidbSource(tidbRoot, tag string) (*KBSnapshot, error) {

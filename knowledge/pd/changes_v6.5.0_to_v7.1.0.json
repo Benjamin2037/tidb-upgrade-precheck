@@ -1,0 +1,11 @@
+[
+  {
+    "name": "schedule.enable-diagnostic",
+    "type": "modified",
+    "from_version": "v6.5.0",
+    "to_version": "v7.1.0",
+    "from_value": false,
+    "to_value": true,
+    "description": "Parameter schedule.enable-diagnostic was modified from false to true"
+  }
+]

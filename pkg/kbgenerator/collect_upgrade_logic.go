@@ -3,7 +3,9 @@ package kbgenerator
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -116,6 +118,68 @@ func CollectUpgradeLogicFromSource(bootstrapPath string) (*UpgradeLogicSnapshot,
 	return &UpgradeLogicSnapshot{
 		Changes: results,
 	}, nil
+}
+
+// CompareVersions compares two versions of TiDB and returns the upgrade logic differences
+func CompareVersions(repoRoot, fromTag, toTag string) ([]UpgradeVarChange, error) {
+	// Checkout to the from tag
+	cmd := exec.Command("git", "checkout", fromTag)
+	cmd.Dir = repoRoot
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return nil, fmt.Errorf("git checkout %s failed: %v, output: %s", fromTag, err, out)
+	}
+
+	// Get upgrade logic from fromTag
+	fromBootstrapPath := filepath.Join(repoRoot, "pkg", "session", "bootstrap.go")
+	fromLogic, err := CollectUpgradeLogicFromSource(fromBootstrapPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to collect upgrade logic from %s: %v", fromTag, err)
+	}
+
+	// Checkout to the to tag
+	cmd = exec.Command("git", "checkout", toTag)
+	cmd.Dir = repoRoot
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return nil, fmt.Errorf("git checkout %s failed: %v, output: %s", toTag, err, out)
+	}
+
+	// Get upgrade logic from toTag
+	toBootstrapPath := filepath.Join(repoRoot, "pkg", "session", "bootstrap.go")
+	toLogic, err := CollectUpgradeLogicFromSource(toBootstrapPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to collect upgrade logic from %s: %v", toTag, err)
+	}
+
+	// Compare and identify differences
+	changes := compareUpgradeLogic(fromLogic, toLogic)
+	return changes, nil
+}
+
+// compareUpgradeLogic compares two upgrade logic snapshots and identifies differences
+func compareUpgradeLogic(from, to *UpgradeLogicSnapshot) []UpgradeVarChange {
+	// Convert to maps for easier lookup
+	fromMap := make(map[string]UpgradeVarChange)
+	toMap := make(map[string]UpgradeVarChange)
+
+	for _, change := range from.Changes {
+		key := fmt.Sprintf("%s-%s", change.Version, change.VarName)
+		fromMap[key] = change
+	}
+
+	for _, change := range to.Changes {
+		key := fmt.Sprintf("%s-%s", change.Version, change.VarName)
+		toMap[key] = change
+	}
+
+	// Identify added changes
+	var changes []UpgradeVarChange
+	for key, change := range toMap {
+		if _, exists := fromMap[key]; !exists {
+			changes = append(changes, change)
+		}
+	}
+
+	return changes
 }
 
 // SaveUpgradeLogic saves the upgrade logic snapshot to a JSON file

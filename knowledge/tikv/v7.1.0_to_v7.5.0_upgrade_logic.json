@@ -1,0 +1,9 @@
+[
+  {
+    "description": "Parameter raftstore.raft-entry-max-size was modified from 8MB to 16MB",
+    "from_value": "8MB",
+    "key": "raftstore.raft-entry-max-size",
+    "to_value": "16MB",
+    "type": "modified"
+  }
+]

@@ -1,117 +1,88 @@
 package rules
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/precheck"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/runtime"
 )
 
-// SysVarCheckRule checks for system variable-related issues
-type SysVarCheckRule struct {
-	sourceKB       map[string]interface{}
-	targetKB       map[string]interface{}
-	forcedChanges  map[string]interface{}
-}
+// SysVarCheckRule checks system variables for upgrade compatibility
+type SysVarCheckRule struct{}
 
 // NewSysVarCheckRule creates a new system variable check rule
-func NewSysVarCheckRule(sourceKB, targetKB map[string]interface{}, forcedChanges map[string]interface{}) precheck.Rule {
-	return &SysVarCheckRule{
-		sourceKB:      sourceKB,
-		targetKB:      targetKB,
-		forcedChanges: forcedChanges,
-	}
+func NewSysVarCheckRule() *SysVarCheckRule {
+	return &SysVarCheckRule{}
 }
 
-// Name returns the rule name
-func (r *SysVarCheckRule) Name() string {
-	return "sysvar-check"
+// RuleID returns the rule ID
+func (r *SysVarCheckRule) RuleID() string {
+	return "SYSVAR_CHECK"
 }
 
-// Evaluate evaluates the rule against a snapshot
-func (r *SysVarCheckRule) Evaluate(ctx context.Context, snapshot precheck.Snapshot) ([]precheck.ReportItem, error) {
-	var items []precheck.ReportItem
-
-	// Check global system variables
-	items = append(items, r.checkGlobalSysVars(snapshot.GlobalSysVars)...)
-
-	return items, nil
+// Description returns the rule description
+func (r *SysVarCheckRule) Description() string {
+	return "Check system variables for upgrade compatibility"
 }
 
-func (r *SysVarCheckRule) checkGlobalSysVars(vars map[string]string) []precheck.ReportItem {
-	var items []precheck.ReportItem
+// Check performs the system variable check
+func (r *SysVarCheckRule) Check(snapshot *runtime.ClusterState) ([]CheckResult, error) {
+	var results []CheckResult
 
-	// Get source and target system variable defaults
-	sourceSysVarDefaults := make(map[string]interface{})
-	targetSysVarDefaults := make(map[string]interface{})
-
-	if sourceSysVars, ok := r.sourceKB["system_variables"].(map[string]interface{}); ok {
-		sourceSysVarDefaults = sourceSysVars
-	}
-
-	if targetSysVars, ok := r.targetKB["system_variables"].(map[string]interface{}); ok {
-		targetSysVarDefaults = targetSysVars
-	}
-
-	// Check each system variable
-	for name, currentValue := range vars {
-		sourceDefault, sourceExists := sourceSysVarDefaults[name]
-		targetDefault, targetExists := targetSysVarDefaults[name]
-
-		// Check if parameter is forcibly changed during upgrade (HIGH risk)
-		if _, isForced := r.forcedChanges[name]; isForced {
-			items = append(items, precheck.ReportItem{
-				Rule:     "sysvar-check",
-				Severity: precheck.SeverityBlocker,
-				Message:  fmt.Sprintf("System variable '%s' will be forcibly changed during upgrade", name),
-				Details: []string{
-					fmt.Sprintf("Current value: '%v', will be changed to: '%v'", currentValue, r.forcedChanges[name]),
-					"This is a forced change during the upgrade process and cannot be overridden",
-				},
-			})
-			continue // Skip other checks for forcibly changed variables
+	// Check each TiDB instance for system variables
+	for _, instance := range snapshot.Instances {
+		if instance.State.Type != runtime.TiDBComponent {
+			continue
 		}
 
-		// Check if default value changes (MEDIUM risk for user-set parameters)
-		if sourceExists && targetExists && 
-		   fmt.Sprintf("%v", sourceDefault) != fmt.Sprintf("%v", targetDefault) {
-			// Check if user has customized the parameter
-			if fmt.Sprintf("%v", currentValue) != fmt.Sprintf("%v", sourceDefault) {
-				items = append(items, precheck.ReportItem{
-					Rule:     "sysvar-check",
-					Severity: precheck.SeverityWarning,
-					Message:  fmt.Sprintf("System variable '%s' default value changed and has custom value", name),
-					Details: []string{
-						fmt.Sprintf("Default value changed from '%v' to '%v'", sourceDefault, targetDefault),
-						fmt.Sprintf("Current custom value: '%v'", currentValue),
-						"You have customized this parameter and the default is changing in the target version",
-					},
-				})
-			} else {
-				// Using default value but default is changing
-				items = append(items, precheck.ReportItem{
-					Rule:     "sysvar-check",
-					Severity: precheck.SeverityInfo,
-					Message:  fmt.Sprintf("System variable '%s' default value will change", name),
-					Details: []string{
-						fmt.Sprintf("Default value changing from '%v' to '%v'", sourceDefault, targetDefault),
-						"The default value for this parameter is changing in the target version",
-					},
+		sysVarResults := r.checkSysVars(instance)
+		results = append(results, sysVarResults...)
+	}
+
+	return results, nil
+}
+
+// checkSysVars checks system variables for a specific TiDB instance
+func (r *SysVarCheckRule) checkSysVars(instance runtime.InstanceState) []CheckResult {
+	var results []CheckResult
+
+	// Check for deprecated system variables
+	deprecatedVars := map[string]string{
+		"tidb_enable_streaming": "This variable has been deprecated and will be removed in future versions",
+	}
+
+	for varName, warningMsg := range deprecatedVars {
+		if _, exists := instance.State.Config[varName]; exists {
+			results = append(results, CheckResult{
+				RuleID:      r.RuleID(),
+				Description: r.Description(),
+				Severity:    "warning",
+				Message:     fmt.Sprintf("Deprecated system variable found: %s", varName),
+				Details:     warningMsg,
+			})
+		}
+	}
+
+	// Check for incompatible system variable values
+	incompatibleVars := map[string]map[interface{}]string{
+		"tidb_txn_mode": {
+			"pessimistic": "Pessimistic transaction mode may cause performance issues in newer versions",
+			"optimistic":  "Optimistic transaction mode may not support all features in newer versions",
+		},
+	}
+
+	for varName, warnings := range incompatibleVars {
+		if value, exists := instance.State.Config[varName]; exists {
+			if warningMsg, hasWarning := warnings[value]; hasWarning {
+				results = append(results, CheckResult{
+					RuleID:      r.RuleID(),
+					Description: r.Description(),
+					Severity:    "warning",
+					Message:     fmt.Sprintf("Potentially incompatible value for %s: %v", varName, value),
+					Details:     warningMsg,
 				})
 			}
-		} else if sourceExists && fmt.Sprintf("%v", currentValue) != fmt.Sprintf("%v", sourceDefault) {
-			// User has customized the parameter but default is not changing
-			items = append(items, precheck.ReportItem{
-				Rule:     "sysvar-check",
-				Severity: precheck.SeverityInfo,
-				Message:  fmt.Sprintf("System variable '%s' has custom value", name),
-				Details: []string{
-					fmt.Sprintf("Current value: '%v', default value: '%v'", currentValue, sourceDefault),
-					"You have customized this parameter",
-				},
-			})
 		}
 	}
 
-	return items
+	return results
 }

@@ -1,0 +1,31 @@
+{
+  "config_defaults": {
+    "lease": 5,
+    "log.level": "info",
+    "quota-backend-bytes": 8589934592,
+    "replication.enable-placement-rules": true,
+    "replication.enable-placement-rules-cache": false,
+    "replication.location-labels": [],
+    "replication.max-replicas": 3,
+    "replication.strictly-match-label": false,
+    "schedule.enable-cross-table-merge": true,
+    "schedule.enable-diagnostic": true,
+    "schedule.enable-joint-consensus": true,
+    "schedule.enable-tikv-split-region": true,
+    "schedule.enable-witness": false,
+    "schedule.high-space-ratio": 0.7,
+    "schedule.hot-region-schedule-limit": 4,
+    "schedule.leader-schedule-limit": 4,
+    "schedule.low-space-ratio": 0.8,
+    "schedule.max-merge-region-size": 54,
+    "schedule.max-pending-peer-count": 64,
+    "schedule.max-snapshot-count": 64,
+    "schedule.max-store-down-time": "30m0s",
+    "schedule.merge-schedule-limit": 8,
+    "schedule.region-schedule-limit": 2048,
+    "schedule.replica-schedule-limit": 64,
+    "schedule.split-merge-interval": "1h0m0s",
+    "schedule.tolerant-size-ratio": 0
+  },
+  "version": "v6.5.1"
+}

@@ -101,41 +101,22 @@ type AnalysisResult struct {
     Timestamp      time.Time    `json:"timestamp"`
     SourceVersion  string       `json:"source_version"`
     TargetVersion  string       `json:"target_version"`
-    HighRiskItems  []RiskItem   `json:"high_risk_items"`
-    MediumRiskItems []RiskItem  `json:"medium_risk_items"`
-    LowRiskItems   []RiskItem   `json:"low_risk_items"`
-    AuditItems     []AuditItem  `json:"audit_items"`
-    ParameterAnalyses []ParameterAnalysis `json:"parameter_analyses"`
+    Risks          []RiskItem   `json:"risks"`
+    Audits         []AuditItem  `json:"audits"`
+    Summary        RiskSummary  `json:"summary"`
 }
 
-// KnowledgeBase represents the knowledge base data
-type KnowledgeBase struct {
-    Version          string                           `json:"version"`
-    BootstrapVersion int                              `json:"bootstrap_version"`
-    Components       map[string]ComponentKnowledgeBase `json:"components"`
-}
-
-// ComponentKnowledgeBase represents knowledge base for a single component
-type ComponentKnowledgeBase struct {
-    Config    map[string]interface{} `json:"config"`
-    Variables map[string]interface{} `json:"variables"`
-}
-
-// UpgradeLogic represents forced changes in upgrade process
-type UpgradeLogic struct {
-    Version  int    `json:"version"`
-    Function string `json:"function"`
-    Changes  []struct {
-        Type        string `json:"type"`
-        Variable    string `json:"variable,omitempty"`
-        ForcedValue string `json:"forced_value,omitempty"`
-        Description string `json:"description,omitempty"`
-    } `json:"changes"`
+// RiskSummary provides a summary of identified risks
+type RiskSummary struct {
+    Total  int `json:"total"`
+    High   int `json:"high"`
+    Medium int `json:"medium"`
+    Low    int `json:"low"`
 }
 
 // Analyzer defines the interface for analyzing cluster configurations
 type Analyzer interface {
-    Analyze(snapshot *collector.ClusterSnapshot, sourceKB, targetKB *KnowledgeBase, upgradeLogic []UpgradeLogic) (*AnalysisResult, error)
+    Analyze(snapshot *collector.ClusterSnapshot, sourceKB, targetKB map[string]interface{}) (*AnalysisResult, error)
 }
 ```
 
@@ -145,8 +126,8 @@ type Analyzer interface {
 package analyzer
 
 import (
+    "context"
     "fmt"
-    "time"
     
     "github.com/pingcap/tidb-upgrade-precheck/pkg/collector"
 )
@@ -164,33 +145,49 @@ func NewAnalyzer() Analyzer {
     }
 }
 
-// Analyze performs analysis of cluster configuration against knowledge base
-func (a *analyzer) Analyze(
-    snapshot *collector.ClusterSnapshot, 
-    sourceKB, targetKB *KnowledgeBase, 
-    upgradeLogic []UpgradeLogic,
-) (*AnalysisResult, error) {
+// Analyze performs analysis of a cluster snapshot against knowledge base data
+func (a *analyzer) Analyze(snapshot *collector.ClusterSnapshot, sourceKB, targetKB map[string]interface{}) (*AnalysisResult, error) {
     result := &AnalysisResult{
-        Timestamp:     time.Now(),
-        SourceVersion: sourceKB.Version,
-        TargetVersion: targetKB.Version,
+        Timestamp:     snapshot.Timestamp,
+        SourceVersion: snapshot.SourceVersion,
+        TargetVersion: snapshot.TargetVersion,
+        Risks:         make([]RiskItem, 0),
+        Audits:        make([]AuditItem, 0),
     }
 
     // Perform parameter analysis
-    analyses, err := a.comparator.Compare(snapshot, sourceKB, targetKB, upgradeLogic)
+    analyses, err := a.comparator.Compare(snapshot, sourceKB, targetKB)
     if err != nil {
         return nil, fmt.Errorf("failed to compare configurations: %w", err)
     }
-    result.ParameterAnalyses = analyses
 
     // Evaluate risks
-    risks, audits := a.riskEvaluator.Evaluate(analyses)
-    result.HighRiskItems = risks[RiskHigh]
-    result.MediumRiskItems = risks[RiskMedium]
-    result.LowRiskItems = risks[RiskLow]
-    result.AuditItems = audits
+    risks, audits := a.riskEvaluator.Evaluate(analyses, sourceKB, targetKB)
+    result.Risks = risks
+    result.Audits = audits
+
+    // Generate summary
+    result.Summary = generateSummary(risks)
 
     return result, nil
+}
+
+func generateSummary(risks []RiskItem) RiskSummary {
+    summary := RiskSummary{}
+    summary.Total = len(risks)
+    
+    for _, risk := range risks {
+        switch risk.RiskLevel {
+        case RiskHigh:
+            summary.High++
+        case RiskMedium:
+            summary.Medium++
+        case RiskLow:
+            summary.Low++
+        }
+    }
+    
+    return summary
 }
 ```
 
@@ -201,18 +198,13 @@ package analyzer
 
 import (
     "fmt"
-    "reflect"
     
     "github.com/pingcap/tidb-upgrade-precheck/pkg/collector"
 )
 
-// Comparator handles comparison of current configuration with knowledge base
+// Comparator handles comparison of current configuration with knowledge base data
 type Comparator interface {
-    Compare(
-        snapshot *collector.ClusterSnapshot,
-        sourceKB, targetKB *KnowledgeBase,
-        upgradeLogic []UpgradeLogic,
-    ) ([]ParameterAnalysis, error)
+    Compare(snapshot *collector.ClusterSnapshot, sourceKB, targetKB map[string]interface{}) ([]*ParameterAnalysis, error)
 }
 
 type comparator struct{}
@@ -222,132 +214,69 @@ func NewComparator() Comparator {
     return &comparator{}
 }
 
-// Compare performs comparison of current configuration with knowledge base data
-func (c *comparator) Compare(
-    snapshot *collector.ClusterSnapshot,
-    sourceKB, targetKB *KnowledgeBase,
-    upgradeLogic []UpgradeLogic,
-) ([]ParameterAnalysis, error) {
-    var analyses []ParameterAnalysis
+// Compare performs parameter-by-parameter comparison
+func (c *comparator) Compare(snapshot *collector.ClusterSnapshot, sourceKB, targetKB map[string]interface{}) ([]*ParameterAnalysis, error) {
+    var analyses []*ParameterAnalysis
 
-    // Process each component in the snapshot
-    for componentName, componentState := range snapshot.Components {
-        componentType := componentState.Type
-        
-        // Process configuration parameters
-        configAnalyses, err := c.compareConfigParameters(
-            componentName, componentType, componentState.Config,
-            sourceKB, targetKB, upgradeLogic)
+    // Analyze TiDB parameters
+    if tidbComponent, exists := snapshot.Components["tidb"]; exists {
+        // Analyze system variables
+        variableAnalyses, err := c.analyzeVariables(tidbComponent, sourceKB, targetKB)
         if err != nil {
-            return nil, fmt.Errorf("failed to compare config parameters for %s: %w", componentName, err)
+            return nil, fmt.Errorf("failed to analyze variables: %w", err)
+        }
+        analyses = append(analyses, variableAnalyses...)
+
+        // Analyze configuration parameters
+        configAnalyses, err := c.analyzeConfig(tidbComponent, sourceKB, targetKB)
+        if err != nil {
+            return nil, fmt.Errorf("failed to analyze config: %w", err)
         }
         analyses = append(analyses, configAnalyses...)
-
-        // Process system variables (for TiDB)
-        if componentType == "tidb" {
-            variableAnalyses, err := c.compareSystemVariables(
-                componentName, componentState.Variables,
-                sourceKB, targetKB, upgradeLogic)
-            if err != nil {
-                return nil, fmt.Errorf("failed to compare system variables for %s: %w", componentName, err)
-            }
-            analyses = append(analyses, variableAnalyses...)
-        }
     }
+
+    // TODO: Analyze TiKV and PD parameters
 
     return analyses, nil
 }
 
-func (c *comparator) compareConfigParameters(
-    componentName, componentType string,
-    currentConfig map[string]interface{},
-    sourceKB, targetKB *KnowledgeBase,
-    upgradeLogic []UpgradeLogic,
-) ([]ParameterAnalysis, error) {
-    var analyses []ParameterAnalysis
+func (c *comparator) analyzeVariables(component collector.ComponentState, sourceKB, targetKB map[string]interface{}) ([]*ParameterAnalysis, error) {
+    var analyses []*ParameterAnalysis
 
-    sourceComponent, sourceExists := sourceKB.Components[componentType]
-    targetComponent, targetExists := targetKB.Components[componentType]
+    // Get source and target system variable defaults
+    sourceSysVars := make(map[string]interface{})
+    targetSysVars := make(map[string]interface{})
 
-    // Compare each configuration parameter
-    for paramName, currentValue := range currentConfig {
-        analysis := ParameterAnalysis{
-            Name:         paramName,
-            Component:    componentName,
-            Type:         ConfigParam,
-            CurrentValue: currentValue,
-        }
-
-        // Get source and target defaults
-        if sourceExists {
-            if sourceVal, ok := sourceComponent.Config[paramName]; ok {
-                analysis.SourceDefault = sourceVal
-            }
-        }
-
-        if targetExists {
-            if targetVal, ok := targetComponent.Config[paramName]; ok {
-                analysis.TargetDefault = targetVal
-            }
-        }
-
-        // Determine parameter state
-        analysis.State = c.determineParameterState(currentValue, analysis.SourceDefault)
-
-        // Check if parameter is forcibly changed during upgrade
-        forcedValue := c.checkForcedChange(componentType, paramName, upgradeLogic)
-        if forcedValue != nil {
-            analysis.IsForced = true
-            analysis.ForcedValue = forcedValue
-        }
-
-        analyses = append(analyses, analysis)
+    if source, ok := sourceKB["system_variables"].(map[string]interface{}); ok {
+        sourceSysVars = source
     }
 
-    return analyses, nil
-}
+    if target, ok := targetKB["system_variables"].(map[string]interface{}); ok {
+        targetSysVars = target
+    }
 
-func (c *comparator) compareSystemVariables(
-    componentName string,
-    currentVariables map[string]string,
-    sourceKB, targetKB *KnowledgeBase,
-    upgradeLogic []UpgradeLogic,
-) ([]ParameterAnalysis, error) {
-    var analyses []ParameterAnalysis
-
-    sourceComponent, sourceExists := sourceKB.Components["tidb"]
-    targetComponent, targetExists := targetKB.Components["tidb"]
-
-    // Compare each system variable
-    for varName, currentValue := range currentVariables {
-        analysis := ParameterAnalysis{
-            Name:         varName,
-            Component:    componentName,
+    // Analyze each variable
+    for name, currentValue := range component.Variables {
+        analysis := &ParameterAnalysis{
+            Name:         name,
+            Component:    component.Type,
             Type:         VariableParam,
             CurrentValue: currentValue,
+            State:        UseDefault, // Default assumption
         }
 
         // Get source and target defaults
-        if sourceExists {
-            if sourceVal, ok := sourceComponent.Variables[varName]; ok {
-                analysis.SourceDefault = sourceVal
-            }
+        if sourceDefault, exists := sourceSysVars[name]; exists {
+            analysis.SourceDefault = sourceDefault
         }
 
-        if targetExists {
-            if targetVal, ok := targetComponent.Variables[varName]; ok {
-                analysis.TargetDefault = targetVal
-            }
+        if targetDefault, exists := targetSysVars[name]; exists {
+            analysis.TargetDefault = targetDefault
         }
 
-        // Determine parameter state
-        analysis.State = c.determineParameterState(currentValue, analysis.SourceDefault)
-
-        // Check if variable is forcibly changed during upgrade
-        forcedValue := c.checkForcedChange("tidb", varName, upgradeLogic)
-        if forcedValue != nil {
-            analysis.IsForced = true
-            analysis.ForcedValue = forcedValue
+        // Determine if parameter is user-set
+        if analysis.SourceDefault != nil && fmt.Sprintf("%v", analysis.SourceDefault) != fmt.Sprintf("%v", currentValue) {
+            analysis.State = UserSet
         }
 
         analyses = append(analyses, analysis)
@@ -356,55 +285,64 @@ func (c *comparator) compareSystemVariables(
     return analyses, nil
 }
 
-func (c *comparator) determineParameterState(currentValue, defaultValue interface{}) ParameterState {
-    if isDefaultValue(currentValue, defaultValue) {
-        return UseDefault
-    }
-    return UserSet
-}
+func (c *comparator) analyzeConfig(component collector.ComponentState, sourceKB, targetKB map[string]interface{}) ([]*ParameterAnalysis, error) {
+    var analyses []*ParameterAnalysis
 
-func (c *comparator) checkForcedChange(componentType, paramName string, upgradeLogic []UpgradeLogic) interface{} {
-    // Check upgrade logic for forced changes to this parameter
-    for _, logic := range upgradeLogic {
-        for _, change := range logic.Changes {
-            if change.Type == "variable_change" && change.Variable == paramName {
-                return change.ForcedValue
-            }
+    // Get source and target config defaults
+    sourceConfigs := make(map[string]interface{})
+    targetConfigs := make(map[string]interface{})
+
+    if source, ok := sourceKB["config_defaults"].(map[string]interface{}); ok {
+        sourceConfigs = source
+    }
+
+    if target, ok := targetKB["config_defaults"].(map[string]interface{}); ok {
+        targetConfigs = target
+    }
+
+    // Analyze each config parameter
+    for name, currentValue := range component.Config {
+        analysis := &ParameterAnalysis{
+            Name:         name,
+            Component:    component.Type,
+            Type:         ConfigParam,
+            CurrentValue: currentValue,
+            State:        UseDefault, // Default assumption
         }
-    }
-    return nil
-}
 
-// isDefaultValue checks if current value equals default value
-func isDefaultValue(currentValue, defaultValue interface{}) bool {
-    if currentValue == nil && defaultValue == nil {
-        return true
+        // Get source and target defaults
+        if sourceDefault, exists := sourceConfigs[name]; exists {
+            analysis.SourceDefault = sourceDefault
+        }
+
+        if targetDefault, exists := targetConfigs[name]; exists {
+            analysis.TargetDefault = targetDefault
+        }
+
+        // Determine if parameter is user-set
+        if analysis.SourceDefault != nil && fmt.Sprintf("%v", analysis.SourceDefault) != fmt.Sprintf("%v", currentValue) {
+            analysis.State = UserSet
+        }
+
+        analyses = append(analyses, analysis)
     }
-    
-    if currentValue == nil || defaultValue == nil {
-        return false
-    }
-    
-    // Handle string comparisons
-    currentStr, isCurrentStr := currentValue.(string)
-    defaultStr, isDefaultStr := defaultValue.(string)
-    if isCurrentStr && isDefaultStr {
-        return currentStr == defaultStr
-    }
-    
-    // Use reflection for other types
-    return reflect.DeepEqual(currentValue, defaultValue)
+
+    return analyses, nil
 }
 ```
 
-### 3.4. Risk Evaluator (risk_evaluator.go)
+### 3.4. Risk Evaluation Logic (risk_evaluator.go)
 
 ```go
 package analyzer
 
+import (
+    "fmt"
+)
+
 // RiskEvaluator handles risk evaluation based on parameter analysis
 type RiskEvaluator interface {
-    Evaluate(analyses []ParameterAnalysis) (map[RiskLevel][]RiskItem, []AuditItem)
+    Evaluate(analyses []*ParameterAnalysis, sourceKB, targetKB map[string]interface{}) ([]RiskItem, []AuditItem)
 }
 
 type riskEvaluator struct{}
@@ -414,29 +352,64 @@ func NewRiskEvaluator() RiskEvaluator {
     return &riskEvaluator{}
 }
 
-// Evaluate performs risk evaluation based on parameter analyses
-func (r *riskEvaluator) Evaluate(analyses []ParameterAnalysis) (map[RiskLevel][]RiskItem, []AuditItem) {
-    risks := make(map[RiskLevel][]RiskItem)
+// Evaluate performs risk evaluation based on the risk matrix
+func (r *riskEvaluator) Evaluate(analyses []*ParameterAnalysis, sourceKB, targetKB map[string]interface{}) ([]RiskItem, []AuditItem) {
+    var risks []RiskItem
     var audits []AuditItem
 
+    // Get forced changes from target knowledge base
+    forcedChanges := r.extractForcedChanges(targetKB)
+
     for _, analysis := range analyses {
-        // Check for high risk items (forced changes)
-        if analysis.IsForced {
-            risk := r.createForcedChangeRisk(analysis)
-            risks[RiskHigh] = append(risks[RiskHigh], risk)
-            continue
+        // Check for forced changes (HIGH risk)
+        if forcedValue, isForced := forcedChanges[analysis.Name]; isForced {
+            risk := RiskItem{
+                ParameterName: analysis.Name,
+                Component:     analysis.Component,
+                RiskLevel:     RiskHigh,
+                CurrentValue:  analysis.CurrentValue,
+                ForcedValue:   forcedValue,
+                Description:   fmt.Sprintf("Parameter %s will be forcibly changed during upgrade from '%v' to '%v'", analysis.Name, analysis.CurrentValue, forcedValue),
+            }
+            risks = append(risks, risk)
+            continue // Skip other evaluations for forced changes
         }
 
-        // Check for medium risk items (default value changes)
-        if analysis.State == UseDefault && !isValueEqual(analysis.SourceDefault, analysis.TargetDefault) {
-            risk := r.createDefaultValueChangeRisk(analysis)
-            risks[RiskMedium] = append(risks[RiskMedium], risk)
-            continue
-        }
-
-        // Check for audit items (user-set values that differ from target defaults)
-        if analysis.State == UserSet && !isValueEqual(analysis.CurrentValue, analysis.TargetDefault) {
-            audit := r.createAuditItem(analysis)
+        // Check for default value changes
+        if analysis.SourceDefault != nil && analysis.TargetDefault != nil &&
+           fmt.Sprintf("%v", analysis.SourceDefault) != fmt.Sprintf("%v", analysis.TargetDefault) {
+            
+            if analysis.State == UserSet {
+                // UserSet + Default Changed = MEDIUM risk
+                risk := RiskItem{
+                    ParameterName: analysis.Name,
+                    Component:     analysis.Component,
+                    RiskLevel:     RiskMedium,
+                    CurrentValue:  analysis.CurrentValue,
+                    DefaultValue:  analysis.SourceDefault,
+                    Description:   fmt.Sprintf("Parameter %s has custom value and default is changing in target version", analysis.Name),
+                }
+                risks = append(risks, risk)
+            } else {
+                // UseDefault + Default Changed = Audit item
+                audit := AuditItem{
+                    ParameterName: analysis.Name,
+                    Component:     analysis.Component,
+                    CurrentValue:  analysis.CurrentValue,
+                    TargetDefault: analysis.TargetDefault,
+                    Description:   fmt.Sprintf("Default value for parameter %s is changing in target version", analysis.Name),
+                }
+                audits = append(audits, audit)
+            }
+        } else if analysis.State == UserSet {
+            // UserSet + Default Not Changed = Audit item
+            audit := AuditItem{
+                ParameterName: analysis.Name,
+                Component:     analysis.Component,
+                CurrentValue:  analysis.CurrentValue,
+                TargetDefault: analysis.TargetDefault,
+                Description:   fmt.Sprintf("Parameter %s has custom value", analysis.Name),
+            }
             audits = append(audits, audit)
         }
     }
@@ -444,188 +417,131 @@ func (r *riskEvaluator) Evaluate(analyses []ParameterAnalysis) (map[RiskLevel][]
     return risks, audits
 }
 
-func (r *riskEvaluator) createForcedChangeRisk(analysis ParameterAnalysis) RiskItem {
-    return RiskItem{
-        ParameterName: analysis.Name,
-        Component:     analysis.Component,
-        RiskLevel:     RiskHigh,
-        CurrentValue:  analysis.CurrentValue,
-        ForcedValue:   analysis.ForcedValue,
-        Description:   "This parameter will be forcibly changed during upgrade regardless of current value",
-        Suggestions: []string{
-            "Review the impact of the forced change",
-            "Plan for potential service disruption during upgrade",
-        },
-    }
-}
+func (r *riskEvaluator) extractForcedChanges(targetKB map[string]interface{}) map[string]interface{} {
+    forcedChanges := make(map[string]interface{})
 
-func (r *riskEvaluator) createDefaultValueChangeRisk(analysis ParameterAnalysis) RiskItem {
-    return RiskItem{
-        ParameterName: analysis.Name,
-        Component:     analysis.Component,
-        RiskLevel:     RiskMedium,
-        CurrentValue:  analysis.CurrentValue,
-        DefaultValue:  analysis.TargetDefault,
-        Description:   "The default value for this parameter will change in the target version",
-        Suggestions: []string{
-            "Consider whether to explicitly set this parameter to the new default value",
-            "Review the impact of the default value change",
-        },
+    // Extract forced changes from upgrade logic if available
+    if upgradeLogic, ok := targetKB["upgrade_logic"].([]interface{}); ok {
+        for _, change := range upgradeLogic {
+            if changeMap, ok := change.(map[string]interface{}); ok {
+                if variable, ok := changeMap["variable"].(string); ok {
+                    if forcedValue, ok := changeMap["forced_value"]; ok {
+                        forcedChanges[variable] = forcedValue
+                    }
+                }
+            }
+        }
     }
-}
 
-func (r *riskEvaluator) createAuditItem(analysis ParameterAnalysis) AuditItem {
-    return AuditItem{
-        ParameterName: analysis.Name,
-        Component:     analysis.Component,
-        CurrentValue:  analysis.CurrentValue,
-        TargetDefault: analysis.TargetDefault,
-        Description:   "User-modified parameter that differs from target version default",
-    }
-}
-
-// isValueEqual checks if two values are equal
-func isValueEqual(val1, val2 interface{}) bool {
-    if val1 == nil && val2 == nil {
-        return true
-    }
-    
-    if val1 == nil || val2 == nil {
-        return false
-    }
-    
-    // Handle string comparisons
-    str1, isStr1 := val1.(string)
-    str2, isStr2 := val2.(string)
-    if isStr1 && isStr2 {
-        return str1 == str2
-    }
-    
-    // For other types, convert to string for comparison
-    return fmt.Sprintf("%v", val1) == fmt.Sprintf("%v", val2)
+    return forcedChanges
 }
 ```
 
-## 4. Usage Example
+## 4. TiUP Integration Considerations
 
-```go
-package main
+### 4.1. Integration Approach
 
-import (
-    "encoding/json"
-    "fmt"
-    "io/ioutil"
-    "os"
-    
-    "github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer"
-    "github.com/pingcap/tidb-upgrade-precheck/pkg/collector"
-)
+The analyzer module is designed to be used as a library by TiUP. TiUP should:
 
-func main() {
-    // Load cluster snapshot
-    snapshotData, err := ioutil.ReadFile("cluster_snapshot.json")
-    if err != nil {
-        fmt.Printf("Error reading snapshot file: %v\n", err)
-        os.Exit(1)
-    }
-    
-    var snapshot collector.ClusterSnapshot
-    if err := json.Unmarshal(snapshotData, &snapshot); err != nil {
-        fmt.Printf("Error unmarshaling snapshot: %v\n", err)
-        os.Exit(1)
-    }
+1. Collect cluster configuration data using the collector module
+2. Load appropriate knowledge base data for source and target versions
+3. Call the analyzer APIs to perform risk analysis
+4. Process the analysis results and present them to users
 
-    // Load knowledge base files
-    sourceKB, err := loadKnowledgeBase("knowledge/source_defaults.json")
-    if err != nil {
-        fmt.Printf("Error loading source knowledge base: %v\n", err)
-        os.Exit(1)
-    }
-    
-    targetKB, err := loadKnowledgeBase("knowledge/target_defaults.json")
-    if err != nil {
-        fmt.Printf("Error loading target knowledge base: %v\n", err)
-        os.Exit(1)
-    }
-    
-    upgradeLogic, err := loadUpgradeLogic("knowledge/upgrade_logic.json")
-    if err != nil {
-        fmt.Printf("Error loading upgrade logic: %v\n", err)
-        os.Exit(1)
-    }
+### 4.2. Knowledge Base Handling
 
-    // Create analyzer
-    a := analyzer.NewAnalyzer()
+TiUP will need to provide the following knowledge base data:
 
-    // Perform analysis
-    result, err := a.Analyze(&snapshot, sourceKB, targetKB, upgradeLogic)
-    if err != nil {
-        fmt.Printf("Error analyzing cluster: %v\n", err)
-        os.Exit(1)
-    }
+- Source version knowledge base (defaults and current values)
+- Target version knowledge base (defaults and upgrade logic)
 
-    // Output results
-    data, err := json.MarshalIndent(result, "", "  ")
-    if err != nil {
-        fmt.Printf("Error marshaling result: %v\n", err)
-        os.Exit(1)
-    }
+The analyzer expects knowledge base data in the following format:
 
-    fmt.Println(string(data))
-}
-
-func loadKnowledgeBase(filename string) (*analyzer.KnowledgeBase, error) {
-    data, err := ioutil.ReadFile(filename)
-    if err != nil {
-        return nil, err
+```json
+{
+  "system_variables": {
+    "tidb_enable_clustered_index": "INT_ONLY",
+    "max_connections": "151"
+  },
+  "config_defaults": {
+    "performance.max-procs": 0,
+    "log.level": "info"
+  },
+  "upgrade_logic": [
+    {
+      "variable": "tidb_enable_clustered_index",
+      "forced_value": "ON",
+      "type": "set_global"
     }
-    
-    var kb analyzer.KnowledgeBase
-    if err := json.Unmarshal(data, &kb); err != nil {
-        return nil, err
-    }
-    
-    return &kb, nil
-}
-
-func loadUpgradeLogic(filename string) ([]analyzer.UpgradeLogic, error) {
-    data, err := ioutil.ReadFile(filename)
-    if err != nil {
-        return nil, err
-    }
-    
-    var logic []analyzer.UpgradeLogic
-    if err := json.Unmarshal(data, &logic); err != nil {
-        return nil, err
-    }
-    
-    return logic, nil
+  ]
 }
 ```
 
-## 5. Implementation Considerations
+### 4.3. Error Handling
 
-### 5.1. Data Type Handling
-- Proper comparison of different data types (string, int, bool, etc.)
-- Handling of nil values
-- Type conversion when necessary
+The analyzer is designed to handle various error conditions:
 
-### 5.2. Performance Optimization
-- Efficient data structures for comparisons
-- Caching of knowledge base data
-- Parallel processing where applicable
+- Missing knowledge base data (will use sensible defaults)
+- Malformed knowledge base data (will return specific error messages)
+- Incomplete cluster snapshots (will analyze available data)
+- Unexpected parameter types (will attempt best-effort analysis)
 
-### 5.3. Error Handling
-- Graceful handling of missing knowledge base data
-- Clear error messages for troubleshooting
-- Validation of input data
+### 4.4. Data Format
 
-### 5.4. Extensibility
-- Modular design for easy addition of new risk types
-- Configurable risk evaluation rules
-- Plugin architecture for custom risk evaluators
+The analyzer consumes data from the collector and produces results in a standardized format that can be:
 
-### 5.5. Testing
-- Unit tests for each component
-- Integration tests for end-to-end functionality
-- Test cases for edge cases and error conditions
+- Serialized to JSON for file storage or transmission
+- Used directly in-memory by the reporter
+- Extended in the future without breaking existing integrations
+
+## 5. Risk Assessment Matrix Implementation
+
+### 5.1. Matrix Definition
+
+The analyzer implements the following risk assessment matrix:
+
+| Source State | Target State      | Risk Level | Action        |
+|--------------|-------------------|------------|---------------|
+| UseDefault   | Default Changed   | LOW        | Configuration Audit |
+| UseDefault   | Forced Upgrade    | HIGH       | Must Handle   |
+| UserSet      | Default Changed   | MEDIUM     | Recommendation |
+| UserSet      | Forced Upgrade    | HIGH       | Must Handle   |
+
+### 5.2. Implementation Details
+
+1. **Parameter State Determination**
+   - Compare current value with source version default
+   - Classify as UseDefault or UserSet
+
+2. **Target State Determination**
+   - Compare source and target defaults
+   - Check for forced upgrade conditions in upgrade logic
+
+3. **Risk Classification**
+   - Apply risk matrix to determine risk level
+   - Generate appropriate risk items or audit items
+
+## 6. Testing Plan
+
+### 6.1. Unit Tests
+
+- Test parameter state determination logic
+- Test risk evaluation with various scenarios
+- Test knowledge base data handling
+- Test error conditions and edge cases
+
+### 6.2. Integration Tests
+
+- Test end-to-end analysis with real knowledge base data
+- Test various combinations of parameter states
+- Test forced upgrade detection
+
+### 6.3. Test Data
+
+Prepare test data covering:
+
+- Parameters with default values that change in target version
+- Parameters with user-set values that change in target version
+- Parameters with user-set values that are forcibly changed during upgrade
+- Parameters with user-set values that remain unchanged
+- Mixed scenarios with multiple parameter types

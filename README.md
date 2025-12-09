@@ -35,13 +35,25 @@ tidb-upgrade-precheck/
 ├── pkg/
 │   └── kbgenerator/          # Core parameter collection logic
 │       ├── kb_generator.go   # Parameter collection from source code
+│       ├── pd_kb_generator.go # PD parameter collection from source code
 │       └── collect_upgrade_logic.go # Upgrade logic analysis
 ├── knowledge/                # Output directory (not version controlled)
+│   ├── tidb/                 # TiDB knowledge base files
+│   ├── pd/                   # PD knowledge base files
+│   │   ├── v6.5.0/           # PD knowledge for v6.5.0
+│   │   │   └── pd_defaults.json # PD parameter defaults for v6.5.0
+│   │   └── v8.5.0/           # PD knowledge for v8.5.0
+│   │       └── pd_defaults.json # PD parameter defaults for v8.5.0
+│   └── upgrade_logic.json    # Cross-version upgrade logic
 ├── doc/                      # Documentation
 │   ├── parameter_collection_design.md    # Technical design document
 │   ├── parameter_collection_guide.md     # Operation guide
 │   ├── parameter_collection_design_zh.md # Technical design document (Chinese)
-│   └── parameter_collection_guide_zh.md  # Operation guide (Chinese)
+│   ├── parameter_collection_guide_zh.md  # Operation guide (Chinese)
+│   ├── pd_knowledge_base_generation.md   # PD knowledge base generation guide
+│   ├── pd_parameter_upgrade_comparison_design.md  # PD parameter upgrade comparison design
+│   ├── pd_mandatory_changes.md           # PD mandatory parameter changes
+│   └── tikv_parameter_upgrade_comparison_design.md # TiKV parameter upgrade comparison design
 └── Makefile                  # Build and run commands
 ```
 
@@ -49,116 +61,45 @@ tidb-upgrade-precheck/
 
 1. **Parameter Collection (P1/P2 Risks)**
    - Strategy: Runtime Import or Static Analysis
-   - Mechanism:
-     - Switch to target tag (e.g., v7.5.0)
-     - Two collection methods supported:
-       - Source code parsing (static analysis)
-       - Binary execution (runtime import)
-     - Extract `CurrentBootstrapVersion` as metadata
-     - Output as `knowledge/<version>/defaults.json`
+   
+2. **PD Configuration Collection**
+   - Strategy: Static Analysis of PD source code
+   - Extracts PD configuration parameters and their default values
+   - Generates knowledge base for PD parameter comparison
 
-2. **Upgrade Logic Collection (P0 Risks)**
-   - Strategy: External intelligent scanning (zero-intrusion)
-   - Mechanism:
-     - AST parsing of `session/bootstrap.go` to extract all `SET GLOBAL` changes
-     - Records forced parameter changes that occur during the upgrade process
-     - Output as `knowledge/upgrade_logic.json` - part of the knowledge base
+### Building and Running
 
-3. **Version Management**
-   - Automatically tracks generated versions to avoid re-generation
-   - Stores version information in `knowledge/generated_versions.json`
-   - Can skip or force re-generation of specific versions
+Build the tools:
 
-### Usage
-
-#### Dependencies
-- Go 1.18+
-- Git
-- TiDB source code cloned to `../tidb` (can be specified with `--repo` flag)
-
-#### Full Collection (All LTS versions)
 ```bash
-# Collect only non-generated versions (default behavior)
-make collect
-# or
-go run cmd/kb-generator/main.go --all --repo=/path/to/tidb
-
-# Collect all versions including already generated ones
-make collect-all
-# or
-go run cmd/kb-generator/main.go --all --skip-generated=false --repo=/path/to/tidb
+make build
 ```
 
-#### Single Tag Collection
-```bash
-# Using source code parsing (default)
-go run cmd/kb-generator/main.go --tag=v7.5.0 --repo=/path/to/tidb
+Generate knowledge base for TiDB:
 
-# Using binary execution method
-go run cmd/kb-generator/main.go --tag=v7.5.0 --method=binary --tool=/path/to/export_tool.go --repo=/path/to/tidb
+```bash
+make gen-kb-tidb REPO_ROOT=../tidb TAG=v6.5.0
 ```
 
-#### Incremental Collection (Version range)
+Generate knowledge base for PD:
+
 ```bash
-go run cmd/kb-generator/main.go --from-tag=v7.5.0 --to-tag=v8.1.0 --repo=/path/to/tidb
+make gen-kb-pd PD_REPO_ROOT=../pd TAG=v6.5.0
 ```
 
-#### Parameter History Aggregation
+Generate upgrade logic for TiDB:
+
 ```bash
-make aggregate
-# or
-go run cmd/kb-generator/main.go --aggregate --repo=/path/to/tidb
+make gen-ul-tidb REPO_ROOT=../tidb FROM_TAG=v6.5.0 TO_TAG=v7.1.0
 ```
 
-#### Clean Generated Records
+Generate upgrade logic for PD:
+
 ```bash
-make clean-generated
-# or manually remove knowledge/generated_versions.json
+make gen-ul-pd PD_REPO_ROOT=../pd FROM_TAG=v6.5.0 TO_TAG=v7.1.0
 ```
 
-### Contents of Knowledge Base
-
-The knowledge base contains three main components:
-
-1. **Parameter Defaults**: Default values for each version
-   - Stored in `knowledge/<version>/defaults.json`
-   - Contains configuration defaults and system variable defaults
-
-2. **Upgrade Logic**: Forced parameter changes during upgrades
-   - Stored in `knowledge/upgrade_logic.json`
-   - Contains records of all forced parameter changes that happen during the upgrade process
-   - Used to identify P0 risks during upgrade precheck
-
-3. **Parameter History**: Aggregated parameter history across versions
-   - Stored in `knowledge/parameters-history.json`
-   - Shows how parameters have changed across versions
-
-### Key Technical Points
-
-1. Multi-version source switching: Automatically checkout git tags to ensure accuracy
-2. Dual collection methods: Support both static analysis and runtime import for parameter collection
-3. AST static analysis: Automatically extract upgrade changes to avoid manual omissions
-4. Standardized output: All outputs are JSON for easy validation and comparison
-5. Fault tolerance and logging: Each tag is collected independently, failures don't affect others
-6. Version management: Avoids re-generating already processed versions for efficiency
-
-### TiDB Parameters in Knowledge Base
-
-The knowledge base contains two main categories of TiDB parameters:
-
-1. **Configuration Defaults**: Values defined in the `config.Config` struct, including:
-   - Server settings (port, status, log, etc.)
-   - Performance tuning parameters
-   - Security settings
-   - Plugin configurations
-
-2. **System Variables**: Global session variables that can be tuned, including:
-   - SQL behavior settings
-   - Optimizer parameters
-   - Transaction settings
-   - Storage engine parameters
-
-Both categories are essential for upgrade compatibility checking as they define the baseline behavior of TiDB at each version.
+See `make help` for more details.
 
 ## Runtime Collection Tool
 

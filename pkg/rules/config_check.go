@@ -1,200 +1,117 @@
 package rules
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/precheck"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/runtime"
 )
 
-// ConfigCheckRule checks for configuration-related issues
-type ConfigCheckRule struct {
-	sourceKB map[string]interface{}
-	targetKB map[string]interface{}
-}
+// ConfigCheckRule checks for configuration inconsistencies across cluster nodes
+type ConfigCheckRule struct{}
 
 // NewConfigCheckRule creates a new config check rule
-func NewConfigCheckRule(sourceKB, targetKB map[string]interface{}) precheck.Rule {
-	return &ConfigCheckRule{
-		sourceKB: sourceKB,
-		targetKB: targetKB,
-	}
+func NewConfigCheckRule() *ConfigCheckRule {
+	return &ConfigCheckRule{}
 }
 
-// Name returns the rule name
-func (r *ConfigCheckRule) Name() string {
-	return "config-check"
-}
-
-// Evaluate evaluates the rule against a snapshot
-func (r *ConfigCheckRule) Evaluate(ctx context.Context, snapshot precheck.Snapshot) ([]precheck.ReportItem, error) {
-	var items []precheck.ReportItem
-
-	// Check TiDB config parameters
-	if tidbSnapshot, exists := snapshot.Components["tidb"]; exists {
-		items = append(items, r.checkTiDBConfig(tidbSnapshot)...)
-	}
-
-	return items, nil
-}
-
-func (r *ConfigCheckRule) checkTiDBConfig(snapshot precheck.ComponentSnapshot) []precheck.ReportItem {
-	var items []precheck.ReportItem
-
-	// Get source and target config defaults
-	sourceConfigDefaults := make(map[string]interface{})
-	targetConfigDefaults := make(map[string]interface{})
-
-	if sourceConfig, ok := r.sourceKB["config_defaults"].(map[string]interface{}); ok {
-		sourceConfigDefaults = sourceConfig
-	}
-
-	if targetConfig, ok := r.targetKB["config_defaults"].(map[string]interface{}); ok {
-		targetConfigDefaults = targetConfig
-	}
-
-	// Check each config parameter
-	for name, currentValue := range snapshot.Config {
-		sourceDefault, sourceExists := sourceConfigDefaults[name]
-		targetDefault, targetExists := targetConfigDefaults[name]
-
-		// Check if parameter default changed
-		if sourceExists && targetExists && fmt.Sprintf("%v", sourceDefault) != fmt.Sprintf("%v", targetDefault) {
-			items = append(items, precheck.ReportItem{
-				Rule:     "config-check",
-				Severity: precheck.SeverityWarning,
-				Message:  fmt.Sprintf("TiDB config parameter '%s' default value changed", name),
-				Details: []string{
-					fmt.Sprintf("Default value changed from '%v' to '%v'", sourceDefault, targetDefault),
-				},
-			})
-		}
-
-		// Check if user has customized the parameter
-		if sourceExists && fmt.Sprintf("%v", currentValue) != fmt.Sprintf("%v", sourceDefault) {
-			items = append(items, precheck.ReportItem{
-				Rule:     "config-check",
-				Severity: precheck.SeverityInfo,
-				Message:  fmt.Sprintf("TiDB config parameter '%s' has custom value", name),
-				Details: []string{
-					fmt.Sprintf("Current value: '%v', default value: '%v'", currentValue, sourceDefault),
-				},
-			})
-		}
-	}
-
-	return items
-}
-
-// ConfigChecker checks for configuration compatibility issues
-type ConfigChecker struct {
-	// Knowledge base data would be loaded here
-	// For now, we'll use placeholder data
-}
-
-// NewConfigChecker creates a new configuration checker
-func NewConfigChecker() Checker {
-	return &ConfigChecker{}
-}
-
-// RuleID returns the unique identifier for this check rule
-func (c *ConfigChecker) RuleID() string {
+// RuleID returns the rule ID
+func (r *ConfigCheckRule) RuleID() string {
 	return "CONFIG_CHECK"
 }
 
-// Description returns a brief description of what this rule checks
-func (c *ConfigChecker) Description() string {
-	return "Check for configuration compatibility issues"
+// Description returns the rule description
+func (r *ConfigCheckRule) Description() string {
+	return "Check for configuration inconsistencies across cluster nodes"
 }
 
-// Check performs the configuration compatibility check
-func (c *ConfigChecker) Check(snapshot *runtime.ClusterSnapshot) ([]CheckResult, error) {
+// Check performs the configuration consistency check
+func (r *ConfigCheckRule) Check(snapshot *runtime.ClusterState) ([]CheckResult, error) {
 	var results []CheckResult
-	
-	// Check TiDB configurations
-	if tidbComponent, exists := snapshot.Components["tidb"]; exists {
-		results = append(results, c.checkTiDBConfig(tidbComponent)...)
-	}
-	
-	// Check TiKV configurations
-	for name, component := range snapshot.Components {
-		if component.Type == "tikv" {
-			results = append(results, c.checkTiKVConfig(name, component)...)
+
+	// Group instances by component type
+	tidbInstances := []runtime.InstanceState{}
+	pdInstances := []runtime.InstanceState{}
+	tikvInstances := []runtime.InstanceState{}
+
+	for _, instance := range snapshot.Instances {
+		switch instance.State.Type {
+		case runtime.TiDBComponent:
+			tidbInstances = append(tidbInstances, instance)
+		case runtime.PDComponent:
+			pdInstances = append(pdInstances, instance)
+		case runtime.TiKVComponent:
+			tikvInstances = append(tikvInstances, instance)
 		}
 	}
-	
-	// Check PD configurations
-	if pdComponent, exists := snapshot.Components["pd"]; exists {
-		results = append(results, c.checkPDConfig(pdComponent)...)
+
+	// Check TiDB configuration consistency
+	if len(tidbInstances) > 1 {
+		tidbResults := r.checkComponentConsistency(tidbInstances, "TiDB")
+		results = append(results, tidbResults...)
 	}
-	
+
+	// Check PD configuration consistency
+	if len(pdInstances) > 1 {
+		pdResults := r.checkComponentConsistency(pdInstances, "PD")
+		results = append(results, pdResults...)
+	}
+
+	// Check TiKV configuration consistency
+	if len(tikvInstances) > 1 {
+		tikvResults := r.checkComponentConsistency(tikvInstances, "TiKV")
+		results = append(results, tikvResults...)
+	}
+
 	return results, nil
 }
 
-func (c *ConfigChecker) checkTiDBConfig(component runtime.ComponentState) []CheckResult {
+// checkComponentConsistency checks configuration consistency for a specific component type
+func (r *ConfigCheckRule) checkComponentConsistency(instances []runtime.InstanceState, componentName string) []CheckResult {
 	var results []CheckResult
-	
-	// Example checks - in a real implementation, these would be based on knowledge base
-	if val, exists := component.Config["performance.max-procs"]; exists {
-		if valStr, ok := val.(string); ok && valStr == "0" {
-			results = append(results, CheckResult{
-				RuleID:      c.RuleID(),
-				Description: c.Description(),
-				Severity:    "warning",
-				Message:     "performance.max-procs is set to 0",
-				Details:     "Setting performance.max-procs to 0 will use all available CPU cores, which might not be optimal in containerized environments",
-			})
-		}
-	}
-	
-	// Check for deprecated configurations
-	if _, exists := component.Config["prepared-plan-cache.enabled"]; exists {
-		results = append(results, CheckResult{
-			RuleID:      c.RuleID(),
-			Description: c.Description(),
-			Severity:    "info",
-			Message:     "prepared-plan-cache.enabled configuration detected",
-			Details:     "prepared-plan-cache.enabled has been deprecated, use [performance] section instead",
-		})
-	}
-	
-	return results
-}
 
-func (c *ConfigChecker) checkTiKVConfig(name string, component runtime.ComponentState) []CheckResult {
-	var results []CheckResult
-	
-	// Example checks - in a real implementation, these would be based on knowledge base
-	if val, exists := component.Config["rocksdb.max-open-files"]; exists {
-		if valFloat, ok := val.(float64); ok && valFloat < 1000 {
-			results = append(results, CheckResult{
-				RuleID:      c.RuleID(),
-				Description: c.Description(),
-				Severity:    "warning",
-				Message:     fmt.Sprintf("rocksdb.max-open-files is set to %v", valFloat),
-				Details:     "Setting rocksdb.max-open-files to a low value may impact performance",
-			})
-		}
-	}
-	
-	return results
-}
+	// Create a map of parameter name to values across instances
+	paramValues := make(map[string][]interface{})
 
-func (c *ConfigChecker) checkPDConfig(component runtime.ComponentState) []CheckResult {
-	var results []CheckResult
-	
-	// Example checks - in a real implementation, these would be based on knowledge base
-	if val, exists := component.Config["schedule.max-merge-region-size"]; exists {
-		if valFloat, ok := val.(float64); ok && valFloat > 20 {
+	for _, instance := range instances {
+		for paramName, paramValue := range instance.State.Config {
+			paramValues[paramName] = append(paramValues[paramName], paramValue)
+		}
+	}
+
+	// Check each parameter for inconsistencies
+	for paramName, values := range paramValues {
+		if len(values) != len(instances) {
+			// Parameter doesn't exist on all instances
 			results = append(results, CheckResult{
-				RuleID:      c.RuleID(),
-				Description: c.Description(),
-				Severity:    "info",
-				Message:     fmt.Sprintf("schedule.max-merge-region-size is set to %v", valFloat),
-				Details:     "Large region merge size may impact online workload performance",
+				RuleID:      r.RuleID(),
+				Description: r.Description(),
+				Severity:    "warning",
+				Message:     fmt.Sprintf("Parameter %s is not configured on all %s instances", paramName, componentName),
+				Details:     fmt.Sprintf("Parameter %s missing on some instances", paramName),
+			})
+			continue
+		}
+
+		// Check if all values are the same
+		firstValue := values[0]
+		isConsistent := true
+		for _, value := range values[1:] {
+			if firstValue != value {
+				isConsistent = false
+				break
+			}
+		}
+
+		if !isConsistent {
+			results = append(results, CheckResult{
+				RuleID:      r.RuleID(),
+				Description: r.Description(),
+				Severity:    "warning",
+				Message:     fmt.Sprintf("Inconsistent values for parameter %s across %s instances", paramName, componentName),
+				Details:     fmt.Sprintf("Parameter %s has different values on different instances", paramName),
 			})
 		}
 	}
-	
+
 	return results
 }

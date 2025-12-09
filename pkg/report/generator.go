@@ -1,33 +1,33 @@
 package report
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"html/template"
 	"os"
-	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/precheck"
 )
 
-// Generator defines the interface for generating reports
-type Generator interface {
-	Generate(report *Report, options *Options) (*GeneratedReport, error)
-}
+// Format represents the output format of the report
+type Format string
+
+const (
+	TextFormat     Format = "text"
+	MarkdownFormat Format = "``"
+	HTMLFormat     Format = "html"
+	JSONFormat     Format = "json"
+)
 
 // Options defines options for report generation
 type Options struct {
 	Format    Format
 	OutputDir string
+	Filename  string
 }
-
-// Format represents the output format of the report
-type Format string
-
-const (
-	MarkdownFormat Format = "markdown"
-	HTMLFormat     Format = "html"
-	TextFormat     Format = "text"
-)
 
 // GeneratedReport represents a generated report
 type GeneratedReport struct {
@@ -35,102 +35,224 @@ type GeneratedReport struct {
 	Data string
 }
 
-// generator implements the Generator interface
-type generator struct{}
+// Generator generates reports in various formats
+type Generator struct{}
 
 // NewGenerator creates a new report generator
-func NewGenerator() Generator {
-	return &generator{}
+func NewGenerator() *Generator {
+	return &Generator{}
 }
 
-// Generate generates a report based on the provided data and options
-func (g *generator) Generate(report *Report, options *Options) (*GeneratedReport, error) {
-	// Set timestamp if not already set
-	if report.GeneratedAt == "" {
-		report.GeneratedAt = time.Now().Format(time.RFC3339)
+// Generate generates a report based on the analysis results
+func (g *Generator) Generate(report *precheck.Report, options *Options) (string, error) {
+	// Create output directory if it doesn't exist
+	if err := os.MkdirAll(options.OutputDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	// Generate filename if not provided
+	filename := options.Filename
+	if filename == "" {
+		timestamp := time.Now().Format("20060102_150405")
+		filename = fmt.Sprintf("upgrade_precheck_report_%s", timestamp)
 	}
 
 	var content string
-	var extension string
 	var err error
 
 	switch options.Format {
-	case MarkdownFormat:
-		content, err = RenderMarkdownReport(report)
-		extension = ".md"
-	case HTMLFormat:
-		content, err = RenderHTMLReport(report)
-		extension = ".html"
 	case TextFormat:
-		content, err = renderTextReport(report)
-		extension = ".txt"
+		content, err = g.generateTextReport(report, options)
+	case MarkdownFormat:
+		content, err = g.generateMarkdownReport(report, options)
+	case HTMLFormat:
+		content, err = g.generateHTMLReport(report, options)
+	case JSONFormat:
+		content, err = g.generateJSONReport(report, options)
 	default:
-		return nil, fmt.Errorf("unsupported format: %s", options.Format)
+		content, err = g.generateTextReport(report, options)
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to render report: %w", err)
+		return "", fmt.Errorf("failed to generate report content: %w", err)
 	}
 
-	// If output directory is specified, write to file
-	if options.OutputDir != "" {
-		// Create output directory if it doesn't exist
-		if err := os.MkdirAll(options.OutputDir, 0755); err != nil {
-			return nil, fmt.Errorf("failed to create output directory: %w", err)
-		}
-
-		// Generate filename
-		filename := fmt.Sprintf("tidb_upgrade_precheck_report_%s%s", 
-			time.Now().Format("20060102_150405"), extension)
-		filePath := filepath.Join(options.OutputDir, filename)
-
-		// Write to file
-		if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
-			return nil, fmt.Errorf("failed to write report to file: %w", err)
-		}
-
-		return &GeneratedReport{
-			Path: filePath,
-			Data: content,
-		}, nil
+	// Write to file
+	filePath := fmt.Sprintf("%s/%s.%s", options.OutputDir, filename, getFileExtension(options.Format))
+	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+		return "", fmt.Errorf("failed to write report to file: %w", err)
 	}
 
-	// If no output directory specified, return content only
-	return &GeneratedReport{
-		Data: content,
-	}, nil
+	return filePath, nil
 }
 
-// renderTextReport renders the report as plain text
-func renderTextReport(report *Report) (string, error) {
-	// For now, we'll just return a simple text representation
-	// In a real implementation, this would be a more detailed text format
-	content := fmt.Sprintf("TiDB Upgrade Precheck Report\n")
-	content += fmt.Sprintf("Cluster: %s\n", report.ClusterName)
-	content += fmt.Sprintf("Upgrade Path: %s\n", report.UpgradePath)
-	content += fmt.Sprintf("Generated At: %s\n\n", report.GeneratedAt)
+func getFileExtension(format Format) string {
+	switch format {
+	case TextFormat:
+		return "txt"
+	case MarkdownFormat:
+		return "md"
+	case HTMLFormat:
+		return "html"
+	case JSONFormat:
+		return "json"
+	default:
+		return "txt"
+	}
+}
+
+// generateTextReport generates a text format report
+func (g *Generator) generateTextReport(report *precheck.Report, options *Options) (string, error) {
+	var content strings.Builder
 	
-	content += fmt.Sprintf("Summary:\n")
-	content += fmt.Sprintf("  HIGH:   %d\n", report.Summary[precheck.RiskHigh])
-	content += fmt.Sprintf("  MEDIUM: %d\n", report.Summary[precheck.RiskMedium])
-	content += fmt.Sprintf("  INFO:   %d\n\n", report.Summary[precheck.RiskInfo])
+	content.WriteString("TiDB Upgrade Precheck Report\n")
+	content.WriteString("============================\n\n")
 	
-	if len(report.Risks) > 0 {
-		content += fmt.Sprintf("Risks:\n")
-		for _, risk := range report.Risks {
-			content += fmt.Sprintf("  [%s] %s: %s\n", risk.Level, risk.Parameter, risk.Impact)
+	content.WriteString(fmt.Sprintf("Started At: %s\n", report.StartedAt.Format(time.RFC3339)))
+	content.WriteString(fmt.Sprintf("Finished At: %s\n\n", report.FinishedAt.Format(time.RFC3339)))
+	
+	content.WriteString("Summary:\n")
+	content.WriteString(fmt.Sprintf("  Total Items: %d\n", report.Summary.Total))
+	content.WriteString(fmt.Sprintf("  Blocking Issues: %d\n", report.Summary.Blocking))
+	content.WriteString(fmt.Sprintf("  Warnings: %d\n", report.Summary.Warnings))
+	content.WriteString(fmt.Sprintf("  Info: %d\n\n", report.Summary.Infos))
+	
+	if len(report.Items) > 0 {
+		content.WriteString("Issues:\n")
+		for _, item := range report.Items {
+			content.WriteString(fmt.Sprintf("  [%s] %s: %s\n", item.Severity, item.Rule, item.Message))
+			if len(item.Suggestions) > 0 {
+				content.WriteString(fmt.Sprintf("    Suggestion: %s\n", item.Suggestions[0]))
+			}
 		}
-		content += fmt.Sprintf("\n")
+		content.WriteString("\n")
 	}
 	
-	if len(report.Audits) > 0 {
-		content += fmt.Sprintf("Configuration Audits:\n")
-		for _, audit := range report.Audits {
-			content += fmt.Sprintf("  %s.%s: %s (target: %s)\n", 
-				audit.Component, audit.Parameter, audit.Current, audit.Target)
+	if len(report.Errors) > 0 {
+		content.WriteString("Errors:\n")
+		for _, err := range report.Errors {
+			content.WriteString(fmt.Sprintf("  - %s\n", err))
 		}
-		content += fmt.Sprintf("\n")
+		content.WriteString("\n")
 	}
 	
-	return content, nil
+	return content.String(), nil
+}
+
+// generateMarkdownReport generates a markdown format report
+func (g *Generator) generateMarkdownReport(report *precheck.Report, options *Options) (string, error) {
+	var content strings.Builder
+	
+	content.WriteString("# TiDB Upgrade Precheck Report\n\n")
+	
+	content.WriteString(fmt.Sprintf("**Started At:** %s  \n", report.StartedAt.Format(time.RFC3339)))
+	content.WriteString(fmt.Sprintf("**Finished At:** %s\n\n", report.FinishedAt.Format(time.RFC3339)))
+	
+	content.WriteString("## Summary\n\n")
+	content.WriteString("| Category | Count |\n")
+	content.WriteString("|----------|-------|\n")
+	content.WriteString(fmt.Sprintf("| Total Items | %d |\n", report.Summary.Total))
+	content.WriteString(fmt.Sprintf("| Blocking Issues | %d |\n", report.Summary.Blocking))
+	content.WriteString(fmt.Sprintf("| Warnings | %d |\n", report.Summary.Warnings))
+	content.WriteString(fmt.Sprintf("| Info | %d |\n\n", report.Summary.Infos))
+	
+	if len(report.Items) > 0 {
+		content.WriteString("## Issues\n\n")
+		content.WriteString("| Severity | Rule | Message |\n")
+		content.WriteString("|----------|------|---------|\n")
+		for _, item := range report.Items {
+			content.WriteString(fmt.Sprintf("| %s | %s | %s |\n", item.Severity, item.Rule, item.Message))
+		}
+		content.WriteString("\n")
+	}
+	
+	if len(report.Errors) > 0 {
+		content.WriteString("## Errors\n\n")
+		content.WriteString("| Error |\n")
+		content.WriteString("|-------|\n")
+		for _, err := range report.Errors {
+			content.WriteString(fmt.Sprintf("| %s |\n", err))
+		}
+		content.WriteString("\n")
+	}
+	
+	return content.String(), nil
+}
+
+// generateHTMLReport generates an HTML format report
+func (g *Generator) generateHTMLReport(report *precheck.Report, options *Options) (string, error) {
+	const htmlTemplate = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>TiDB Upgrade Precheck Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1 { color: #333; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        code { background-color: #f8f8f8; padding: 2px 4px; }
+    </style>
+</head>
+<body>
+    <h1>TiDB Upgrade Precheck Report</h1>
+    
+    <p><strong>Started At:</strong> {{.StartedAt}}</p>
+    <p><strong>Finished At:</strong> {{.FinishedAt}}</p>
+    
+    <h2>Summary</h2>
+    <table>
+        <tr><th>Category</th><th>Count</th></tr>
+        <tr><td>Total Items</td><td>{{.Summary.Total}}</td></tr>
+        <tr><td>Blocking Issues</td><td>{{.Summary.Blocking}}</td></tr>
+        <tr><td>Warnings</td><td>{{.Summary.Warnings}}</td></tr>
+        <tr><td>Info</td><td>{{.Summary.Infos}}</td></tr>
+    </table>
+    
+    {{if .Items}}
+    <h2>Issues</h2>
+    <table>
+        <tr><th>Severity</th><th>Rule</th><th>Message</th></tr>
+        {{range .Items}}
+        <tr>
+            <td>{{.Severity}}</td>
+            <td>{{.Rule}}</td>
+            <td>{{.Message}}</td>
+        </tr>
+        {{end}}
+    </table>
+    {{end}}
+    
+    {{if .Errors}}
+    <h2>Errors</h2>
+    <ul>
+        {{range .Errors}}
+        <li>{{.}}</li>
+        {{end}}
+    </ul>
+    {{end}}
+</body>
+</html>`
+
+	tmpl, err := template.New("report").Parse(htmlTemplate)
+	if err != nil {
+		return "", err
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, report); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+// generateJSONReport generates a JSON format report
+func (g *Generator) generateJSONReport(report *precheck.Report, options *Options) (string, error) {
+	data, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }

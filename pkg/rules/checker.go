@@ -16,7 +16,7 @@ type CheckResult struct {
 // Checker defines the interface for checking upgrade compatibility
 type Checker interface {
 	// Check performs the compatibility check
-	Check(snapshot *runtime.ClusterSnapshot) ([]CheckResult, error)
+	Check(snapshot *runtime.ClusterState) ([]CheckResult, error)
 	
 	// RuleID returns the unique identifier for this check rule
 	RuleID() string
@@ -30,33 +30,25 @@ type CheckRunner struct {
 	checkers []Checker
 }
 
-// NewCheckRunner creates a new check runner with the provided checkers
+// NewCheckRunner creates a new check runner
 func NewCheckRunner(checkers []Checker) *CheckRunner {
 	return &CheckRunner{
 		checkers: checkers,
 	}
 }
 
-// Run executes all checks against the provided cluster snapshot
-func (cr *CheckRunner) Run(snapshot *runtime.ClusterSnapshot) ([]CheckResult, error) {
-	var results []CheckResult
+// Run executes all checks and returns the combined results
+func (r *CheckRunner) Run(snapshot *runtime.ClusterState) ([]CheckResult, error) {
+	var allResults []CheckResult
 	
-	for _, checker := range cr.checkers {
-		checkResults, err := checker.Check(snapshot)
+	for _, checker := range r.checkers {
+		results, err := checker.Check(snapshot)
 		if err != nil {
-			// Log error but continue with other checks
-			results = append(results, CheckResult{
-				RuleID:      checker.RuleID(),
-				Description: checker.Description(),
-				Severity:    "error",
-				Message:     "Check execution failed",
-				Details:     err.Error(),
-			})
+			// Log error but continue with other checkers
 			continue
 		}
-		
-		results = append(results, checkResults...)
+		allResults = append(allResults, results...)
 	}
 	
-	return results, nil
+	return allResults, nil
 }
