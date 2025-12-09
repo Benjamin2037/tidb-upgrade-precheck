@@ -1,0 +1,348 @@
+{
+  "component": "pd",
+  "version": "v7.5.3",
+  "config_defaults": {
+    "DisableStrictReconfigCheck": {
+      "value": false,
+      "type": "bool"
+    },
+    "ElectionInterval": {
+      "value": "3s",
+      "type": "string"
+    },
+    "HeartbeatStreamBindInterval": {
+      "value": "1m0s",
+      "type": "string"
+    },
+    "LeaderPriorityCheckInterval": {
+      "value": "1m0s",
+      "type": "string"
+    },
+    "PreVote": {
+      "value": true,
+      "type": "bool"
+    },
+    "TickInterval": {
+      "value": "500ms",
+      "type": "string"
+    },
+    "WarningMsgs": {
+      "value": null,
+      "type": "string"
+    },
+    "advertise-client-urls": {
+      "value": "http://127.0.0.1:2379",
+      "type": "string"
+    },
+    "advertise-peer-urls": {
+      "value": "http://127.0.0.1:2380",
+      "type": "string"
+    },
+    "auto-compaction-mode": {
+      "value": "periodic",
+      "type": "string"
+    },
+    "auto-compaction-retention-v2": {
+      "value": "1h",
+      "type": "string"
+    },
+    "client-urls": {
+      "value": "http://127.0.0.1:2379",
+      "type": "string"
+    },
+    "cluster-version": {
+      "value": "0.0.0",
+      "type": "string"
+    },
+    "controller": {
+      "value": {
+        "degraded-mode-wait-duration": "0s",
+        "enable-controller-trace-log": "false",
+        "ltb-max-wait-duration": "30s",
+        "ltb-token-rpc-max-delay": "1s",
+        "request-unit": {
+          "read-base-cost": 0.125,
+          "read-cost-per-byte": 0.0000152587890625,
+          "read-cpu-ms-cost": 0.3333333333333333,
+          "read-per-batch-base-cost": 0.5,
+          "write-base-cost": 1,
+          "write-cost-per-byte": 0.0009765625,
+          "write-per-batch-base-cost": 1
+        }
+      },
+      "type": "map"
+    },
+    "dashboard": {
+      "value": {
+        "enable-experimental": false,
+        "enable-telemetry": false,
+        "internal-proxy": false,
+        "public-path-prefix": "",
+        "tidb-cacert-path": "",
+        "tidb-cert-path": "",
+        "tidb-key-path": ""
+      },
+      "type": "map"
+    },
+    "data-dir": {
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.3-1765243724/pd-0/default.pd-Mac-mini-3.local",
+      "type": "string"
+    },
+    "enable-grpc-gateway": {
+      "value": true,
+      "type": "bool"
+    },
+    "enable-local-tso": {
+      "value": false,
+      "type": "bool"
+    },
+    "force-new-cluster": {
+      "value": false,
+      "type": "bool"
+    },
+    "initial-cluster": {
+      "value": "pd-Mac-mini-3.local=http://127.0.0.1:2380",
+      "type": "string"
+    },
+    "initial-cluster-state": {
+      "value": "new",
+      "type": "string"
+    },
+    "initial-cluster-token": {
+      "value": "pd-cluster",
+      "type": "string"
+    },
+    "join": {
+      "value": "",
+      "type": "string"
+    },
+    "keyspace": {
+      "value": {
+        "check-region-split-interval": "50ms",
+        "pre-alloc": null,
+        "wait-region-split": true,
+        "wait-region-split-timeout": "30s"
+      },
+      "type": "map"
+    },
+    "label-property": {
+      "value": null,
+      "type": "string"
+    },
+    "labels": {
+      "value": {},
+      "type": "map"
+    },
+    "lease": {
+      "value": 3,
+      "type": "float"
+    },
+    "log": {
+      "value": {
+        "development": false,
+        "disable-caller": false,
+        "disable-error-verbose": true,
+        "disable-stacktrace": false,
+        "disable-timestamp": false,
+        "error-output-path": "",
+        "file": {
+          "filename": "",
+          "max-backups": 0,
+          "max-days": 0,
+          "max-size": 0
+        },
+        "format": "text",
+        "level": "info",
+        "sampling": null
+      },
+      "type": "map"
+    },
+    "max-concurrent-tso-proxy-streamings": {
+      "value": 5000,
+      "type": "float"
+    },
+    "max-request-bytes": {
+      "value": 157286400,
+      "type": "float"
+    },
+    "metric": {
+      "value": {
+        "address": "",
+        "interval": "15s",
+        "job": "pd-Mac-mini-3.local"
+      },
+      "type": "map"
+    },
+    "name": {
+      "value": "pd-Mac-mini-3.local",
+      "type": "string"
+    },
+    "pd-server": {
+      "value": {
+        "block-safe-point-v1": "false",
+        "dashboard-address": "auto",
+        "enable-gogc-tuner": "false",
+        "flow-round-by-digit": 3,
+        "gc-tuner-threshold": 0.6,
+        "key-type": "table",
+        "max-gap-reset-ts": "24h0m0s",
+        "metric-storage": "",
+        "min-resolved-ts-persistence-interval": "1s",
+        "runtime-services": "",
+        "server-memory-limit": 0,
+        "server-memory-limit-gc-trigger": 0.7,
+        "use-region-storage": "true"
+      },
+      "type": "map"
+    },
+    "peer-urls": {
+      "value": "http://127.0.0.1:2380",
+      "type": "string"
+    },
+    "quota-backend-bytes": {
+      "value": "8GiB",
+      "type": "string"
+    },
+    "replication": {
+      "value": {
+        "enable-placement-rules": "true",
+        "enable-placement-rules-cache": "false",
+        "isolation-level": "",
+        "location-labels": "",
+        "max-replicas": 3,
+        "strictly-match-label": "false"
+      },
+      "type": "map"
+    },
+    "replication-mode": {
+      "value": {
+        "dr-auto-sync": {
+          "dr": "",
+          "dr-replicas": 0,
+          "label-key": "",
+          "pause-region-split": "false",
+          "primary": "",
+          "primary-replicas": 0,
+          "wait-store-timeout": "1m0s"
+        },
+        "replication-mode": "majority"
+      },
+      "type": "map"
+    },
+    "schedule": {
+      "value": {
+        "enable-cross-table-merge": "true",
+        "enable-debug-metrics": "false",
+        "enable-diagnostic": "true",
+        "enable-joint-consensus": "true",
+        "enable-location-replacement": "true",
+        "enable-make-up-replica": "true",
+        "enable-one-way-merge": "false",
+        "enable-remove-down-replica": "true",
+        "enable-remove-extra-replica": "true",
+        "enable-replace-offline-replica": "true",
+        "enable-tikv-split-region": "true",
+        "enable-witness": "false",
+        "high-space-ratio": 0.7,
+        "hot-region-cache-hits-threshold": 3,
+        "hot-region-schedule-limit": 4,
+        "hot-regions-reserved-days": 7,
+        "hot-regions-write-interval": "10m0s",
+        "leader-schedule-limit": 4,
+        "leader-schedule-policy": "count",
+        "low-space-ratio": 0.8,
+        "max-merge-region-keys": 0,
+        "max-merge-region-size": 20,
+        "max-movable-hot-peer-size": 512,
+        "max-pending-peer-count": 64,
+        "max-snapshot-count": 64,
+        "max-store-down-time": "30m0s",
+        "max-store-preparing-time": "48h0m0s",
+        "merge-schedule-limit": 8,
+        "patrol-region-interval": "10ms",
+        "region-schedule-limit": 2048,
+        "region-score-formula-version": "v2",
+        "replica-schedule-limit": 64,
+        "scheduler-max-waiting-operator": 5,
+        "schedulers-payload": null,
+        "schedulers-v2": [
+          {
+            "args": null,
+            "args-payload": "",
+            "disable": false,
+            "type": "balance-region"
+          },
+          {
+            "args": null,
+            "args-payload": "",
+            "disable": false,
+            "type": "balance-leader"
+          },
+          {
+            "args": null,
+            "args-payload": "",
+            "disable": false,
+            "type": "balance-witness"
+          },
+          {
+            "args": null,
+            "args-payload": "",
+            "disable": false,
+            "type": "hot-region"
+          },
+          {
+            "args": null,
+            "args-payload": "",
+            "disable": false,
+            "type": "transfer-witness-leader"
+          }
+        ],
+        "slow-store-evicting-affected-store-ratio-threshold": 0.3,
+        "split-merge-interval": "1h0m0s",
+        "store-limit": {},
+        "store-limit-version": "v1",
+        "switch-witness-interval": "1h0m0s",
+        "tolerant-size-ratio": 0,
+        "witness-schedule-limit": 4
+      },
+      "type": "map"
+    },
+    "security": {
+      "value": {
+        "SSLCABytes": null,
+        "SSLCertBytes": null,
+        "SSLKEYBytes": null,
+        "cacert-path": "",
+        "cert-allowed-cn": null,
+        "cert-path": "",
+        "encryption": {
+          "data-encryption-method": "plaintext",
+          "data-key-rotation-period": "168h0m0s",
+          "master-key": {
+            "endpoint": "",
+            "key-id": "",
+            "path": "",
+            "region": "",
+            "type": "plaintext"
+          }
+        },
+        "key-path": "",
+        "redact-info-log": false
+      },
+      "type": "map"
+    },
+    "tso-proxy-recv-from-client-timeout": {
+      "value": "1h0m0s",
+      "type": "string"
+    },
+    "tso-save-interval": {
+      "value": "3s",
+      "type": "string"
+    },
+    "tso-update-physical-interval": {
+      "value": "50ms",
+      "type": "string"
+    }
+  },
+  "bootstrap_version": 0
+}

@@ -1,0 +1,86 @@
+{
+    "tidb": {
+        "config": {
+            "performance.max-procs": {
+                "severity": "error",
+                "description": "Max procs setting is critical for performance and stability",
+                "check_modified": true,
+                "from_version": "v7.0.0"
+            },
+            "log.level": {
+                "severity": "warning",
+                "description": "Log level affects debugging and performance",
+                "check_modified": true,
+                "from_version": "v6.5.0"
+            }
+        },
+        "system_variables": {
+            "tidb_mem_quota_query": {
+                "severity": "error",
+                "description": "Query memory quota is critical for preventing OOM",
+                "allowed_values": [
+                    1073741824,
+                    2147483648,
+                    4294967296
+                ],
+                "check_modified": false,
+                "from_version": "v7.1.0"
+            },
+            "tidb_enable_1pc": {
+                "severity": "warning",
+                "description": "One-phase commit setting affects transaction performance",
+                "check_modified": true,
+                "from_version": "v6.5.0",
+                "to_version": "v7.5.0"
+            }
+        }
+    },
+    "pd": {
+        "config": {
+            "schedule.max-merge-region-size": {
+                "severity": "warning",
+                "description": "Max merge region size affects region management",
+                "check_modified": true,
+                "from_version": "v7.0.0"
+            },
+            "replication.max-replicas": {
+                "severity": "error",
+                "description": "Replication factor is critical for data safety",
+                "check_modified": true
+            }
+        }
+    },
+    "tikv": {
+        "config": {
+            "storage.reserve-space": {
+                "severity": "error",
+                "description": "Reserve space is critical for preventing disk full",
+                "check_modified": true,
+                "from_version": "v6.5.0"
+            },
+            "raftstore.raft-entry-max-size": {
+                "severity": "warning",
+                "description": "Raft entry max size affects replication performance",
+                "check_modified": true,
+                "from_version": "v7.1.0"
+            },
+            "rocksdb.defaultcf.block-cache-size": {
+                "severity": "error",
+                "description": "Block cache size is critical for performance",
+                "check_modified": true,
+                "from_version": "v7.0.0",
+                "to_version": "v8.0.0"
+            }
+        }
+    },
+    "tiflash": {
+        "config": {
+            "profiles.default.max_memory_usage": {
+                "severity": "error",
+                "description": "Max memory usage is critical for preventing OOM",
+                "check_modified": true,
+                "from_version": "v7.1.0"
+            }
+        }
+    }
+}
