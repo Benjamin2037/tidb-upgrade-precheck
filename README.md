@@ -33,7 +33,6 @@ The TiDB Upgrade Precheck system is designed to be a comprehensive precheck plat
 - **SQL Compatibility Checking**: Identify SQL statements that may behave differently in the target version
 - **Schema Change Compatibility**: Check for schema changes that may affect application compatibility
 - **Feature Deprecation Detection**: Identify deprecated features that will be removed in the target version
-- **Performance Regression Analysis**: Analyze potential performance regressions based on version changes
 - **Additional Risk Monitoring**: Continuously expand risk detection capabilities based on real-world upgrade scenarios
 
 **Version Strategy:**
