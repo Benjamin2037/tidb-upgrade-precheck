@@ -90,7 +90,7 @@ For development or testing purposes, you can run the precheck command directly:
   --output-dir=./reports
 ```
 
-For detailed integration guides, see [TiUP Integration Documents](./doc/design/tiup/).
+For detailed integration guides, see [TiUP Integration Documents](./doc/tiup/).
 
 ## System Architecture
 
