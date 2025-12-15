@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer/rules"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer/rules/high_risk_params"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +18,7 @@ func newHighRiskParamsRemoveCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "remove",
 		Short: "Remove a high-risk parameter",
-		Long: `Remove a high-risk parameter from the configuration.`,
+		Long:  `Remove a high-risk parameter from the configuration.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if component == "" || paramType == "" || paramName == "" {
 				return fmt.Errorf("component, type, and name are required")
@@ -91,7 +91,7 @@ func newHighRiskParamsRemoveCmd() *cobra.Command {
 
 			configFile := highRiskParamsConfigFile
 			if configFile == "" {
-				configFile = getDefaultConfigPath()
+				configFile = high_risk_params.GetDefaultConfigPath()
 			}
 
 			fmt.Printf("Successfully removed high-risk parameter: %s/%s/%s\n", component, paramType, paramName)
@@ -110,4 +110,3 @@ func newHighRiskParamsRemoveCmd() *cobra.Command {
 
 	return cmd
 }
-

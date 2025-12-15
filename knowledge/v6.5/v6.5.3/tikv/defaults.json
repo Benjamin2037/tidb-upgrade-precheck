@@ -270,7 +270,7 @@
       "value": {
         "enable-timestamp": true,
         "file": {
-          "filename": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765242812/tikv-0/tikv.log",
+          "filename": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765504871/tikv-0/tikv.log",
           "max-backups": 0,
           "max-days": 0,
           "max-size": 300
@@ -288,7 +288,7 @@
         "initial-scan-rate-limit": "60MiB",
         "max-flush-interval": "3m",
         "num-threads": 6,
-        "temp-path": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765242812/tikv-0/data/log-backup-temp"
+        "temp-path": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765504871/tikv-0/data/log-backup-temp"
       },
       "type": "map"
     },
@@ -317,7 +317,7 @@
       "type": "float"
     },
     "log-backup.temp-path": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765242812/tikv-0/data/log-backup-temp",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765504871/tikv-0/data/log-backup-temp",
       "type": "string"
     },
     "log-file": {
@@ -345,7 +345,7 @@
       "type": "bool"
     },
     "log.file.filename": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765242812/tikv-0/tikv.log",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765504871/tikv-0/tikv.log",
       "type": "string"
     },
     "log.file.max-backups": {
@@ -407,7 +407,7 @@
       "value": [
         "http://127.0.0.1:2379"
       ],
-      "type": "string"
+      "type": "array"
     },
     "pd.retry-interval": {
       "value": "300ms",
@@ -498,7 +498,7 @@
     "raft-engine": {
       "value": {
         "batch-compression-threshold": "8KiB",
-        "dir": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765242812/tikv-0/data/raft-engine",
+        "dir": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765504871/tikv-0/data/raft-engine",
         "enable": true,
         "enable-log-recycle": false,
         "format-version": 2,
@@ -523,7 +523,7 @@
       "type": "string"
     },
     "raft-engine.dir": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765242812/tikv-0/data/raft-engine",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765504871/tikv-0/data/raft-engine",
       "type": "string"
     },
     "raft-engine.enable": {
@@ -764,7 +764,7 @@
         "zstd",
         "zstd"
       ],
-      "type": "string"
+      "type": "array"
     },
     "raftdb.defaultcf.disable-auto-compactions": {
       "value": false,
@@ -1094,7 +1094,7 @@
         "raft-min-election-timeout-ticks": 10,
         "raft-store-max-leader-lease": "9s",
         "raft-write-size-limit": "1MiB",
-        "raftdb-path": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765242812/tikv-0/data/raft",
+        "raftdb-path": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765504871/tikv-0/data/raft",
         "reactive-memory-lock-tick-interval": "2s",
         "reactive-memory-lock-timeout-tick": 5,
         "region-compact-check-interval": "5m",
@@ -1319,7 +1319,7 @@
       "type": "string"
     },
     "raftstore.raftdb-path": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765242812/tikv-0/data/raft",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765504871/tikv-0/data/raft",
       "type": "string"
     },
     "raftstore.reactive-memory-lock-tick-interval": {
@@ -1962,7 +1962,7 @@
         "zstd",
         "zstd"
       ],
-      "type": "string"
+      "type": "array"
     },
     "rocksdb.defaultcf.disable-auto-compactions": {
       "value": false,
@@ -2218,7 +2218,7 @@
         "no",
         "no"
       ],
-      "type": "string"
+      "type": "array"
     },
     "rocksdb.lockcf.disable-auto-compactions": {
       "value": false,
@@ -2466,7 +2466,7 @@
         "no",
         "no"
       ],
-      "type": "string"
+      "type": "array"
     },
     "rocksdb.raftcf.disable-auto-compactions": {
       "value": false,
@@ -2758,7 +2758,7 @@
         "zstd",
         "zstd"
       ],
-      "type": "string"
+      "type": "array"
     },
     "rocksdb.writecf.disable-auto-compactions": {
       "value": false,
@@ -2947,7 +2947,7 @@
     },
     "security.cert-allowed-cn": {
       "value": [],
-      "type": "string"
+      "type": "array"
     },
     "security.cert-path": {
       "value": "",
@@ -3265,7 +3265,7 @@
           "shared": true,
           "strict-capacity-limit": false
         },
-        "data-dir": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765242812/tikv-0/data",
+        "data-dir": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765504871/tikv-0/data",
         "enable-async-apply-prewrite": false,
         "enable-ttl": false,
         "flow-control": {
@@ -3335,7 +3335,7 @@
       "type": "bool"
     },
     "storage.data-dir": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765242812/tikv-0/data",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.3-1765504871/tikv-0/data",
       "type": "string"
     },
     "storage.enable-async-apply-prewrite": {

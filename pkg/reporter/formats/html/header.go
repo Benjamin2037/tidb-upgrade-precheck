@@ -51,28 +51,39 @@ func (h *HTMLHeader) Render(result *analyzer.AnalysisResult) (string, error) {
         <tr><td>Forced Changes</td><td>{{.ForcedChangeCount}}</td></tr>
         <tr><td>Focus Parameters</td><td>{{.FocusParamCount}}</td></tr>
         <tr><td>Check Results</td><td>{{.CheckResultCount}}</td></tr>
+        {{if .TotalParametersCompared}}
+        <tr><td>Parameters Compared</td><td>{{.TotalParametersCompared}}</td></tr>
+        <tr><td>Parameters with Differences</td><td>{{.ParametersWithDifferences}}</td></tr>
+        <tr><td>Parameters Skipped (source == target)</td><td>{{.ParametersSkipped}}</td></tr>
+        {{end}}
     </table>`
 
 	data := struct {
-		SourceVersion          string
-		TargetVersion          string
-		GeneratedAt            string
-		ModifiedCount          int
-		TikvInconsistencyCount int
-		UpgradeDiffCount       int
-		ForcedChangeCount      int
-		FocusParamCount        int
-		CheckResultCount       int
+		SourceVersion             string
+		TargetVersion             string
+		GeneratedAt               string
+		ModifiedCount             int
+		TikvInconsistencyCount    int
+		UpgradeDiffCount          int
+		ForcedChangeCount         int
+		FocusParamCount           int
+		CheckResultCount          int
+		TotalParametersCompared   int
+		ParametersWithDifferences int
+		ParametersSkipped         int
 	}{
-		SourceVersion:          result.SourceVersion,
-		TargetVersion:          result.TargetVersion,
-		GeneratedAt:            time.Now().Format("2006-01-02 15:04:05"),
-		ModifiedCount:          countModifiedParams(result.ModifiedParams),
-		TikvInconsistencyCount: len(result.TikvInconsistencies),
-		UpgradeDiffCount:       countUpgradeDifferences(result.UpgradeDifferences),
-		ForcedChangeCount:      countForcedChanges(result.ForcedChanges),
-		FocusParamCount:        countFocusParams(result.FocusParams),
-		CheckResultCount:       len(result.CheckResults),
+		SourceVersion:             result.SourceVersion,
+		TargetVersion:             result.TargetVersion,
+		GeneratedAt:               time.Now().Format("2006-01-02 15:04:05"),
+		ModifiedCount:             countModifiedParams(result.ModifiedParams),
+		TikvInconsistencyCount:    len(result.TikvInconsistencies),
+		UpgradeDiffCount:          countUpgradeDifferences(result.UpgradeDifferences),
+		ForcedChangeCount:         countForcedChanges(result.ForcedChanges),
+		FocusParamCount:           countFocusParams(result.FocusParams),
+		CheckResultCount:          len(result.CheckResults),
+		TotalParametersCompared:   result.Statistics.TotalParametersCompared,
+		ParametersWithDifferences: result.Statistics.ParametersWithDifferences,
+		ParametersSkipped:         result.Statistics.ParametersSkipped,
 	}
 
 	tmpl, err := template.New("header").Parse(headerTemplate)
@@ -120,4 +131,3 @@ func countFocusParams(focusParams map[string]map[string]analyzer.FocusParamInfo)
 	}
 	return count
 }
-

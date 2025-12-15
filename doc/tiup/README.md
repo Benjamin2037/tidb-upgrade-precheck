@@ -13,6 +13,7 @@ TiUP integration allows users to perform compatibility checks before upgrading T
 
 - **[TiUP Integration and Deployment Guide](../tiup_deployment.md)** - Complete integration, deployment and packaging guide
 - **[TiUP Implementation Guide](./tiup_implementation_guide.md)** - Step-by-step implementation instructions
+- **[End-to-End Test Plan](./e2e_test_plan.md)** - Comprehensive test plan for local TiUP cluster integration testing
 
 ## Related Documents
 

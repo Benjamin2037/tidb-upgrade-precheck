@@ -80,7 +80,7 @@ func TestAnalyzer_Analyze(t *testing.T) {
 			name:          "nil snapshot",
 			snapshot:       nil,
 			sourceVersion:  "v7.5.0",
-			targetVersion:  "v8.0.0",
+			targetVersion:  "v8.5.0",
 			sourceKB:      make(map[string]interface{}),
 			targetKB:      make(map[string]interface{}),
 			wantErr:       true,
@@ -91,7 +91,7 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				Components: make(map[string]collector.ComponentState),
 			},
 			sourceVersion: "v7.5.0",
-			targetVersion: "v8.0.0",
+			targetVersion: "v8.5.0",
 			sourceKB:     make(map[string]interface{}),
 			targetKB:     make(map[string]interface{}),
 			wantErr:      false,
@@ -113,7 +113,7 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				},
 			},
 			sourceVersion: "v7.5.0",
-			targetVersion: "v8.0.0",
+			targetVersion: "v8.5.0",
 			sourceKB: map[string]interface{}{
 				"tidb": map[string]interface{}{
 					"config_defaults": map[string]interface{}{

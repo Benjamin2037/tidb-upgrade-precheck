@@ -84,7 +84,7 @@
       "type": "map"
     },
     "data-dir": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.1-1765243603/pd-0/default.pd-Mac-mini-3.local",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.1-1765505694/pd-0/default.pd-Mac-mini-3.local",
       "type": "string"
     },
     "enable-grpc-gateway": {

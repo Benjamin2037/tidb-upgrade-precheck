@@ -3,7 +3,7 @@
   "version": "v7.5.2",
   "config_defaults": {
     "engine-store.flash.proxy.config": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.2-1765243653/tiflash-0/tiflash_proxy.toml",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.2-1765505735/tiflash-0/tiflash_proxy.toml",
       "type": "string"
     },
     "engine-store.logger.level": {
@@ -11,7 +11,7 @@
       "type": "string"
     },
     "flash.proxy.config": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.2-1765243653/tiflash-0/tiflash_proxy.toml",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.2-1765505735/tiflash-0/tiflash_proxy.toml",
       "type": "string"
     },
     "logger.level": {
@@ -231,7 +231,7 @@
       "type": "float"
     },
     "raftstore-proxy.log-backup.temp-path": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.2-1765243653/tiflash-0/proxy_data/log-backup-temp",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.2-1765505735/tiflash-0/proxy_data/log-backup-temp",
       "type": "string"
     },
     "raftstore-proxy.log-file": {
@@ -259,7 +259,7 @@
       "type": "bool"
     },
     "raftstore-proxy.log.file.filename": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.2-1765243653/tiflash-0/tiflash_tikv.log",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.2-1765505735/tiflash-0/tiflash_tikv.log",
       "type": "string"
     },
     "raftstore-proxy.log.file.max-backups": {
@@ -298,7 +298,7 @@
       "value": [
         "127.0.0.1:2379"
       ],
-      "type": "string"
+      "type": "array"
     },
     "raftstore-proxy.pd.retry-interval": {
       "value": "300ms",
@@ -373,7 +373,7 @@
       "type": "string"
     },
     "raftstore-proxy.raft-engine.dir": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.2-1765243653/tiflash-0/proxy_data/raft-engine",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.2-1765505735/tiflash-0/proxy_data/raft-engine",
       "type": "string"
     },
     "raftstore-proxy.raft-engine.enable": {
@@ -510,7 +510,7 @@
         "zstd",
         "zstd"
       ],
-      "type": "string"
+      "type": "array"
     },
     "raftstore-proxy.raftdb.defaultcf.disable-auto-compactions": {
       "value": false,
@@ -993,7 +993,7 @@
       "type": "string"
     },
     "raftstore-proxy.raftstore.raftdb-path": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.2-1765243653/tiflash-0/proxy_data/raft",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.2-1765505735/tiflash-0/proxy_data/raft",
       "type": "string"
     },
     "raftstore-proxy.raftstore.reactive-memory-lock-tick-interval": {
@@ -1314,7 +1314,7 @@
         "zstd",
         "zstd"
       ],
-      "type": "string"
+      "type": "array"
     },
     "raftstore-proxy.rocksdb.defaultcf.disable-auto-compactions": {
       "value": false,
@@ -1590,7 +1590,7 @@
         "no",
         "no"
       ],
-      "type": "string"
+      "type": "array"
     },
     "raftstore-proxy.rocksdb.lockcf.disable-auto-compactions": {
       "value": false,
@@ -1858,7 +1858,7 @@
         "no",
         "no"
       ],
-      "type": "string"
+      "type": "array"
     },
     "raftstore-proxy.rocksdb.raftcf.disable-auto-compactions": {
       "value": false,
@@ -2174,7 +2174,7 @@
         "zstd",
         "zstd"
       ],
-      "type": "string"
+      "type": "array"
     },
     "raftstore-proxy.rocksdb.writecf.disable-auto-compactions": {
       "value": false,
@@ -2362,7 +2362,7 @@
     },
     "raftstore-proxy.security.cert-allowed-cn": {
       "value": [],
-      "type": "string"
+      "type": "array"
     },
     "raftstore-proxy.security.cert-path": {
       "value": "",
@@ -2645,7 +2645,7 @@
       "type": "bool"
     },
     "raftstore-proxy.storage.data-dir": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.2-1765243653/tiflash-0/proxy_data",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v7.5.2-1765505735/tiflash-0/proxy_data",
       "type": "string"
     },
     "raftstore-proxy.storage.enable-async-apply-prewrite": {

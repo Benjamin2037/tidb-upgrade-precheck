@@ -153,4 +153,3 @@ func printHighRiskParamInfo(indent, name, paramType string, param rules.HighRisk
 	}
 	fmt.Println()
 }
-

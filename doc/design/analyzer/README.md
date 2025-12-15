@@ -71,73 +71,32 @@ The `RuleContext` provides access to:
 
 ## Current Rules
 
+The analyzer includes several rules for checking different aspects of cluster configuration and upgrade compatibility. Each rule is documented in detail in the [Rules Documentation](./rules/) directory.
+
 ### Default Rules
 
 The analyzer includes three default rules (defined in `pkg/analyzer/analyzer.go`):
 
-1. **User Modified Params Rule**
-2. **Upgrade Differences Rule**
-3. **TiKV Consistency Rule**
+1. **[User Modified Params Rule](./rules/user_modified_params_rule.md)** - Detects parameters modified by users
+2. **[Upgrade Differences Rule](./rules/upgrade_differences_rule.md)** - Detects parameters that will change after upgrade
+3. **[TiKV Consistency Rule](./rules/tikv_consistency_rule.md)** - Compares TiKV parameters with source defaults
 
-### User Modified Params Rule
+### Optional Rules
 
-**Location**: `pkg/analyzer/rules/user_modified_params_rule.go`
+4. **[High Risk Params Rule](./rules/high_risk_params_rule.md)** - Validates manually specified high-risk parameters
 
-**Purpose**: Detects parameters that differ from default values in the source version.
+**Note**: The High Risk Params Rule is not included in default rules. It must be explicitly added when creating the analyzer with a custom rule list.
 
-**Implementation**: Compare runtime parameter values against source version defaults.
+### Quick Reference
 
-**Data Requirements:**
-- Source cluster: Config and system variables for all components
-- Source KB: Config defaults and system variable defaults for all components
+| Rule | Purpose | Risk Level | Components |
+|------|---------|------------|------------|
+| User Modified Params | Detect user customizations | Low | All |
+| Upgrade Differences | Detect upgrade changes | High/Medium/Low | All |
+| TiKV Consistency | Compare TiKV with defaults | Medium | TiKV |
+| High Risk Params | Custom risk monitoring | Configurable | All |
 
-### Upgrade Differences Rule
-
-**Location**: `pkg/analyzer/rules/upgrade_differences_rule.go`
-
-**Purpose**: Detects forced parameter changes during upgrades.
-
-**Key Features:**
-- Filters changes by bootstrap version range `(source, target]`
-- Categorizes by operation type (UPDATE, REPLACE, DELETE) with severity levels
-- Extracts forced changes from `upgrade_logic.json`
-
-**Severity Levels:**
-- **Medium**: UPDATE, REPLACE operations (parameter default value or behavior may change)
-- **Low-Medium**: DELETE operations (parameter is deprecated)
-
-**Data Requirements:**
-- Source cluster: Config and system variables for TiDB
-- Source KB: Bootstrap version for TiDB, upgrade logic
-- Target KB: Bootstrap version for TiDB
-
-### TiKV Consistency Rule
-
-**Location**: `pkg/analyzer/rules/tikv_consistency_rule.go`
-
-**Purpose**: Checks parameter consistency across TiKV nodes.
-
-**Implementation:**
-- Uses `last_tikv.toml` and `SHOW CONFIG WHERE type='tikv' AND instance='IP:port'`
-- Merges with priority: runtime > user-set
-- Performs consistency checks on the merged configuration
-
-**Data Requirements:**
-- Source cluster: Config for all TiKV nodes (`NeedAllTikvNodes: true`)
-- Source KB: Config defaults for TiKV
-
-### High Risk Params Rule
-
-**Location**: `pkg/analyzer/rules/high_risk_params_rule.go`
-
-**Purpose**: Validates manually specified high-risk parameters.
-
-**Features:**
-- Supports version range filtering
-- Checks against allowed values and source defaults
-- Configurable via JSON configuration file
-
-**Note**: This rule is not included in default rules. It must be explicitly added when creating the analyzer with a custom rule list.
+For detailed documentation on each rule, including logic, implementation details, and examples, see the [Rules Documentation](./rules/) directory.
 
 ## Analyzer Workflow
 
@@ -183,7 +142,7 @@ The analyzer follows this workflow:
 
 4. **Write Tests**: Create test file `pkg/analyzer/rules/my_new_rule_test.go`
 
-5. **Document**: Add documentation in this directory
+5. **Document**: Add documentation in the [Rules Documentation](./rules/) directory
 
 ### Best Practices
 

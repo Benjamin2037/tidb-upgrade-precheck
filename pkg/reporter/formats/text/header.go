@@ -34,7 +34,13 @@ func (h *TextHeader) Render(result *analyzer.AnalysisResult) (string, error) {
 	content.WriteString(fmt.Sprintf("  Upgrade Differences: %d\n", countUpgradeDifferences(result.UpgradeDifferences)))
 	content.WriteString(fmt.Sprintf("  Forced Changes: %d\n", countForcedChanges(result.ForcedChanges)))
 	content.WriteString(fmt.Sprintf("  Focus Parameters: %d\n", countFocusParams(result.FocusParams)))
-	content.WriteString(fmt.Sprintf("  Check Results: %d\n\n", len(result.CheckResults)))
+	content.WriteString(fmt.Sprintf("  Check Results: %d\n", len(result.CheckResults)))
+	if result.Statistics.TotalParametersCompared > 0 {
+		content.WriteString(fmt.Sprintf("  Parameters Compared: %d\n", result.Statistics.TotalParametersCompared))
+		content.WriteString(fmt.Sprintf("  Parameters with Differences: %d\n", result.Statistics.ParametersWithDifferences))
+		content.WriteString(fmt.Sprintf("  Parameters Skipped (source == target): %d\n", result.Statistics.ParametersSkipped))
+	}
+	content.WriteString("\n")
 
 	return content.String(), nil
 }

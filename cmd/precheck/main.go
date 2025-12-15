@@ -10,8 +10,6 @@ import (
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer/rules"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector"
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector/runtime"
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/kbgenerator"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/reporter"
 	"github.com/spf13/cobra"
 )
@@ -22,8 +20,6 @@ func main() {
 		targetVersion string
 		outputFormat  string
 		outputDir     string
-		knowledgeBase string // Knowledge base directory path
-		workDir       string // Working directory for temporary files
 		// Topology file (alternative to individual connection parameters)
 		topologyFile string
 		// Cluster connection parameters (provided by TiUP/Operator)
@@ -82,9 +78,6 @@ Source and target version numbers are used as keys to locate version-specific de
 	// High-risk parameters configuration
 	rootCmd.Flags().StringVar(&highRiskParamsConfig, "high-risk-params-config", "", "Path to high-risk parameters configuration file (JSON format). If not specified, will try to load from default locations")
 
-	// Add high-risk-params subcommand group
-	rootCmd.AddCommand(newHighRiskParamsCmd())
-
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -96,7 +89,50 @@ func runPrecheck(sourceVersion, targetVersion, outputFormat, outputDir,
 
 	// Knowledge base is fixed at ./knowledge in the tidb-upgrade-precheck directory
 	// Source and target version numbers are used as keys to locate version-specific defaults.json files
-	const knowledgeBasePath = "knowledge"
+	// Try multiple locations:
+	// 1. Environment variable TIDB_UPGRADE_PRECHECK_KNOWLEDGE_BASE
+	// 2. Relative to executable (for TiUP component installation)
+	// 3. Current working directory
+	// 4. Relative paths from executable (go up to find tidb-upgrade-precheck directory)
+	var knowledgeBasePath string
+	if envPath := os.Getenv("TIDB_UPGRADE_PRECHECK_KNOWLEDGE_BASE"); envPath != "" {
+		knowledgeBasePath = envPath
+	} else {
+		// Try multiple locations
+		candidates := []string{
+			"knowledge", // Current working directory
+		}
+
+		// Try relative to executable
+		if execPath, execErr := os.Executable(); execErr == nil {
+			execDir := filepath.Dir(execPath)
+			candidates = append(candidates,
+				filepath.Join(execDir, "knowledge"),                                // Same dir as executable
+				filepath.Join(execDir, "..", "knowledge"),                          // Parent dir
+				filepath.Join(execDir, "..", "tidb-upgrade-precheck", "knowledge"), // Go up to find tidb-upgrade-precheck
+			)
+		}
+
+		// Find first existing path
+		for _, candidate := range candidates {
+			if absPath, absErr := filepath.Abs(candidate); absErr == nil {
+				if _, statErr := os.Stat(absPath); statErr == nil {
+					knowledgeBasePath = absPath
+					break
+				}
+			}
+		}
+
+		// Final fallback
+		if knowledgeBasePath == "" {
+			if absPath, absErr := filepath.Abs("knowledge"); absErr == nil {
+				knowledgeBasePath = absPath
+			} else {
+				knowledgeBasePath = "knowledge"
+			}
+		}
+	}
+	fmt.Printf("[DEBUG] Using knowledge base path: %s\n", knowledgeBasePath)
 
 	var endpoints *collector.ClusterEndpoints
 	var err error
@@ -106,7 +142,7 @@ func runPrecheck(sourceVersion, targetVersion, outputFormat, outputDir,
 	if topologyFile != "" {
 		// Load from topology file (TiUP/TiDB Operator format)
 		fmt.Printf("Loading topology from file: %s\n", topologyFile)
-		endpoints, err = runtime.LoadTopologyFromFile(topologyFile)
+		endpoints, err = collector.LoadTopologyFromFile(topologyFile)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error loading topology file: %v\n", err)
 			os.Exit(1)
@@ -160,7 +196,7 @@ func runPrecheck(sourceVersion, targetVersion, outputFormat, outputDir,
 	fmt.Println("Initializing analyzer...")
 
 	// Build rules list
-	var rulesList []analyzer.Rule
+	var rulesList []rules.Rule
 
 	// Add default rules
 	rulesList = append(rulesList,
@@ -216,10 +252,10 @@ func runPrecheck(sourceVersion, targetVersion, outputFormat, outputDir,
 
 	// Step 3: Collect runtime configuration from cluster based on requirements
 	fmt.Println("Collecting cluster configuration...")
-	collectorInstance := runtime.NewCollector()
+	collectorInstance := collector.NewCollector()
 	// Convert analyzer's CollectionRequirements to collector's CollectDataRequirements
 	// (They have the same structure, so we can convert directly)
-	collectReq := runtime.CollectDataRequirements{
+	collectReq := collector.CollectDataRequirements{
 		Components:          analyzerCollectReq.Components,
 		NeedConfig:          analyzerCollectReq.NeedConfig,
 		NeedSystemVariables: analyzerCollectReq.NeedSystemVariables,
@@ -258,13 +294,13 @@ func runPrecheck(sourceVersion, targetVersion, outputFormat, outputDir,
 
 	// Step 4: Load knowledge base for source and target versions based on requirements
 	fmt.Println("Loading knowledge base...")
-	sourceKB, err := kbgenerator.LoadKnowledgeBase(knowledgeBasePath, snapshot.SourceVersion)
+	sourceKB, err := collector.LoadKnowledgeBase(knowledgeBasePath, snapshot.SourceVersion)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: failed to load source knowledge base: %v\n", err)
 		sourceKB = make(map[string]interface{})
 	}
 
-	targetKB, err := kbgenerator.LoadKnowledgeBase(knowledgeBasePath, targetVersion)
+	targetKB, err := collector.LoadKnowledgeBase(knowledgeBasePath, targetVersion)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: failed to load target knowledge base: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Please ensure knowledge base is generated for version %s\n", targetVersion)

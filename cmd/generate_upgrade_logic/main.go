@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	kbgenerator "github.com/pingcap/tidb-upgrade-precheck/pkg/kbgenerator"
-	tidbkb "github.com/pingcap/tidb-upgrade-precheck/pkg/kbgenerator/tidb"
+	kbgenerator "github.com/pingcap/tidb-upgrade-precheck/pkg/collector"
+	tidbkb "github.com/pingcap/tidb-upgrade-precheck/pkg/collector/tidb"
 )
 
 func main() {

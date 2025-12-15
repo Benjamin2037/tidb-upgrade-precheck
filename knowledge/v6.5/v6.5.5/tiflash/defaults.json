@@ -23,7 +23,7 @@
       "type": "string"
     },
     "engine-store.flash.flash_cluster.log": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765242911/tiflash-0/log/tiflash_cluster_manager.log",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765504954/tiflash-0/log/tiflash_cluster_manager.log",
       "type": "string"
     },
     "engine-store.flash.flash_cluster.master_ttl": {
@@ -39,7 +39,7 @@
       "type": "float"
     },
     "engine-store.flash.proxy.config": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765242911/tiflash-0/tiflash-learner.toml",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765504954/tiflash-0/tiflash-learner.toml",
       "type": "string"
     },
     "engine-store.flash.service_addr": {
@@ -63,7 +63,7 @@
       "type": "float"
     },
     "engine-store.logger.errorlog": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765242911/tiflash-0/log/tiflash_error.log",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765504954/tiflash-0/log/tiflash_error.log",
       "type": "string"
     },
     "engine-store.logger.level": {
@@ -71,7 +71,7 @@
       "type": "string"
     },
     "engine-store.logger.log": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765242911/tiflash-0/log/tiflash.log",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765504954/tiflash-0/log/tiflash.log",
       "type": "string"
     },
     "engine-store.logger.size": {
@@ -79,7 +79,7 @@
       "type": "string"
     },
     "engine-store.path": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765242911/tiflash-0/data",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765504954/tiflash-0/data",
       "type": "string"
     },
     "engine-store.profiles.default.load_balancing": {
@@ -135,7 +135,7 @@
       "type": "float"
     },
     "engine-store.tmp_path": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765242911/tiflash-0/tmp",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765504954/tiflash-0/tmp",
       "type": "string"
     },
     "engine-store.users.default.networks.ip": {
@@ -175,7 +175,7 @@
       "type": "string"
     },
     "flash.flash_cluster.log": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765242911/tiflash-0/log/tiflash_cluster_manager.log",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765504954/tiflash-0/log/tiflash_cluster_manager.log",
       "type": "string"
     },
     "flash.flash_cluster.master_ttl": {
@@ -191,7 +191,7 @@
       "type": "int"
     },
     "flash.proxy.config": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765242911/tiflash-0/tiflash-learner.toml",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765504954/tiflash-0/tiflash-learner.toml",
       "type": "string"
     },
     "flash.service_addr": {
@@ -215,7 +215,7 @@
       "type": "int"
     },
     "logger.errorlog": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765242911/tiflash-0/log/tiflash_error.log",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765504954/tiflash-0/log/tiflash_error.log",
       "type": "string"
     },
     "logger.level": {
@@ -223,7 +223,7 @@
       "type": "string"
     },
     "logger.log": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765242911/tiflash-0/log/tiflash.log",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765504954/tiflash-0/log/tiflash.log",
       "type": "string"
     },
     "logger.size": {
@@ -231,7 +231,7 @@
       "type": "string"
     },
     "path": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765242911/tiflash-0/data",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765504954/tiflash-0/data",
       "type": "string"
     },
     "profiles.default.load_balancing": {
@@ -487,7 +487,7 @@
       "type": "float"
     },
     "raftstore-proxy.log-backup.temp-path": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765242911/tiflash-0/flash/log-backup-temp",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765504954/tiflash-0/flash/log-backup-temp",
       "type": "string"
     },
     "raftstore-proxy.log-file": {
@@ -515,7 +515,7 @@
       "type": "bool"
     },
     "raftstore-proxy.log.file.filename": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765242911/tiflash-0/log/tiflash_tikv.log",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765504954/tiflash-0/log/tiflash_tikv.log",
       "type": "string"
     },
     "raftstore-proxy.log.file.max-backups": {
@@ -554,7 +554,7 @@
       "value": [
         "127.0.0.1:2379"
       ],
-      "type": "string"
+      "type": "array"
     },
     "raftstore-proxy.pd.retry-interval": {
       "value": "300ms",
@@ -629,7 +629,7 @@
       "type": "string"
     },
     "raftstore-proxy.raft-engine.dir": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765242911/tiflash-0/flash/raft-engine",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765504954/tiflash-0/flash/raft-engine",
       "type": "string"
     },
     "raftstore-proxy.raft-engine.enable": {
@@ -754,7 +754,7 @@
         "zstd",
         "zstd"
       ],
-      "type": "string"
+      "type": "array"
     },
     "raftstore-proxy.raftdb.defaultcf.disable-auto-compactions": {
       "value": false,
@@ -1217,7 +1217,7 @@
       "type": "string"
     },
     "raftstore-proxy.raftstore.raftdb-path": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765242911/tiflash-0/flash/raft",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765504954/tiflash-0/flash/raft",
       "type": "string"
     },
     "raftstore-proxy.raftstore.reactive-memory-lock-tick-interval": {
@@ -1502,7 +1502,7 @@
         "zstd",
         "zstd"
       ],
-      "type": "string"
+      "type": "array"
     },
     "raftstore-proxy.rocksdb.defaultcf.disable-auto-compactions": {
       "value": false,
@@ -1758,7 +1758,7 @@
         "no",
         "no"
       ],
-      "type": "string"
+      "type": "array"
     },
     "raftstore-proxy.rocksdb.lockcf.disable-auto-compactions": {
       "value": false,
@@ -2006,7 +2006,7 @@
         "no",
         "no"
       ],
-      "type": "string"
+      "type": "array"
     },
     "raftstore-proxy.rocksdb.raftcf.disable-auto-compactions": {
       "value": false,
@@ -2298,7 +2298,7 @@
         "zstd",
         "zstd"
       ],
-      "type": "string"
+      "type": "array"
     },
     "raftstore-proxy.rocksdb.writecf.disable-auto-compactions": {
       "value": false,
@@ -2466,7 +2466,7 @@
     },
     "raftstore-proxy.security.cert-allowed-cn": {
       "value": [],
-      "type": "string"
+      "type": "array"
     },
     "raftstore-proxy.security.cert-path": {
       "value": "",
@@ -2749,7 +2749,7 @@
       "type": "bool"
     },
     "raftstore-proxy.storage.data-dir": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765242911/tiflash-0/flash",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765504954/tiflash-0/flash",
       "type": "string"
     },
     "raftstore-proxy.storage.enable-async-apply-prewrite": {
@@ -2877,7 +2877,7 @@
       "type": "int"
     },
     "tmp_path": {
-      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765242911/tiflash-0/tmp",
+      "value": "/Users/benjamin2037/.tiup/data/kb-gen-v6.5.5-1765504954/tiflash-0/tmp",
       "type": "string"
     },
     "users.default.networks.ip": {

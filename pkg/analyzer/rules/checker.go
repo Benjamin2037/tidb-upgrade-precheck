@@ -4,6 +4,29 @@ import (
 	"context"
 )
 
+// RiskLevel represents the risk level of a check result
+type RiskLevel string
+
+const (
+	RiskLevelHigh   RiskLevel = "high"   // critical, error
+	RiskLevelMedium RiskLevel = "medium" // warning
+	RiskLevelLow    RiskLevel = "low"    // info
+)
+
+// GetRiskLevel determines the risk level from severity
+func GetRiskLevel(severity string) RiskLevel {
+	switch severity {
+	case "critical", "error":
+		return RiskLevelHigh
+	case "warning":
+		return RiskLevelMedium
+	case "info":
+		return RiskLevelLow
+	default:
+		return RiskLevelLow
+	}
+}
+
 // CheckResult represents the result of a single check
 type CheckResult struct {
 	RuleID        string                 `json:"rule_id"`
@@ -12,7 +35,8 @@ type CheckResult struct {
 	ParameterName string                 `json:"parameter_name,omitempty"` // Parameter or system variable name
 	ParamType     string                 `json:"param_type,omitempty"`     // "config" or "system_variable"
 	Description   string                 `json:"description"`
-	Severity      string                 `json:"severity"` // "info", "warning", "error", "critical"
+	Severity      string                 `json:"severity"`             // "info", "warning", "error", "critical"
+	RiskLevel     RiskLevel              `json:"risk_level,omitempty"` // Risk level: "high", "medium", "low" (auto-set from severity if not provided)
 	Message       string                 `json:"message"`
 	Details       string                 `json:"details,omitempty"`
 	Suggestions   []string               `json:"suggestions,omitempty"` // Optional suggestions for fixing the issue
@@ -57,7 +81,7 @@ func (r *RuleRunner) Run(ctx context.Context, ruleCtx *RuleContext) ([]CheckResu
 			continue
 		}
 
-		// Ensure all results have the rule ID and category set
+		// Ensure all results have the rule ID, category, and risk level set
 		for i := range results {
 			if results[i].RuleID == "" {
 				results[i].RuleID = rule.Name()
@@ -67,6 +91,10 @@ func (r *RuleRunner) Run(ctx context.Context, ruleCtx *RuleContext) ([]CheckResu
 			}
 			if results[i].Description == "" {
 				results[i].Description = rule.Description()
+			}
+			// Auto-set risk level from severity if not already set
+			if results[i].RiskLevel == "" {
+				results[i].RiskLevel = GetRiskLevel(results[i].Severity)
 			}
 		}
 

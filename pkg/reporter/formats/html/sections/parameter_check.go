@@ -2,9 +2,11 @@ package sections
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer/rules"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/reporter/formats"
 )
 
@@ -23,145 +25,328 @@ func (s *ParameterCheckSection) Name() string {
 
 // HasContent checks if this section has any content to render
 func (s *ParameterCheckSection) HasContent(result *analyzer.AnalysisResult) bool {
-	return len(result.ModifiedParams) > 0 ||
-		len(result.TikvInconsistencies) > 0 ||
-		len(result.UpgradeDifferences) > 0 ||
-		len(result.ForcedChanges) > 0 ||
-		len(result.FocusParams) > 0
+	return len(result.CheckResults) > 0
 }
 
 // Render renders the section content in HTML format
+// Groups CheckResults by risk level (high, medium, low), then by component
 func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.AnalysisResult) (string, error) {
+	if len(result.CheckResults) == 0 {
+		return "", nil
+	}
+
+	// Group CheckResults by risk level, then by component
+	resultsByRiskLevel := make(map[formats.RiskLevel]map[string][]rules.CheckResult)
+	for _, check := range result.CheckResults {
+		// Skip if no parameter name (not a parameter check)
+		if check.ParameterName == "" {
+			continue
+		}
+		// Skip large configuration objects that bloat the report
+		// These are internal config objects, not individual parameters users need to see
+		if check.ParameterName == "tidb_config" {
+			continue
+		}
+		// Skip statistics CheckResults (they are handled separately)
+		if check.ParameterName == "__statistics__" {
+			continue
+		}
+		riskLevel := check.RiskLevel
+		if riskLevel == "" {
+			// Fallback: determine from severity if risk level not set
+			riskLevel = rules.GetRiskLevel(check.Severity)
+		}
+		component := check.Component
+		if component == "" {
+			component = "unknown"
+		}
+
+		if resultsByRiskLevel[riskLevel] == nil {
+			resultsByRiskLevel[riskLevel] = make(map[string][]rules.CheckResult)
+		}
+		resultsByRiskLevel[riskLevel][component] = append(resultsByRiskLevel[riskLevel][component], check)
+	}
+
 	var content strings.Builder
 
-	// Modified Parameters
-	if len(result.ModifiedParams) > 0 {
-		content.WriteString("<h2>1. User Modified Parameters</h2>\n")
-		content.WriteString("<p>Parameters that have been modified from source version defaults.</p>\n")
+	// Define order of risk levels
+	riskLevelOrder := []formats.RiskLevel{
+		formats.RiskLevelHigh,
+		formats.RiskLevelMedium,
+		formats.RiskLevelLow,
+	}
 
-		components := []string{"tidb", "pd", "tikv", "tiflash"}
-		for _, compType := range components {
-			if params, ok := result.ModifiedParams[compType]; ok && len(params) > 0 {
+	riskLevelTitles := map[formats.RiskLevel]string{
+		formats.RiskLevelHigh:   "High Risk",
+		formats.RiskLevelMedium: "Medium Risk",
+		formats.RiskLevelLow:    "Low Risk",
+	}
+
+	riskLevelDescriptions := map[formats.RiskLevel]string{
+		formats.RiskLevelHigh:   "⚠️ <strong>Critical issues that require immediate attention before upgrade.</strong>",
+		formats.RiskLevelMedium: "⚠️ <strong>Warnings that should be reviewed before upgrade.</strong>",
+		formats.RiskLevelLow:    "ℹ️ <strong>Informational items for awareness.</strong>",
+	}
+
+	// Define component order
+	componentOrder := []string{"tidb", "pd", "tikv", "tiflash"}
+
+	sectionNum := 1
+	for _, riskLevel := range riskLevelOrder {
+		byComponent := resultsByRiskLevel[riskLevel]
+		if len(byComponent) == 0 {
+			continue
+		}
+
+		content.WriteString(fmt.Sprintf("<h2>%d. %s</h2>\n", sectionNum, riskLevelTitles[riskLevel]))
+		content.WriteString(fmt.Sprintf("<p>%s</p>\n", riskLevelDescriptions[riskLevel]))
+		sectionNum++
+
+		// Display by component in order
+		for _, compType := range componentOrder {
+			compChecks := byComponent[compType]
+			if len(compChecks) == 0 {
+				continue
+			}
+
+			content.WriteString(fmt.Sprintf("<h3>%s Component</h3>\n", strings.ToUpper(compType)))
+
+			// Sort checks by parameter name
+			sort.Slice(compChecks, func(i, j int) bool {
+				return compChecks[i].ParameterName < compChecks[j].ParameterName
+			})
+
+			// Table header
+			content.WriteString("<table>\n")
+			content.WriteString("<tr><th>Parameter</th><th>Type</th><th>Current Value</th><th>Source Default</th><th>Target Default</th><th>Forced To</th><th>Severity</th><th>Message</th><th>Details</th></tr>\n")
+
+			// Render each check result as a table row
+			for _, check := range compChecks {
+				paramType := check.ParamType
+				if paramType == "" {
+					paramType = "config"
+				}
+				severityClass := ""
+				switch check.Severity {
+				case "error", "critical":
+					severityClass = "error"
+				case "warning":
+					severityClass = "warning"
+				case "info":
+					severityClass = "info"
+				}
+
+				// Determine report type for display
+				reportType := formats.GetReportType(check)
+				reportTypeLabel := ""
+				switch reportType {
+				case formats.ReportTypeForcedChange:
+					reportTypeLabel = "🔴 Forced"
+				case formats.ReportTypeUserModified:
+					reportTypeLabel = "✏️ Modified"
+				case formats.ReportTypeDefaultChanged:
+					reportTypeLabel = "📝 Default Changed"
+				case formats.ReportTypeDeprecated:
+					reportTypeLabel = "🗑️ Deprecated"
+				case formats.ReportTypeNewParameter:
+					reportTypeLabel = "✨ New"
+				case formats.ReportTypeInconsistency:
+					reportTypeLabel = "⚠️ Inconsistent"
+				case formats.ReportTypeHighRisk:
+					reportTypeLabel = "🚨 High Risk"
+				}
+
+				// Format values with highlighting for differences
+				currentFormatted := formatValueWithHighlight(check.CurrentValue, check.SourceDefault, check.TargetDefault, "current")
+				sourceFormatted := formatValueWithHighlight(check.SourceDefault, check.SourceDefault, check.TargetDefault, "source")
+				targetFormatted := formatValueWithHighlight(check.TargetDefault, check.SourceDefault, check.TargetDefault, "target")
+				forcedFormatted := formatValue(check.ForcedValue)
+
+				content.WriteString(fmt.Sprintf(
+					"<tr class=\"%s\"><td><code>%s</code><br/><small>%s</small></td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td class=\"%s\">%s</td><td>%s</td><td>%s</td></tr>\n",
+					severityClass, check.ParameterName, reportTypeLabel, paramType,
+					currentFormatted, sourceFormatted, targetFormatted, forcedFormatted,
+					severityClass, check.Severity, check.Message, check.Details))
+			}
+
+			content.WriteString("</table>\n")
+		}
+
+		// Display unknown components if any
+		for compType, compChecks := range byComponent {
+			found := false
+			for _, knownComp := range componentOrder {
+				if compType == knownComp {
+					found = true
+					break
+				}
+			}
+			if !found && len(compChecks) > 0 {
 				content.WriteString(fmt.Sprintf("<h3>%s Component</h3>\n", strings.ToUpper(compType)))
 				content.WriteString("<table>\n")
-				content.WriteString("<tr><th>Parameter</th><th>Current Value</th><th>Source Default</th><th>Type</th></tr>\n")
-				for paramName, info := range params {
-					content.WriteString(fmt.Sprintf("<tr><td><code>%s</code></td><td>%v</td><td>%v</td><td>%s</td></tr>\n",
-						paramName, info.CurrentValue, info.SourceDefault, info.ParamType))
+				content.WriteString("<tr><th>Parameter</th><th>Type</th><th>Current Value</th><th>Severity</th><th>Message</th></tr>\n")
+				for _, check := range compChecks {
+					paramType := check.ParamType
+					if paramType == "" {
+						paramType = "config"
+					}
+					severityClass := ""
+					switch check.Severity {
+					case "error", "critical":
+						severityClass = "error"
+					case "warning":
+						severityClass = "warning"
+					case "info":
+						severityClass = "info"
+					}
+					content.WriteString(fmt.Sprintf(
+						"<tr class=\"%s\"><td><code>%s</code></td><td>%s</td><td>%v</td><td class=\"%s\">%s</td><td>%s</td></tr>\n",
+						severityClass, check.ParameterName, paramType,
+						formatValue(check.CurrentValue),
+						severityClass, check.Severity, check.Message))
 				}
 				content.WriteString("</table>\n")
 			}
 		}
 	}
 
-	// TiKV Inconsistencies
-	if len(result.TikvInconsistencies) > 0 {
-		content.WriteString("<h2>2. TiKV Parameter Inconsistencies</h2>\n")
-		content.WriteString("<p>TiKV nodes with inconsistent parameter values.</p>\n")
-		for paramName, nodes := range result.TikvInconsistencies {
-			content.WriteString(fmt.Sprintf("<h3>Parameter: <code>%s</code></h3>\n", paramName))
-			content.WriteString("<table>\n")
-			content.WriteString("<tr><th>Node Address</th><th>Value</th></tr>\n")
-			for _, node := range nodes {
-				content.WriteString(fmt.Sprintf("<tr><td>%s</td><td>%v</td></tr>\n", node.NodeAddress, node.Value))
-			}
-			content.WriteString("</table>\n")
-		}
-	}
-
-	// Upgrade Differences
-	if len(result.UpgradeDifferences) > 0 || len(result.ForcedChanges) > 0 {
-		content.WriteString("<h2>3. Upgrade Differences</h2>\n")
-		content.WriteString("<p>Parameters that will differ after upgrade.</p>\n")
-
-		// Forced Changes
-		if len(result.ForcedChanges) > 0 {
-			content.WriteString("<h3>Forced Changes (Critical)</h3>\n")
-			content.WriteString("<p>⚠️ <strong>These parameters will be forcibly changed during upgrade and cannot be prevented.</strong></p>\n")
-			content.WriteString("<table>\n")
-			content.WriteString("<tr><th>Component</th><th>Parameter</th><th>Current</th><th>Forced To</th><th>Summary</th></tr>\n")
-			for compType, params := range result.ForcedChanges {
-				for paramName, change := range params {
-					content.WriteString(fmt.Sprintf("<tr><td>%s</td><td><code>%s</code></td><td>%v</td><td>%v</td><td>%s</td></tr>\n",
-						compType, paramName, change.CurrentValue, change.ForcedValue, change.Summary))
-				}
-			}
-			content.WriteString("</table>\n")
-		}
-
-		// Other Upgrade Differences
-		if len(result.UpgradeDifferences) > 0 {
-			content.WriteString("<h3>Other Upgrade Differences</h3>\n")
-			components := []string{"tidb", "pd", "tikv", "tiflash"}
-			for _, compType := range components {
-				if params, ok := result.UpgradeDifferences[compType]; ok && len(params) > 0 {
-					content.WriteString(fmt.Sprintf("<h4>%s Component</h4>\n", strings.ToUpper(compType)))
-
-					// Separate PD info messages (default changed but value preserved) from warnings
-					var pdInfoParams []string
-					var otherParams []string
-					for paramName := range params {
-						// Check if this is a PD info message by looking at CheckResults
-						isPDInfo := false
-						for _, check := range result.CheckResults {
-							if check.Component == compType && check.ParameterName == paramName && check.Severity == "info" && compType == "pd" {
-								isPDInfo = true
-								break
-							}
-						}
-						if isPDInfo {
-							pdInfoParams = append(pdInfoParams, paramName)
-						} else {
-							otherParams = append(otherParams, paramName)
-						}
-					}
-
-					// Display PD info messages separately
-					if len(pdInfoParams) > 0 && compType == "pd" {
-						content.WriteString("<p>ℹ️ <strong>Default Value Changes (Info):</strong></p>\n")
-						content.WriteString("<p>The following parameters have default value changes in the target version, but your current configuration will be preserved during upgrade.</p>\n")
-						content.WriteString("<table>\n")
-						content.WriteString("<tr><th>Parameter</th><th>Current (Preserved)</th><th>Target Default</th><th>Source Default</th><th>Type</th></tr>\n")
-						for _, paramName := range pdInfoParams {
-							diff := params[paramName]
-							content.WriteString(fmt.Sprintf("<tr><td><code>%s</code></td><td>%v</td><td>%v</td><td>%v</td><td>%s</td></tr>\n",
-								paramName, diff.CurrentValue, diff.TargetDefault, diff.SourceDefault, diff.ParamType))
-						}
-						content.WriteString("</table>\n")
-					}
-
-					// Display other upgrade differences
-					if len(otherParams) > 0 {
-						if len(pdInfoParams) > 0 && compType == "pd" {
-							content.WriteString("<h5>Other Upgrade Differences</h5>\n")
-						}
-						content.WriteString("<table>\n")
-						content.WriteString("<tr><th>Parameter</th><th>Current</th><th>Target Default</th><th>Source Default</th><th>Type</th></tr>\n")
-						for _, paramName := range otherParams {
-							diff := params[paramName]
-							content.WriteString(fmt.Sprintf("<tr><td><code>%s</code></td><td>%v</td><td>%v</td><td>%v</td><td>%s</td></tr>\n",
-								paramName, diff.CurrentValue, diff.TargetDefault, diff.SourceDefault, diff.ParamType))
-						}
-						content.WriteString("</table>\n")
-					}
-				}
-			}
-		}
-	}
-
-	// Focus Parameters
-	if len(result.FocusParams) > 0 {
-		content.WriteString("<h2>Focus Parameters</h2>\n")
-		content.WriteString("<table>\n")
-		content.WriteString("<tr><th>Component</th><th>Parameter</th><th>Current</th><th>Modified</th><th>Will Change</th></tr>\n")
-		for compType, params := range result.FocusParams {
-			for paramName, info := range params {
-				content.WriteString(fmt.Sprintf("<tr><td>%s</td><td><code>%s</code></td><td>%v</td><td>%v</td><td>%v</td></tr>\n",
-					compType, paramName, info.CurrentValue, info.IsModified, info.WillChange))
-			}
-		}
-		content.WriteString("</table>\n")
-	}
-
 	return content.String(), nil
+}
+
+// formatValue formats a value for display
+func formatValue(v interface{}) string {
+	if v == nil {
+		return "<em>N/A</em>"
+	}
+	return fmt.Sprintf("%v", v)
+}
+
+// formatValueWithHighlight formats a value with highlighting for differences
+// role: "current", "source", or "target"
+func formatValueWithHighlight(value, sourceDefault, targetDefault interface{}, role string) string {
+	if value == nil {
+		return "<em>N/A</em>"
+	}
+
+	valueStr := fmt.Sprintf("%v", value)
+	sourceStr := ""
+	targetStr := ""
+
+	if sourceDefault != nil {
+		sourceStr = fmt.Sprintf("%v", sourceDefault)
+	}
+	if targetDefault != nil {
+		targetStr = fmt.Sprintf("%v", targetDefault)
+	}
+
+	// If source and target are the same, no highlighting needed
+	if sourceStr == targetStr {
+		return formatValue(value)
+	}
+
+	// For comma-separated lists (like function lists), highlight differences
+	if strings.Contains(valueStr, ",") && strings.Contains(sourceStr, ",") && strings.Contains(targetStr, ",") {
+		return highlightCommaSeparatedListHTML(valueStr, sourceStr, targetStr, role)
+	}
+
+	// For simple string differences, highlight the entire value if it differs
+	if role == "current" {
+		if valueStr != sourceStr && valueStr != targetStr {
+			// Current differs from both, highlight in yellow
+			return fmt.Sprintf("<span style=\"background-color: #fff3cd;\">%s</span>", escapeHTML(valueStr))
+		}
+	} else if role == "target" {
+		if targetStr != sourceStr {
+			// Target differs from source, highlight additions in green
+			return fmt.Sprintf("<span style=\"background-color: #d4edda;\">%s</span>", escapeHTML(targetStr))
+		}
+	} else if role == "source" {
+		if sourceStr != targetStr {
+			// Source differs from target, highlight removals in red (lighter)
+			return fmt.Sprintf("<span style=\"background-color: #f8d7da;\">%s</span>", escapeHTML(sourceStr))
+		}
+	}
+
+	return formatValue(value)
+}
+
+// highlightCommaSeparatedListHTML highlights differences in comma-separated lists for HTML
+func highlightCommaSeparatedListHTML(valueStr, sourceStr, targetStr, role string) string {
+	valueItems := strings.Split(valueStr, ",")
+	sourceItems := strings.Split(sourceStr, ",")
+	targetItems := strings.Split(targetStr, ",")
+
+	// Trim spaces
+	for i := range valueItems {
+		valueItems[i] = strings.TrimSpace(valueItems[i])
+	}
+	for i := range sourceItems {
+		sourceItems[i] = strings.TrimSpace(sourceItems[i])
+	}
+	for i := range targetItems {
+		targetItems[i] = strings.TrimSpace(targetItems[i])
+	}
+
+	// Create sets for comparison
+	sourceSet := make(map[string]bool)
+	for _, item := range sourceItems {
+		sourceSet[item] = true
+	}
+	targetSet := make(map[string]bool)
+	for _, item := range targetItems {
+		targetSet[item] = true
+	}
+
+	var result []string
+	for _, item := range valueItems {
+		item = strings.TrimSpace(item)
+		if item == "" {
+			continue
+		}
+
+		inSource := sourceSet[item]
+		inTarget := targetSet[item]
+
+		escapedItem := escapeHTML(item)
+
+		if role == "current" {
+			// For current value, show if it matches source or target
+			if inSource && !inTarget {
+				// Will be removed in target
+				result = append(result, fmt.Sprintf("<span style=\"background-color: #f8d7da; text-decoration: line-through;\">%s</span>", escapedItem))
+			} else if !inSource && inTarget {
+				// Will be added in target
+				result = append(result, fmt.Sprintf("<span style=\"background-color: #d4edda;\">%s</span>", escapedItem))
+			} else {
+				// Same in both
+				result = append(result, escapedItem)
+			}
+		} else if role == "source" {
+			// For source, highlight items that will be removed
+			if inSource && !inTarget {
+				result = append(result, fmt.Sprintf("<span style=\"background-color: #f8d7da; text-decoration: line-through;\">%s</span>", escapedItem))
+			} else {
+				result = append(result, escapedItem)
+			}
+		} else if role == "target" {
+			// For target, highlight items that are new
+			if !inSource && inTarget {
+				result = append(result, fmt.Sprintf("<span style=\"background-color: #d4edda; font-weight: bold;\">%s</span>", escapedItem))
+			} else {
+				result = append(result, escapedItem)
+			}
+		}
+	}
+
+	return strings.Join(result, ", ")
+}
+
+// escapeHTML escapes HTML special characters
+func escapeHTML(s string) string {
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	s = strings.ReplaceAll(s, "\"", "&quot;")
+	s = strings.ReplaceAll(s, "'", "&#39;")
+	return s
 }

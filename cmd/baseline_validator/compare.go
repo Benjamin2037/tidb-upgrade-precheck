@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector"
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/kbgenerator"
 	defaultsTypes "github.com/pingcap/tidb-upgrade-precheck/pkg/types"
 )
 
@@ -176,7 +175,7 @@ func loadBaseline(filename string) (*BaselineResult, error) {
 }
 
 func loadKnowledgeBase(kbDir, version string) (map[string]KBConfig, error) {
-	// Use pkg/kbgenerator.LoadKnowledgeBase to load the knowledge base
+	// Use pkg/collector/kbgenerator.LoadKnowledgeBase to load the knowledge base
 	// kbDir is the base knowledge directory (e.g., "knowledge")
 	kb, err := kbgenerator.LoadKnowledgeBase(kbDir, version)
 	if err != nil {
@@ -185,7 +184,7 @@ func loadKnowledgeBase(kbDir, version string) (map[string]KBConfig, error) {
 
 	result := make(map[string]KBConfig)
 
-	// Convert from pkg/kbgenerator format to KBConfig format
+	// Convert from pkg/collector/kbgenerator format to KBConfig format
 	for comp, componentKB := range kb {
 		compData, ok := componentKB.(map[string]interface{})
 		if !ok {

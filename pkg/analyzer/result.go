@@ -36,6 +36,19 @@ type AnalysisResult struct {
 
 	// CheckResults contains all rule check results
 	CheckResults []rules.CheckResult `json:"check_results"`
+
+	// Statistics contains comparison statistics
+	Statistics Statistics `json:"statistics,omitempty"`
+}
+
+// Statistics contains comparison statistics
+type Statistics struct {
+	// TotalParametersCompared is the total number of parameters compared
+	TotalParametersCompared int `json:"total_parameters_compared,omitempty"`
+	// ParametersWithDifferences is the number of parameters that have differences
+	ParametersWithDifferences int `json:"parameters_with_differences,omitempty"`
+	// ParametersSkipped is the number of parameters skipped (source == target, no difference)
+	ParametersSkipped int `json:"parameters_skipped,omitempty"`
 }
 
 // ModifiedParamInfo contains information about a modified parameter
@@ -115,4 +128,3 @@ type FocusParamInfo struct {
 	// WillChange indicates if the parameter will change after upgrade
 	WillChange bool `json:"will_change"`
 }
-

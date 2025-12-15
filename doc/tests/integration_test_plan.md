@@ -22,7 +22,7 @@ cd /path/to/tidb-upgrade-precheck
 bash scripts/generate_knowledge.sh --serial
 
 # Or generate specific version range
-bash scripts/generate_knowledge.sh --serial --start-from=v7.5.0 --stop-at=v8.1.0
+bash scripts/generate_knowledge.sh --serial --start-from=v7.5.6 --stop-at=v8.5.4
 ```
 
 **Verification Points**:
@@ -43,8 +43,8 @@ tree knowledge/ -L 3
 find knowledge/ -name "*.json" -exec jq . {} \; > /dev/null
 
 # Check key versions
-ls -la knowledge/v7.5/v7.5.0/
-ls -la knowledge/v8.1/v8.1.0/
+ls -la knowledge/v7.5/v7.5.6/
+ls -la knowledge/v8.5/v8.5.4/
 ```
 
 **Verification Points**:
@@ -170,13 +170,13 @@ go tool cover -html=coverage.out -o coverage.html
 
 ```bash
 # Start TiUP playground cluster
-tiup playground v7.5.0 --tag test-collection
+tiup playground v7.5.6 --tag test-collection
 
 # Wait for cluster to be ready
 sleep 30
 
 # Run collection test (using kb_generator or direct collector)
-./bin/kb_generator --version=v7.5.0 --components=tidb
+./bin/kb_generator --version=v7.5.6 --components=tidb
 
 # Stop playground
 tiup clean test-collection
@@ -193,13 +193,13 @@ tiup clean test-collection
 
 ```bash
 # Start full cluster
-tiup playground v7.5.0 --tag test-full
+tiup playground v7.5.6 --tag test-full
 
 # Collect all components
-./bin/kb_generator --version=v7.5.0
+./bin/kb_generator --version=v7.5.6
 
 # Verify all components
-ls -la knowledge/v7.5/v7.5.0/
+ls -la knowledge/v7.5/v7.5.6/
 ```
 
 **Verification Points**:
@@ -213,7 +213,7 @@ ls -la knowledge/v7.5/v7.5.0/
 ```bash
 # Test optimized collection with data requirements
 # (This would be tested through precheck command)
-./bin/precheck --target-version=v8.1.0 --tidb-addr=127.0.0.1:4000 \
+./bin/precheck --target-version=v8.5.4 --tidb-addr=127.0.0.1:4000 \
   --components=tidb
 ```
 
@@ -232,11 +232,11 @@ ls -la knowledge/v7.5/v7.5.0/
 
 ```bash
 # Start source version cluster
-tiup playground v7.5.0 --tag test-precheck
+tiup playground v7.5.6 --tag test-precheck
 
 # Run precheck for target version
 ./bin/precheck \
-  --target-version=v8.1.0 \
+  --target-version=v8.5.4 \
   --tidb-addr=127.0.0.1:4000 \
   --tidb-user=root \
   --tidb-password="" \
@@ -270,7 +270,7 @@ EOF
 
 # Run precheck with topology file
 ./bin/precheck \
-  --target-version=v8.1.0 \
+  --target-version=v8.5.4 \
   --topology-file=/tmp/topology.yaml \
   --format=json
 ```
@@ -285,7 +285,7 @@ EOF
 
 ```bash
 # Run precheck and verify all rules are executed
-./bin/precheck --target-version=v8.1.0 --tidb-addr=127.0.0.1:4000 --format=text
+./bin/precheck --target-version=v8.5.4 --tidb-addr=127.0.0.1:4000 --format=text
 ```
 
 **Verification Points**:
@@ -300,7 +300,7 @@ EOF
 ```bash
 # Test all report formats
 for format in text markdown html json; do
-  ./bin/precheck --target-version=v8.1.0 --tidb-addr=127.0.0.1:4000 \
+  ./bin/precheck --target-version=v8.5.4 --tidb-addr=127.0.0.1:4000 \
     --format=$format --output-dir=./reports/$format
 done
 ```
@@ -361,7 +361,7 @@ done
 ```bash
 # Run precheck with high-risk params config
 ./bin/precheck \
-  --target-version=v8.1.0 \
+  --target-version=v8.5.4 \
   --tidb-addr=127.0.0.1:4000 \
   --high-risk-params-config=~/.tiup/storage/upgrade-precheck/config/high_risk_params.json
 ```
@@ -381,15 +381,15 @@ done
 
 ```bash
 # Step 1: Generate knowledge base for source and target versions
-bash scripts/generate_knowledge.sh --serial --start-from=v7.5.0 --stop-at=v7.5.0
-bash scripts/generate_knowledge.sh --serial --start-from=v8.1.0 --stop-at=v8.1.0
+bash scripts/generate_knowledge.sh --serial --start-from=v7.5.6 --stop-at=v7.5.6
+bash scripts/generate_knowledge.sh --serial --start-from=v8.5.4 --stop-at=v8.5.4
 
 # Step 2: Start source version cluster
-tiup playground v7.5.0 --tag test-e2e
+tiup playground v7.5.6 --tag test-e2e
 
 # Step 3: Run precheck
 ./bin/precheck \
-  --target-version=v8.1.0 \
+  --target-version=v8.5.4 \
   --tidb-addr=127.0.0.1:4000 \
   --format=html \
   --output-dir=./reports
@@ -410,7 +410,7 @@ cat ./reports/*.html | grep -i "risk\|issue\|warning"
 
 ```bash
 # Generate knowledge base with upgrade logic
-bash scripts/generate_knowledge.sh --serial --start-from=v7.5.0 --stop-at=v8.1.0
+bash scripts/generate_knowledge.sh --serial --start-from=v7.5.6 --stop-at=v8.5.4
 
 # Verify upgrade logic contains changes in bootstrap version range
 jq '.changes[] | select(.bootstrap_version > 109 and .bootstrap_version <= 218)' \
@@ -435,7 +435,7 @@ jq '.changes[] | select(.bootstrap_version > 109 and .bootstrap_version <= 218)'
 rm -rf knowledge/
 
 # Try to run precheck
-./bin/precheck --target-version=v8.1.0 --tidb-addr=127.0.0.1:4000
+./bin/precheck --target-version=v8.5.4 --tidb-addr=127.0.0.1:4000
 ```
 
 **Verification Points**:
@@ -458,7 +458,7 @@ rm -rf knowledge/
 
 ```bash
 # Try to connect to non-existent cluster
-./bin/precheck --target-version=v8.1.0 --tidb-addr=127.0.0.1:9999
+./bin/precheck --target-version=v8.5.4 --tidb-addr=127.0.0.1:9999
 ```
 
 **Verification Points**:
@@ -476,10 +476,10 @@ rm -rf knowledge/
 
 ```bash
 # Start cluster with multiple TiKV nodes
-tiup playground v7.5.0 --tag test-large --tikv 3
+tiup playground v7.5.6 --tag test-large --tikv 3
 
 # Run precheck
-./bin/precheck --target-version=v8.1.0 --tidb-addr=127.0.0.1:4000
+./bin/precheck --target-version=v8.5.4 --tidb-addr=127.0.0.1:4000
 ```
 
 **Verification Points**:

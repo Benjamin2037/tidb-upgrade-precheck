@@ -26,7 +26,7 @@ func TestGenerator_GenerateFromAnalysisResult(t *testing.T) {
 			name: "text format",
 			result: &analyzer.AnalysisResult{
 				SourceVersion:       "v7.5.0",
-				TargetVersion:       "v8.0.0",
+				TargetVersion:       "v8.5.0",
 				ModifiedParams:      make(map[string]map[string]analyzer.ModifiedParamInfo),
 				TikvInconsistencies: make(map[string][]analyzer.InconsistentNode),
 				UpgradeDifferences:  make(map[string]map[string]analyzer.UpgradeDifference),
@@ -44,7 +44,7 @@ func TestGenerator_GenerateFromAnalysisResult(t *testing.T) {
 			name: "markdown format",
 			result: &analyzer.AnalysisResult{
 				SourceVersion:       "v7.5.0",
-				TargetVersion:       "v8.1.2",
+				TargetVersion:       "v8.5.2",
 				ModifiedParams:      make(map[string]map[string]analyzer.ModifiedParamInfo),
 				TikvInconsistencies: make(map[string][]analyzer.InconsistentNode),
 				UpgradeDifferences:  make(map[string]map[string]analyzer.UpgradeDifference),
@@ -62,7 +62,7 @@ func TestGenerator_GenerateFromAnalysisResult(t *testing.T) {
 			name: "html format",
 			result: &analyzer.AnalysisResult{
 				SourceVersion:       "v7.5.0",
-				TargetVersion:       "v8.0.0",
+				TargetVersion:       "v8.5.0",
 				ModifiedParams:      make(map[string]map[string]analyzer.ModifiedParamInfo),
 				TikvInconsistencies: make(map[string][]analyzer.InconsistentNode),
 				UpgradeDifferences:  make(map[string]map[string]analyzer.UpgradeDifference),
@@ -80,7 +80,7 @@ func TestGenerator_GenerateFromAnalysisResult(t *testing.T) {
 			name: "json format",
 			result: &analyzer.AnalysisResult{
 				SourceVersion:       "v7.5.0",
-				TargetVersion:       "v8.0.0",
+				TargetVersion:       "v8.5.0",
 				ModifiedParams:      make(map[string]map[string]analyzer.ModifiedParamInfo),
 				TikvInconsistencies: make(map[string][]analyzer.InconsistentNode),
 				UpgradeDifferences:  make(map[string]map[string]analyzer.UpgradeDifference),
@@ -98,7 +98,7 @@ func TestGenerator_GenerateFromAnalysisResult(t *testing.T) {
 			name: "invalid format",
 			result: &analyzer.AnalysisResult{
 				SourceVersion: "v7.5.0",
-				TargetVersion: "v8.0.0",
+				TargetVersion: "v8.5.0",
 			},
 			options: &Options{
 				Format:    Format("invalid"),
@@ -132,7 +132,7 @@ func TestGenerator_GenerateFromAnalysisResult(t *testing.T) {
 func TestGenerator_GenerateFromAnalysisResult_WithData(t *testing.T) {
 	result := &analyzer.AnalysisResult{
 		SourceVersion: "v7.5.0",
-		TargetVersion: "v8.0.0",
+		TargetVersion: "v8.5.0",
 		ModifiedParams: map[string]map[string]analyzer.ModifiedParamInfo{
 			"tidb": {
 				"max-connections": {
@@ -149,13 +149,14 @@ func TestGenerator_GenerateFromAnalysisResult_WithData(t *testing.T) {
 		ForcedChanges:       make(map[string]map[string]analyzer.ForcedChange),
 		CheckResults: []rules.CheckResult{
 			{
-				RuleID:      "USER_MODIFIED_PARAMS",
-				Category:    "user_modified",
-				Component:   "tidb",
-				Severity:    "info",
-				Message:     "Parameter max-connections has been modified",
-				Details:     "Current value: 2000, Source default: 1000",
-				Suggestions: []string{"Review parameter changes"},
+				RuleID:        "USER_MODIFIED_PARAMS",
+				Category:      "user_modified",
+				Component:     "tidb",
+				ParameterName: "max-connections",
+				Severity:      "info",
+				Message:       "Parameter max-connections has been modified",
+				Details:       "Current value: 2000, Source default: 1000",
+				Suggestions:   []string{"Review parameter changes"},
 			},
 		},
 	}
@@ -178,6 +179,6 @@ func TestGenerator_GenerateFromAnalysisResult_WithData(t *testing.T) {
 	content := string(fileContent)
 
 	assert.Contains(t, content, "v7.5.0")
-	assert.Contains(t, content, "v8.0.0")
+	assert.Contains(t, content, "v8.5.0")
 	assert.Contains(t, content, "max-connections")
 }

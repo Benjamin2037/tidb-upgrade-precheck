@@ -175,7 +175,14 @@ func (ctx *RuleContext) WillDefaultChange(component, paramName string) bool {
 func (ctx *RuleContext) GetForcedChanges(component string) map[string]interface{} {
 	result := make(map[string]interface{})
 
+	// Debug: Check if upgrade_logic is loaded
+	if len(ctx.UpgradeLogic) == 0 {
+		fmt.Printf("[DEBUG GetForcedChanges] No upgrade_logic loaded for any component\n")
+		return result
+	}
+
 	if logic, ok := ctx.UpgradeLogic[component]; ok {
+		fmt.Printf("[DEBUG GetForcedChanges] Found upgrade_logic for component %s, SourceBootstrap=%d, TargetBootstrap=%d\n", component, ctx.SourceBootstrapVersion, ctx.TargetBootstrapVersion)
 		// Parse upgrade logic structure
 		// Expected structure: UpgradeLogicSnapshot with Changes array
 		// Each change has a Version field that contains bootstrap version number (e.g., "68", "71")
@@ -204,7 +211,9 @@ func (ctx *RuleContext) GetForcedChanges(component string) map[string]interface{
 						// Check if bootstrap version is in range (sourceBootstrapVersion, targetBootstrapVersion]
 						// This means: sourceBootstrapVersion < changeBootstrapVersion <= targetBootstrapVersion
 						if ctx.SourceBootstrapVersion > 0 && ctx.TargetBootstrapVersion > 0 {
+							// Debug: Check if version is in range
 							if changeBootstrapVersion > ctx.SourceBootstrapVersion && changeBootstrapVersion <= ctx.TargetBootstrapVersion {
+								fmt.Printf("[DEBUG GetForcedChanges] Change version %d is in range (%d, %d]\n", changeBootstrapVersion, ctx.SourceBootstrapVersion, ctx.TargetBootstrapVersion)
 								// Extract parameter name and value
 								var paramName string
 								var forcedValue interface{}
@@ -230,8 +239,12 @@ func (ctx *RuleContext) GetForcedChanges(component string) map[string]interface{
 								}
 
 								result[paramName] = forcedValue
+								fmt.Printf("[DEBUG GetForcedChanges] Added forced change: %s = %v (version: %d)\n", paramName, forcedValue, changeBootstrapVersion)
+							} else {
+								fmt.Printf("[DEBUG GetForcedChanges] Change version %d is NOT in range (%d, %d]\n", changeBootstrapVersion, ctx.SourceBootstrapVersion, ctx.TargetBootstrapVersion)
 							}
 						} else {
+							fmt.Printf("[DEBUG GetForcedChanges] Bootstrap versions not set (Source=%d, Target=%d), using fallback\n", ctx.SourceBootstrapVersion, ctx.TargetBootstrapVersion)
 							// Fallback to release version comparison if bootstrap versions are not available
 							// This maintains backward compatibility
 							changeVersion := fmt.Sprintf("%d", changeBootstrapVersion)
@@ -259,10 +272,24 @@ func (ctx *RuleContext) GetForcedChanges(component string) map[string]interface{
 					}
 				}
 			}
+		} else {
+			fmt.Printf("[DEBUG GetForcedChanges] upgrade_logic for component %s is not a map[string]interface{}\n", component)
 		}
+	} else {
+		fmt.Printf("[DEBUG GetForcedChanges] No upgrade_logic found for component %s (available components: %v)\n", component, getMapKeys(ctx.UpgradeLogic))
 	}
 
+	fmt.Printf("[DEBUG GetForcedChanges] Returning %d forced changes for component %s\n", len(result), component)
 	return result
+}
+
+// Helper function to get map keys for debugging
+func getMapKeys(m map[string]interface{}) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 // isVersionInRange checks if a version is in the range (sourceVersion, targetVersion]

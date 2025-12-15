@@ -14,7 +14,7 @@ Parameter comparison is performed by the **Analyzer** module using **Rules**. Th
 
 ### User Modified Params Rule
 
-**Location**: `pkg/analyzer/rules/user_modified_params_rule.go`
+**Location**: `pkg/analyzer/rules/rule_user_modified_params.go`
 
 **Purpose**: Detects parameters that differ from default values in the source version.
 
@@ -26,7 +26,7 @@ Parameter comparison is performed by the **Analyzer** module using **Rules**. Th
 
 ### Upgrade Differences Rule
 
-**Location**: `pkg/analyzer/rules/upgrade_differences_rule.go`
+**Location**: `pkg/analyzer/rules/rule_upgrade_differences.go`
 
 **Purpose**: Detects forced parameter changes during upgrades.
 
@@ -44,7 +44,7 @@ Parameter comparison is performed by the **Analyzer** module using **Rules**. Th
 
 ### TiKV Consistency Rule
 
-**Location**: `pkg/analyzer/rules/tikv_consistency_rule.go`
+**Location**: `pkg/analyzer/rules/rule_tikv_consistency.go`
 
 **Purpose**: Checks parameter consistency across TiKV nodes.
 
@@ -60,7 +60,7 @@ Parameter comparison is performed by the **Analyzer** module using **Rules**. Th
 
 ### High Risk Params Rule
 
-**Location**: `pkg/analyzer/rules/high_risk_params_rule.go`
+**Location**: `pkg/analyzer/rules/rule_high_risk_params.go`
 
 **Purpose**: Validates manually specified high-risk parameters.
 

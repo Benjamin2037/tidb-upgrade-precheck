@@ -9,15 +9,15 @@ import (
 	"strings"
 	"time"
 
-	kbgenerator "github.com/pingcap/tidb-upgrade-precheck/pkg/kbgenerator"
-	pdkb "github.com/pingcap/tidb-upgrade-precheck/pkg/kbgenerator/pd"
-	tidbkb "github.com/pingcap/tidb-upgrade-precheck/pkg/kbgenerator/tidb"
-	tiflashkb "github.com/pingcap/tidb-upgrade-precheck/pkg/kbgenerator/tiflash"
-	tikvkb "github.com/pingcap/tidb-upgrade-precheck/pkg/kbgenerator/tikv"
+	kbgenerator "github.com/pingcap/tidb-upgrade-precheck/pkg/collector"
+	pdkb "github.com/pingcap/tidb-upgrade-precheck/pkg/collector/pd"
+	tidbkb "github.com/pingcap/tidb-upgrade-precheck/pkg/collector/tidb"
+	tiflashkb "github.com/pingcap/tidb-upgrade-precheck/pkg/collector/tiflash"
+	tikvkb "github.com/pingcap/tidb-upgrade-precheck/pkg/collector/tikv"
 )
 
 // getVersionGroup extracts the version group (first two digits) from a full version string
-// Example: v6.5.0 -> v6.5, v7.1.0 -> v7.1
+// Example: v6.5.0 -> v6.5, v7.5.0 -> v7.5
 func getVersionGroup(version string) string {
 	// Remove 'v' prefix if present
 	version = strings.TrimPrefix(version, "v")

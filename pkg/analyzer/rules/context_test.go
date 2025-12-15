@@ -15,7 +15,7 @@ func TestNewRuleContext(t *testing.T) {
 	ruleCtx := NewRuleContext(
 		snapshot,
 		"v7.5.0",
-		"v8.0.0",
+		"v8.5.0",
 		make(map[string]map[string]interface{}),
 		make(map[string]map[string]interface{}),
 		make(map[string]interface{}),
@@ -26,7 +26,7 @@ func TestNewRuleContext(t *testing.T) {
 	assert.NotNil(t, ruleCtx)
 	assert.Equal(t, snapshot, ruleCtx.SourceClusterSnapshot)
 	assert.Equal(t, "v7.5.0", ruleCtx.SourceVersion)
-	assert.Equal(t, "v8.0.0", ruleCtx.TargetVersion)
+	assert.Equal(t, "v8.5.0", ruleCtx.TargetVersion)
 	assert.NotNil(t, ruleCtx.SourceDefaults)
 	assert.NotNil(t, ruleCtx.TargetDefaults)
 	assert.NotNil(t, ruleCtx.UpgradeLogic)
@@ -43,7 +43,7 @@ func TestRuleContext_GetForcedChanges(t *testing.T) {
 			name: "no upgrade logic",
 			ruleCtx: &RuleContext{
 				SourceVersion: "v7.5.0",
-				TargetVersion: "v8.0.0",
+				TargetVersion: "v8.5.0",
 				UpgradeLogic:  make(map[string]interface{}),
 			},
 			wantLen: 0,
@@ -52,7 +52,7 @@ func TestRuleContext_GetForcedChanges(t *testing.T) {
 			name: "with forced changes in range",
 			ruleCtx: &RuleContext{
 				SourceVersion:          "v7.5.0",
-				TargetVersion:          "v8.0.0",
+				TargetVersion:          "v8.5.0",
 				SourceBootstrapVersion: 140,
 				TargetBootstrapVersion: 160,
 				UpgradeLogic: map[string]interface{}{
@@ -74,7 +74,7 @@ func TestRuleContext_GetForcedChanges(t *testing.T) {
 			name: "forced change outside range",
 			ruleCtx: &RuleContext{
 				SourceVersion:          "v7.5.0",
-				TargetVersion:          "v8.0.0",
+				TargetVersion:          "v8.5.0",
 				SourceBootstrapVersion: 140,
 				TargetBootstrapVersion: 160,
 				UpgradeLogic: map[string]interface{}{

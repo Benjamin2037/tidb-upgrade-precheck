@@ -465,9 +465,20 @@ echo ""
 # Generate upgrade_logic.json globally (once for all versions)
 # This file contains all historical upgrade logic and is version-agnostic
 # IMPORTANT: Must be extracted from master branch to get all historical upgradeToVerXX functions
+# In --force mode, always regenerate upgrade_logic.json to ensure it's up-to-date
 if [[ "$COMPONENTS" == *"tidb"* ]] && [ -n "$TIDB_REPO" ] && [ -d "$TIDB_REPO" ]; then
     UPGRADE_LOGIC_PATH="${PROJECT_ROOT}/knowledge/tidb/upgrade_logic.json"
-    if [ ! -f "$UPGRADE_LOGIC_PATH" ]; then
+    # In force mode, always regenerate; otherwise only generate if missing
+    # Debug: Log the decision
+    if [ "$FORCE_REGENERATE" = true ]; then
+        echo "[DEBUG] Force mode: will regenerate upgrade_logic.json"
+    elif [ ! -f "$UPGRADE_LOGIC_PATH" ]; then
+        echo "[DEBUG] File missing: will generate upgrade_logic.json"
+    else
+        echo "[DEBUG] File exists and not in force mode: will skip generation"
+    fi
+    
+    if [ "$FORCE_REGENERATE" = true ] || [ ! -f "$UPGRADE_LOGIC_PATH" ]; then
         echo "=========================================="
         echo "Generating global upgrade_logic.json (TiDB)"
         echo "=========================================="
@@ -505,13 +516,23 @@ if [[ "$COMPONENTS" == *"tidb"* ]] && [ -n "$TIDB_REPO" ] && [ -d "$TIDB_REPO" ]
         fi
         
         # Generate upgrade_logic.json using cmd/generate_upgrade_logic tool
+        echo "Running: go run cmd/generate_upgrade_logic/main.go --tidb-repo=\"$TIDB_REPO\" --output=\"$UPGRADE_LOGIC_PATH\""
         if (cd "$PROJECT_ROOT" && GOWORK=off go run cmd/generate_upgrade_logic/main.go \
             --tidb-repo="$TIDB_REPO" \
             --output="$UPGRADE_LOGIC_PATH" 2>&1); then
-            echo "✓ Successfully generated upgrade_logic.json"
+            # Verify file was actually created
+            if [ -f "$UPGRADE_LOGIC_PATH" ]; then
+                echo "✓ Successfully generated upgrade_logic.json"
+                echo "  File: $UPGRADE_LOGIC_PATH"
+                echo "  Size: $(ls -lh "$UPGRADE_LOGIC_PATH" | awk '{print $5}')"
+            else
+                echo "✗ Generation command succeeded but file not found at: $UPGRADE_LOGIC_PATH"
+                echo "  This indicates a problem with the generation tool or file path"
+            fi
         else
             echo "✗ Failed to generate upgrade_logic.json (continuing with version generation)"
             echo "  Note: upgrade_logic.json will not be available, but version-specific knowledge bases will still be generated"
+            echo "  Check the error messages above for details"
         fi
         
         # Restore original branch if we switched
@@ -526,12 +547,14 @@ if [[ "$COMPONENTS" == *"tidb"* ]] && [ -n "$TIDB_REPO" ] && [ -d "$TIDB_REPO" ]
         
         echo ""
     else
-        echo "=========================================="
-        echo "upgrade_logic.json already exists, skipping generation"
-        echo "=========================================="
-        echo "File: $UPGRADE_LOGIC_PATH"
-        echo "To regenerate, delete this file and run the script again."
-        echo ""
+        if [ "$FORCE_REGENERATE" = false ]; then
+            echo "=========================================="
+            echo "upgrade_logic.json already exists, skipping generation"
+            echo "=========================================="
+            echo "File: $UPGRADE_LOGIC_PATH"
+            echo "To regenerate, delete this file and run the script again, or use --force flag."
+            echo ""
+        fi
     fi
 fi
 

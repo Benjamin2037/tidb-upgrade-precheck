@@ -122,12 +122,19 @@ func (a *Analyzer) Analyze(
 	// Load upgrade logic (only need to load once, contains all historical changes)
 	// Upgrade logic is version-agnostic and contains all changes with version tags
 	upgradeLogic := a.loadUpgradeLogic(sourceKB, targetKB, dataReqs)
+	// Debug: log loaded components
+	upgradeLogicKeys := make([]string, 0, len(upgradeLogic))
+	for k := range upgradeLogic {
+		upgradeLogicKeys = append(upgradeLogicKeys, k)
+	}
+	fmt.Printf("[DEBUG Analyzer] Loaded upgrade_logic for components: %v\n", upgradeLogicKeys)
 
 	// Step 3: Create shared rule context with loaded data
 	// All rules share the same context, but each rule only accesses data it needs
 	// Extract bootstrap versions for TiDB (most important for upgrade logic filtering)
 	sourceBootstrapVersion := sourceBootstrapVersions["tidb"]
 	targetBootstrapVersion := targetBootstrapVersions["tidb"]
+	fmt.Printf("[DEBUG Analyzer] Bootstrap versions - Source: %d, Target: %d\n", sourceBootstrapVersion, targetBootstrapVersion)
 
 	ruleCtx := rules.NewRuleContext(
 		snapshot,
@@ -182,7 +189,8 @@ func (a *Analyzer) collectDataRequirements() rules.DataSourceRequirement {
 		)
 		merged.SourceKBRequirements.NeedConfigDefaults = merged.SourceKBRequirements.NeedConfigDefaults || req.SourceKBRequirements.NeedConfigDefaults
 		merged.SourceKBRequirements.NeedSystemVariables = merged.SourceKBRequirements.NeedSystemVariables || req.SourceKBRequirements.NeedSystemVariables
-		// Note: NeedUpgradeLogic is merged but upgrade logic is loaded once (not per version)
+		merged.SourceKBRequirements.NeedUpgradeLogic = merged.SourceKBRequirements.NeedUpgradeLogic || req.SourceKBRequirements.NeedUpgradeLogic
+		// Note: upgrade logic is loaded once (not per version) but we need to know if any rule needs it
 
 		// Merge target KB requirements
 		merged.TargetKBRequirements.Components = mergeStringSlices(
@@ -191,7 +199,8 @@ func (a *Analyzer) collectDataRequirements() rules.DataSourceRequirement {
 		)
 		merged.TargetKBRequirements.NeedConfigDefaults = merged.TargetKBRequirements.NeedConfigDefaults || req.TargetKBRequirements.NeedConfigDefaults
 		merged.TargetKBRequirements.NeedSystemVariables = merged.TargetKBRequirements.NeedSystemVariables || req.TargetKBRequirements.NeedSystemVariables
-		// Note: NeedUpgradeLogic is merged but upgrade logic is loaded once (not per version)
+		merged.TargetKBRequirements.NeedUpgradeLogic = merged.TargetKBRequirements.NeedUpgradeLogic || req.TargetKBRequirements.NeedUpgradeLogic
+		// Note: upgrade logic is loaded once (not per version) but we need to know if any rule needs it
 	}
 
 	return merged
@@ -215,6 +224,7 @@ func (a *Analyzer) loadKBFromRequirements(
 		if compKB, ok := kb[comp].(map[string]interface{}); ok {
 			// Load bootstrap_version (always load if available)
 			if bootstrapVersion, ok := compKB["bootstrap_version"]; ok {
+				fmt.Printf("[DEBUG loadKBFromRequirements] Found bootstrap_version for %s: %v\n", comp, bootstrapVersion)
 				var version int64
 				switch v := bootstrapVersion.(type) {
 				case int64:
@@ -232,8 +242,15 @@ func (a *Analyzer) loadKBFromRequirements(
 				}
 				if version > 0 {
 					bootstrapVersions[comp] = version
+					fmt.Printf("[DEBUG loadKBFromRequirements] Loaded bootstrap_version for %s: %d\n", comp, version)
+				} else {
+					fmt.Printf("[DEBUG loadKBFromRequirements] bootstrap_version for %s is 0 or invalid: %v\n", comp, bootstrapVersion)
 				}
+			} else {
+				fmt.Printf("[DEBUG loadKBFromRequirements] No bootstrap_version found for %s in KB\n", comp)
 			}
+		} else {
+			fmt.Printf("[DEBUG loadKBFromRequirements] Component %s not found in KB\n", comp)
 		}
 	}
 
@@ -431,12 +448,15 @@ func (a *Analyzer) loadUpgradeLogic(sourceKB, targetKB map[string]interface{}, r
 
 	// Check if any rule needs upgrade logic
 	needUpgradeLogic := req.SourceKBRequirements.NeedUpgradeLogic || req.TargetKBRequirements.NeedUpgradeLogic
+	fmt.Printf("[DEBUG loadUpgradeLogic] needUpgradeLogic: %v (Source: %v, Target: %v)\n", needUpgradeLogic, req.SourceKBRequirements.NeedUpgradeLogic, req.TargetKBRequirements.NeedUpgradeLogic)
 	if !needUpgradeLogic {
+		fmt.Printf("[DEBUG loadUpgradeLogic] No rule needs upgrade logic, returning empty\n")
 		return upgradeLogic
 	}
 
 	// Get all components that need upgrade logic
 	components := mergeStringSlices(req.SourceKBRequirements.Components, req.TargetKBRequirements.Components)
+	fmt.Printf("[DEBUG loadUpgradeLogic] Components to check: %v\n", components)
 
 	// Load upgrade logic for each component
 	// Prefer target KB, fallback to source KB
@@ -445,17 +465,29 @@ func (a *Analyzer) loadUpgradeLogic(sourceKB, targetKB map[string]interface{}, r
 	for _, comp := range components {
 		// Try target KB first
 		if compKB, ok := targetKB[comp].(map[string]interface{}); ok {
+			fmt.Printf("[DEBUG loadUpgradeLogic] Found component %s in target KB\n", comp)
 			if upgrade, ok := compKB["upgrade_logic"].(map[string]interface{}); ok {
 				upgradeLogic[comp] = upgrade
+				fmt.Printf("[DEBUG loadUpgradeLogic] ✅ Loaded upgrade_logic for %s from target KB\n", comp)
 				continue
+			} else {
+				fmt.Printf("[DEBUG loadUpgradeLogic] Component %s in target KB but upgrade_logic type is %T (not map[string]interface{})\n", comp, compKB["upgrade_logic"])
 			}
+		} else {
+			fmt.Printf("[DEBUG loadUpgradeLogic] Component %s not found in target KB\n", comp)
 		}
 
 		// Fallback to source KB
 		if compKB, ok := sourceKB[comp].(map[string]interface{}); ok {
+			fmt.Printf("[DEBUG loadUpgradeLogic] Found component %s in source KB\n", comp)
 			if upgrade, ok := compKB["upgrade_logic"].(map[string]interface{}); ok {
 				upgradeLogic[comp] = upgrade
+				fmt.Printf("[DEBUG loadUpgradeLogic] ✅ Loaded upgrade_logic for %s from source KB\n", comp)
+			} else {
+				fmt.Printf("[DEBUG loadUpgradeLogic] Component %s in source KB but upgrade_logic type is %T (not map[string]interface{})\n", comp, compKB["upgrade_logic"])
 			}
+		} else {
+			fmt.Printf("[DEBUG loadUpgradeLogic] Component %s not found in source KB\n", comp)
 		}
 	}
 
@@ -471,11 +503,30 @@ func (a *Analyzer) organizeResults(checkResults []rules.CheckResult, sourceVersi
 		TikvInconsistencies: make(map[string][]InconsistentNode),
 		UpgradeDifferences:  make(map[string]map[string]UpgradeDifference),
 		ForcedChanges:       make(map[string]map[string]ForcedChange),
-		CheckResults:        checkResults,
+		CheckResults:        []rules.CheckResult{},
+		Statistics:          Statistics{},
 	}
 
-	// Organize results by category
+	// Filter out statistics CheckResults and extract statistics
+	var filteredResults []rules.CheckResult
 	for _, check := range checkResults {
+		// Check if this is a statistics CheckResult
+		if check.ParameterName == "__statistics__" && strings.HasSuffix(check.RuleID, "_STATS") {
+			// Extract statistics from Description
+			// Format: "Compared X parameters, skipped Y (source == target)"
+			var totalCompared, totalSkipped int
+			fmt.Sscanf(check.Description, "Compared %d parameters, skipped %d", &totalCompared, &totalSkipped)
+			result.Statistics.TotalParametersCompared += totalCompared
+			result.Statistics.ParametersSkipped += totalSkipped
+			result.Statistics.ParametersWithDifferences = totalCompared - totalSkipped
+			continue // Skip this CheckResult
+		}
+		filteredResults = append(filteredResults, check)
+	}
+	result.CheckResults = filteredResults
+
+	// Organize results by category
+	for _, check := range filteredResults {
 		switch check.Category {
 		case "user_modified":
 			a.addModifiedParam(result, check)
