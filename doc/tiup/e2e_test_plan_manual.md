@@ -77,6 +77,90 @@ ls -d "$TIDB_UPGRADE_PRECHECK_KB"
   ls -d /Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/knowledge && echo "✓ KB directory exists" || echo "✗ KB directory not found"
   ```
 
+### 1.5 远程 Linux VM 快速准备（在有 systemd 的 Linux 上运行 tiup cluster）
+
+```bash
+# 1.5.1 安装基础依赖（Debian/Ubuntu）
+sudo apt update
+sudo apt install -y git curl wget tar bash ca-certificates rsync sudo     build-essential golang openssh-server
+sudo systemctl enable --now ssh
+
+# 1.5.2 克隆代码
+mkdir -p ~/workspace && cd ~/workspace
+git clone git@github.com:Benjamin2037/tidb-upgrade-precheck.git
+git clone git@github.com:Benjamin2037/tiup.git
+
+# 1.5.3 构建 tidb-upgrade-precheck
+cd ~/workspace/tidb-upgrade-precheck
+GOWORK=off go build -o bin/upgrade-precheck ./cmd/precheck
+
+# 1.5.4 构建 tiup-cluster（使用本地 precheck 作为 replace）
+cd ~/workspace/tiup
+git checkout precheck-dev-qwen
+sed -i 's|replace github.com/pingcap/tidb-upgrade-precheck .*|replace github.com/pingcap/tidb-upgrade-precheck => ../tidb-upgrade-precheck|' go.mod
+GOWORK=off go mod tidy
+GOWORK=off go build -ldflags '-w -s' -o bin/tiup-cluster ./components/cluster
+
+# 1.5.5 设置环境变量（当前 shell 会话）
+export TIDB_UPGRADE_PRECHECK_BIN=~/workspace/tidb-upgrade-precheck/bin/upgrade-precheck
+export TIDB_UPGRADE_PRECHECK_KB=~/workspace/tidb-upgrade-precheck/knowledge
+export PATH=~/workspace/tiup/bin:$PATH
+
+# 1.5.6 准备拓扑文件（/tmp/e2e-test-topology.yaml，使用当前登录用户）
+cat > /tmp/e2e-test-topology.yaml <<'EOF'
+global:
+  user: "<你的登录用户名>"
+  ssh_port: 22
+  deploy_dir: "/data/tidb-deploy"
+  data_dir: "/data/tidb-data"
+
+pd_servers:
+  - host: 127.0.0.1
+    name: pd1
+    client_port: 2379
+    peer_port: 2380
+
+tidb_servers:
+  - host: 127.0.0.1
+    port: 4000
+    status_port: 10080
+
+tikv_servers:
+  - host: 127.0.0.1
+    port: 20160
+    status_port: 20180
+
+tiflash_servers:
+  - host: 127.0.0.1
+    data_dir: "/data/tidb-data/tiflash-9000"
+    tcp_port: 9000
+    http_port: 8123
+    flash_service_port: 3930
+    flash_proxy_port: 20170
+    flash_proxy_status_port: 20292
+EOF
+
+# 确保 /data 可写
+sudo mkdir -p /data && sudo chown -R $(whoami):$(whoami) /data
+
+# 1.5.7 部署与启动
+tiup_bin=~/workspace/tiup/bin/tiup-cluster
+$tiup_bin deploy e2e-test-cluster v7.5.1 /tmp/e2e-test-topology.yaml -y
+$tiup_bin start e2e-test-cluster
+$tiup_bin display e2e-test-cluster
+
+# 1.5.8 升级前检查（显式指定 precheck）
+$tiup_bin upgrade e2e-test-cluster v8.5.2 --precheck   --precheck-bin $TIDB_UPGRADE_PRECHECK_BIN   --precheck-kb $TIDB_UPGRADE_PRECHECK_KB   --yes
+```
+
+**验证点（远程 VM）**：
+- [ ] `bin/upgrade-precheck` 可执行  
+- [ ] `bin/tiup-cluster` 可执行  
+- [ ] 环境变量已设置（`echo $TIDB_UPGRADE_PRECHECK_BIN`）  
+- [ ] `/data/tidb-deploy` 与 `/data/tidb-data` 可写  
+- [ ] `tiup-cluster deploy/start/display` 正常，无 systemd 缺失错误  
+- [ ] `tiup-cluster upgrade --precheck` 运行成功或输出预期检查结果  
+
 ### 2. 知识库准备
 
 ```bash
