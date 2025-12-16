@@ -124,53 +124,29 @@ func (r *UserModifiedParamsRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 
 			if isSystemVar {
 				// System variable: remove "sysvar:" prefix and check in Variables
-				// Since validateComponentMapping already verified one-to-one correspondence,
-				// this should always exist. If not, it's an unexpected error.
+				// If variable doesn't exist in runtime, skip it
+				// validateComponentMapping already reports variable mismatches as warnings
+				// We can't compare a variable that doesn't exist, so just skip it
 				varName := strings.TrimPrefix(paramName, "sysvar:")
 				if varValue, ok := component.Variables[varName]; ok {
 					currentValue = varValue.Value
 				} else {
-					// This should not happen if validateComponentMapping worked correctly
-					// Report as an error for investigation
-					results = append(results, CheckResult{
-						RuleID:        r.Name(),
-						Category:      r.Category(),
-						Component:     compType,
-						ParameterName: varName,
-						ParamType:     "system_variable",
-						Severity:      "error",
-						Message:       fmt.Sprintf("System variable %s in %s was expected but not found in runtime (validation mismatch)", varName, compType),
-						Details:       fmt.Sprintf("Source KB has default for %s, but runtime cluster does not have this variable. This indicates a validation issue.", varName),
-						Suggestions: []string{
-							"Verify that validateComponentMapping detected this mismatch",
-							"Check if variable was removed or renamed",
-						},
-					})
+					// Variable doesn't exist in runtime - skip it
+					// This is normal for optional variables or variables removed in certain versions
+					// validateComponentMapping will report this as a warning if needed
 					continue
 				}
 			} else {
 				// Config parameter: check in Config
-				// Since validateComponentMapping already verified one-to-one correspondence,
-				// this should always exist. If not, it's an unexpected error.
+				// If parameter doesn't exist in runtime, skip it
+				// validateComponentMapping already reports parameter mismatches as warnings
+				// We can't compare a parameter that doesn't exist, so just skip it
 				if paramValue, ok := component.Config[paramName]; ok {
 					currentValue = paramValue.Value
 				} else {
-					// This should not happen if validateComponentMapping worked correctly
-					// Report as an error for investigation
-					results = append(results, CheckResult{
-						RuleID:        r.Name(),
-						Category:      r.Category(),
-						Component:     compType,
-						ParameterName: paramName,
-						ParamType:     "config",
-						Severity:      "error",
-						Message:       fmt.Sprintf("Parameter %s in %s was expected but not found in runtime (validation mismatch)", paramName, compType),
-						Details:       fmt.Sprintf("Source KB has default for %s, but runtime cluster does not have this parameter. This indicates a validation issue.", paramName),
-						Suggestions: []string{
-							"Verify that validateComponentMapping detected this mismatch",
-							"Check if parameter was removed or renamed",
-						},
-					})
+					// Parameter doesn't exist in runtime - skip it
+					// This is normal for optional parameters or parameters removed in certain versions
+					// validateComponentMapping will report this as a warning if needed
 					continue
 				}
 			}
