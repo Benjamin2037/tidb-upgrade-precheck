@@ -124,6 +124,129 @@ func TestUserModifiedParamsRule_Evaluate(t *testing.T) {
 			wantErr: false,
 			wantLen: 1,
 		},
+		{
+			name: "map parameter with nested differences - only differing fields reported",
+			ruleCtx: &RuleContext{
+				SourceClusterSnapshot: &collector.ClusterSnapshot{
+					Components: map[string]collector.ComponentState{
+						"tikv": {
+							Type: types.ComponentTiKV,
+							Config: types.ConfigDefaults{
+								"storage": types.ParameterValue{
+									Value: map[string]interface{}{
+										"data-dir": "/data/tikv",
+										"reserve-space": "5GiB",
+										"reserve-raft-space": "1GiB",
+										"block-cache": map[string]interface{}{
+											"capacity": "7373835KiB",
+											"high-pri-pool-ratio": 0.8,
+										},
+									},
+									Type: "map",
+								},
+							},
+						},
+					},
+				},
+				SourceDefaults: map[string]map[string]interface{}{
+					"tikv": {
+						"storage": map[string]interface{}{
+							"data-dir": "/default/tikv",
+							"reserve-space": "0KiB",
+							"reserve-raft-space": "0KiB",
+							"block-cache": map[string]interface{}{
+								"capacity": "23192823398B",
+								"high-pri-pool-ratio": 0.8,
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+			wantLen: 4, // reserve-space, reserve-raft-space, block-cache.capacity, storage.data-dir (nested)
+		},
+		{
+			name: "map parameter with no differences - nothing reported",
+			ruleCtx: &RuleContext{
+				SourceClusterSnapshot: &collector.ClusterSnapshot{
+					Components: map[string]collector.ComponentState{
+						"tikv": {
+							Type: types.ComponentTiKV,
+							Config: types.ConfigDefaults{
+								"storage": types.ParameterValue{
+									Value: map[string]interface{}{
+										"reserve-space": "5GiB",
+										"reserve-raft-space": "1GiB",
+									},
+									Type: "map",
+								},
+							},
+						},
+					},
+				},
+				SourceDefaults: map[string]map[string]interface{}{
+					"tikv": {
+						"storage": map[string]interface{}{
+							"reserve-space": "5GiB",
+							"reserve-raft-space": "1GiB",
+						},
+					},
+				},
+			},
+			wantErr: false,
+			wantLen: 0, // No differences, nothing reported
+		},
+		{
+			name: "top-level path parameter ignored",
+			ruleCtx: &RuleContext{
+				SourceClusterSnapshot: &collector.ClusterSnapshot{
+					Components: map[string]collector.ComponentState{
+						"tidb": {
+							Type: types.ComponentTiDB,
+							Config: types.ConfigDefaults{
+								"data-dir": types.ParameterValue{Value: "/custom/data", Type: "string"},
+							},
+						},
+					},
+				},
+				SourceDefaults: map[string]map[string]interface{}{
+					"tidb": {
+						"data-dir": "/default/data",
+					},
+				},
+			},
+			wantErr: false,
+			wantLen: 0, // Top-level data-dir is ignored
+		},
+		{
+			name: "nested path parameter in map NOT ignored",
+			ruleCtx: &RuleContext{
+				SourceClusterSnapshot: &collector.ClusterSnapshot{
+					Components: map[string]collector.ComponentState{
+						"tikv": {
+							Type: types.ComponentTiKV,
+							Config: types.ConfigDefaults{
+								"storage": types.ParameterValue{
+									Value: map[string]interface{}{
+										"data-dir": "/custom/tikv/data",
+									},
+									Type: "map",
+								},
+							},
+						},
+					},
+				},
+				SourceDefaults: map[string]map[string]interface{}{
+					"tikv": {
+						"storage": map[string]interface{}{
+							"data-dir": "/default/tikv/data",
+						},
+					},
+				},
+			},
+			wantErr: false,
+			wantLen: 1, // Nested storage.data-dir is NOT ignored
+		},
 	}
 
 	for _, tt := range tests {
@@ -137,7 +260,7 @@ func TestUserModifiedParamsRule_Evaluate(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantLen, len(results))
+				assert.Equal(t, tt.wantLen, len(results), "Expected %d results, got %d. Results: %+v", tt.wantLen, len(results), results)
 			}
 		})
 	}
