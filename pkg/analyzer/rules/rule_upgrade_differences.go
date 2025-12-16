@@ -563,6 +563,18 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				continue
 			}
 
+			// Check if current value is empty/nil (parameter not actually used)
+			currentValueStr := fmt.Sprintf("%v", currentValue)
+			isEmpty := currentValue == nil || currentValueStr == "" || currentValueStr == "<nil>" || currentValueStr == "N/A"
+			
+			// Build details message
+			var details string
+			if isEmpty {
+				details = fmt.Sprintf("Parameter is not present in current cluster (may have been removed or not configured). Source default: %v. This parameter will be removed in target version.", sourceDefault)
+			} else {
+				details = fmt.Sprintf("Current cluster value: %v, Source default: %v. This parameter will be removed in target version.", currentValue, sourceDefault)
+			}
+
 			// Parameter deprecated: low risk (info)
 			results = append(results, CheckResult{
 				RuleID:        r.Name(),
@@ -573,7 +585,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				Severity:      "info",
 				RiskLevel:     RiskLevelLow,
 				Message:       fmt.Sprintf("Parameter %s in %s is deprecated (exists in source version but removed in target version)", displayName, compType),
-				Details:       fmt.Sprintf("Current cluster value: %v, Source default: %v. This parameter will be removed in target version.", currentValue, sourceDefault),
+				Details:       details,
 				CurrentValue:  currentValue,
 				SourceDefault: sourceDefault,
 				Suggestions: []string{

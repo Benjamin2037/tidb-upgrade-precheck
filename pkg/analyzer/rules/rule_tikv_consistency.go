@@ -287,6 +287,13 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 					details := FormatValueDiff(currentValue, sourceDefault)
 					if targetDefault != nil {
 						details += fmt.Sprintf("\nTarget Default: %v", FormatValue(targetDefault))
+						
+						// If source default == target default but current differs, add note about auto-tuning
+						sourceDefaultStr := fmt.Sprintf("%v", sourceDefault)
+						targetDefaultStr := fmt.Sprintf("%v", targetDefault)
+						if sourceDefaultStr == targetDefaultStr {
+							details += "\n\nNote: Source and target defaults are the same. The current value may be auto-tuned by TiKV based on system resources (e.g., CPU cores)."
+						}
 					}
 
 					results = append(results, CheckResult{
