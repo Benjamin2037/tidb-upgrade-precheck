@@ -23,41 +23,16 @@ var ignoredParamsForUserModification = map[string]bool{
 	"version_compile_os":      true, // Compilation OS (e.g., linux, darwin)
 }
 
-// isResourceDependentParameter checks if a parameter name indicates a resource-dependent parameter
-// Resource-dependent parameters are automatically adjusted by TiKV/TiFlash based on system resources
-// (CPU cores, memory, etc.) and should not be reported as "user modified" if source == target default
-// Returns true if the parameter name contains resource-related keywords
+// isResourceDependentParameter is a wrapper for the shared IsResourceDependentParameter function
+// Kept for backward compatibility with existing code
 func isResourceDependentParameter(paramName string) bool {
-	paramNameLower := strings.ToLower(paramName)
-
-	// Auto-tune parameters
-	if strings.Contains(paramNameLower, "auto-tune") || strings.Contains(paramNameLower, "auto_tune") {
-		return true
-	}
-
-	// Thread-related parameters that are adjusted based on CPU cores
-	// These include: num-threads, thread-count, threads, concurrency
-	threadKeywords := []string{
-		"num-threads",  // backup.num-threads, import.num-threads
-		"num_threads",  // Alternative naming
-		"thread-count", // Alternative naming
-		"thread_count", // Alternative naming
-		"threads",      // Generic threads parameter
-		"concurrency",  // Concurrency parameters (may be CPU-dependent)
-	}
-	for _, keyword := range threadKeywords {
-		if strings.Contains(paramNameLower, keyword) {
-			return true
-		}
-	}
-
-	return false
+	return IsResourceDependentParameter(paramName)
 }
 
 // isAutoTuneParameter is kept for backward compatibility
 // Deprecated: Use isResourceDependentParameter instead
 func isAutoTuneParameter(paramName string) bool {
-	return isResourceDependentParameter(paramName)
+	return IsResourceDependentParameter(paramName)
 }
 
 // UserModifiedParamsRule detects parameters that have been modified by the user

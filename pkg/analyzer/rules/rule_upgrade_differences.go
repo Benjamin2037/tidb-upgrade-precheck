@@ -4,6 +4,7 @@ package rules
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -12,8 +13,14 @@ import (
 // parameters (paths, hostnames, etc.) that differ between environments but don't
 // represent actual configuration changes that users need to be aware of.
 var ignoredParamsForUpgradeDifferences = map[string]bool{
+	// Deployment-specific host/network parameters
+	"host":     true, // Host binding address (deployment-specific)
+	"hostname": true, // Hostname (deployment-specific)
+	"port":     true, // Port (deployment-specific, may vary by deployment)
+	"addr":     true, // Address (deployment-specific)
+	"address":  true, // Address (deployment-specific)
+
 	// Deployment-specific path parameters (TiDB)
-	"host":                 true, // Host binding address (deployment-specific)
 	"path":                 true, // TiDB storage path (deployment-specific)
 	"socket":               true, // Socket file path (deployment-specific)
 	"temp-dir":             true, // Temporary directory (deployment-specific)
@@ -23,15 +30,19 @@ var ignoredParamsForUpgradeDifferences = map[string]bool{
 	"log.file.max-size":    true, // Log file max size (deployment-specific, may vary)
 	"log.file.max-days":    true, // Log file max days (deployment-specific, may vary)
 	"log.file.max-backups": true, // Log file max backups (deployment-specific, may vary)
+	"log-file":             true, // Log file path (deployment-specific, alternative naming)
+	"log-dir":              true, // Log directory (deployment-specific)
+	"log_dir":              true, // Log directory (deployment-specific, alternative naming)
 
 	// Deployment-specific path parameters (TiKV)
 	"data-dir":             true, // Data directory (deployment-specific)
-	"log-file":             true, // Log file path (deployment-specific)
+	"data_dir":             true, // Data directory (deployment-specific, alternative naming)
 	"deploy-dir":           true, // Deploy directory (deployment-specific)
-	"log-dir":              true, // Log directory (deployment-specific)
+	"deploy_dir":           true, // Deploy directory (deployment-specific, alternative naming)
 	"log-backup.temp-path": true, // Log backup temporary path (deployment-specific)
 	"backup.temp-path":     true, // Backup temporary path (deployment-specific)
 	"temp-path":            true, // Temporary path (deployment-specific)
+	"temp_path":            true, // Temporary path (deployment-specific, alternative naming)
 
 	// Deployment-specific path parameters (PD)
 	// data-dir, log-file, deploy-dir, log-dir are already covered above
@@ -50,30 +61,10 @@ var ignoredParamsForUpgradeDifferences = map[string]bool{
 	"version_compile_os":      true, // Compilation OS (e.g., linux, darwin)
 }
 
-// isPathParameter checks if a parameter name indicates a path-related parameter
-// This is a catch-all for any path parameters we might have missed
+// isPathParameter is a wrapper for the shared IsPathParameter function
+// Kept for backward compatibility with existing code
 func isPathParameter(paramName string) bool {
-	// Check if parameter name contains path-related keywords
-	pathKeywords := []string{
-		"-path", ".path", "path",
-		"-dir", ".dir", "dir",
-		"filename", "file-name",
-		"log-file", "log-dir",
-		"data-dir", "deploy-dir",
-		"temp", "tmp",
-		"ca-path", "cert-path", "key-path",
-		"dirname", "dir-name",
-		"info-log-dir",
-		"raftdb-path",
-	}
-
-	paramNameLower := strings.ToLower(paramName)
-	for _, keyword := range pathKeywords {
-		if strings.Contains(paramNameLower, keyword) {
-			return true
-		}
-	}
-	return false
+	return IsPathParameter(paramName)
 }
 
 // filenameOnlyParams contains parameters that should be compared by filename only (ignoring path)
@@ -436,6 +427,19 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 						currentEqualsSource := CompareValues(currentFieldValue, diff.Source)
 						currentEqualsTarget := CompareValues(currentFieldValue, diff.Current)
 
+						// Skip reporting if current == target but != source, and this is a resource-dependent parameter
+						// This indicates the difference is due to deployment environment, not user modification
+						// The current value already matches the target default, so no action is needed
+						fullParamName := fmt.Sprintf("%s.%s", displayName, fieldPath)
+						if currentEqualsTarget && !currentEqualsSource {
+							if IsResourceDependentParameter(fieldPath) || IsResourceDependentParameter(fullParamName) {
+								// Current value matches target default, but differs from source default
+								// This is likely due to deployment environment differences (e.g., different hardware)
+								// Skip reporting as the current value is already correct for target version
+								continue
+							}
+						}
+
 						// Only mark as user modified if current differs from both source and target
 						if !currentEqualsSource && !currentEqualsTarget {
 							fieldDetails += fmt.Sprintf("\n\n⚠️ User Modified: Current value (%v) differs from both source default (%v) and target default (%v)",
@@ -448,6 +452,15 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 							fieldDetails += "\n\nCurrent value will be kept.\n\nPD maintains existing configuration"
 						} else if compType == "tidb" && paramType == "system_variable" {
 							fieldDetails += "\n\nCurrent value will be kept.\n\nTiDB system variables keep old values"
+						}
+
+						// Special handling for stats-load-concurrency: 0 means auto mode
+						// fullParamName is already defined above
+						if fullParamName == "performance.stats-load-concurrency" && compType == "tidb" && paramType == "config" {
+							targetDefaultNum, ok := toNumeric(diff.Current)
+							if ok && targetDefaultNum == 0 {
+								fieldDetails += "\n\nNote: Target default value 0 means 'auto mode'. The concurrency will be automatically calculated based on CPU cores (range: 2-16)."
+							}
 						}
 
 						results = append(results, CheckResult{
@@ -470,12 +483,37 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 						})
 					}
 				} else {
+					// For non-map types, check if current == target but != source
+					// If this is a resource-dependent parameter, skip reporting
+					currentEqualsSource := CompareValues(currentValue, sourceDefault)
+					currentEqualsTarget := CompareValues(currentValue, targetDefault)
+
+					// Skip reporting if current == target but != source, and this is a resource-dependent parameter
+					// This indicates the difference is due to deployment environment, not user modification
+					// The current value already matches the target default, so no action is needed
+					if currentEqualsTarget && !currentEqualsSource {
+						if IsResourceDependentParameter(displayName) {
+							// Current value matches target default, but differs from source default
+							// This is likely due to deployment environment differences (e.g., different hardware)
+							// Skip reporting as the current value is already correct for target version
+							continue
+						}
+					}
+
 					// For non-map types, use simple format
 					details := FormatDefaultChangeDiff(currentValue, sourceDefault, targetDefault, nil)
 					if compType == "pd" && paramType == "config" {
 						details += "\n\nCurrent value will be kept.\n\nPD maintains existing configuration"
 					} else if compType == "tidb" && paramType == "system_variable" {
 						details += "\n\nCurrent value will be kept.\n\nTiDB system variables keep old values"
+					}
+
+					// Special handling for stats-load-concurrency: 0 means auto mode
+					if displayName == "performance.stats-load-concurrency" && compType == "tidb" && paramType == "config" {
+						targetDefaultNum, ok := toNumeric(targetDefault)
+						if ok && targetDefaultNum == 0 {
+							details += "\n\nNote: Target default value 0 means 'auto mode'. The concurrency will be automatically calculated based on CPU cores (range: 2-16)."
+						}
 					}
 
 					results = append(results, CheckResult{
@@ -734,4 +772,48 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 	}
 
 	return results, nil
+}
+
+// toNumeric converts an interface{} value to a numeric value (float64)
+// Returns the numeric value and true if conversion was successful
+func toNumeric(v interface{}) (float64, bool) {
+	if v == nil {
+		return 0, false
+	}
+
+	// Try to parse as float64
+	switch val := v.(type) {
+	case int:
+		return float64(val), true
+	case int8:
+		return float64(val), true
+	case int16:
+		return float64(val), true
+	case int32:
+		return float64(val), true
+	case int64:
+		return float64(val), true
+	case uint:
+		return float64(val), true
+	case uint8:
+		return float64(val), true
+	case uint16:
+		return float64(val), true
+	case uint32:
+		return float64(val), true
+	case uint64:
+		return float64(val), true
+	case float32:
+		return float64(val), true
+	case float64:
+		return val, true
+	case string:
+		// Try parsing string as float
+		if f, err := strconv.ParseFloat(val, 64); err == nil {
+			return f, true
+		}
+		return 0, false
+	default:
+		return 0, false
+	}
 }

@@ -202,8 +202,9 @@ func formatValue(v interface{}) string {
 		return "N/A"
 	}
 
-	// Convert to string first
-	str := fmt.Sprintf("%v", v)
+	// Use rules.FormatValue to properly format values (handles scientific notation)
+	// Then apply truncation logic for long values
+	str := rules.FormatValue(v)
 
 	// If the value is a large JSON object (like tidb_config), truncate it
 	// Large objects typically start with "map[" or "{" and are very long
@@ -236,15 +237,16 @@ func formatValueWithHighlight(value, sourceDefault, targetDefault interface{}, r
 		return "N/A"
 	}
 
-	valueStr := fmt.Sprintf("%v", value)
+	// Use rules.FormatValue to properly format values (handles scientific notation)
+	valueStr := rules.FormatValue(value)
 	sourceStr := ""
 	targetStr := ""
 
 	if sourceDefault != nil {
-		sourceStr = fmt.Sprintf("%v", sourceDefault)
+		sourceStr = rules.FormatValue(sourceDefault)
 	}
 	if targetDefault != nil {
-		targetStr = fmt.Sprintf("%v", targetDefault)
+		targetStr = rules.FormatValue(targetDefault)
 	}
 
 	// If source and target are the same, no highlighting needed

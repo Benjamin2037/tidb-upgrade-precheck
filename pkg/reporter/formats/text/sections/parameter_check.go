@@ -218,11 +218,12 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 }
 
 // formatValue formats a value for display
+// Uses rules.FormatValue to properly handle scientific notation and numeric types
 func formatValue(v interface{}) string {
 	if v == nil {
 		return "N/A"
 	}
-	return fmt.Sprintf("%v", v)
+	return rules.FormatValue(v)
 }
 
 // formatValueForDisplay formats a value for clear display, handling complex types

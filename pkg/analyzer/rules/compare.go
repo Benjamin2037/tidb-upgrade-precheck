@@ -497,15 +497,32 @@ func CompareFileNames(path1, path2 interface{}) bool {
 // Returns true if the parameter name contains path-related keywords
 func IsPathParameter(paramName string) bool {
 	paramNameLower := strings.ToLower(paramName)
+
+	// Host/network-related keywords
+	hostKeywords := []string{
+		"host", "hostname", "addr", "address", "port",
+	}
+	for _, keyword := range hostKeywords {
+		if paramNameLower == keyword || strings.HasSuffix(paramNameLower, "."+keyword) || strings.HasPrefix(paramNameLower, keyword+".") {
+			return true
+		}
+	}
+
+	// Path/directory/file-related keywords
 	pathKeywords := []string{
 		"path", "dir", "file", "log", "data", "deploy", "temp", "tmp",
 		"storage", "socket", "home", "root", "cache", "config",
+		"filename", "file-name", "file_name", // File name related
+		"log-file", "log-dir", "log_file", "log_dir", // Log file/dir
+		"data-dir", "data_dir", "deploy-dir", "deploy_dir", // Data/deploy dir
+		"temp-path", "temp_path", "tmp-path", "tmp_path", // Temp path
 	}
 	for _, keyword := range pathKeywords {
 		if strings.Contains(paramNameLower, keyword) {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -584,4 +601,67 @@ func toFloat64(v reflect.Value) float64 {
 	default:
 		return 0
 	}
+}
+
+// IsResourceDependentParameter checks if a parameter name indicates a resource-dependent parameter
+// Resource-dependent parameters are automatically adjusted by TiKV/TiFlash based on system resources
+// (CPU cores, memory, etc.) and should not be reported as "user modified" if source == target default
+// Returns true if the parameter name contains resource-related keywords
+func IsResourceDependentParameter(paramName string) bool {
+	paramNameLower := strings.ToLower(paramName)
+
+	// Auto-tune parameters
+	if strings.Contains(paramNameLower, "auto-tune") || strings.Contains(paramNameLower, "auto_tune") {
+		return true
+	}
+
+	// Thread-related parameters that are adjusted based on CPU cores
+	// These include: num-threads, thread-count, threads, concurrency
+	threadKeywords := []string{
+		"num-threads",  // backup.num-threads, import.num-threads
+		"num_threads",  // Alternative naming
+		"thread-count", // Alternative naming
+		"thread_count", // Alternative naming
+		"threads",      // Generic threads parameter
+		"concurrency",  // Concurrency parameters (may be CPU-dependent)
+	}
+	for _, keyword := range threadKeywords {
+		if strings.Contains(paramNameLower, keyword) {
+			return true
+		}
+	}
+
+	// Region-related parameters that may vary based on deployment environment
+	// These include: region-max-size, region-max-keys, region-split-size, region-split-keys
+	regionKeywords := []string{
+		"region-max-size",   // coprocessor.region-max-size
+		"region-max-keys",   // coprocessor.region-max-keys
+		"region-split-size", // coprocessor.region-split-size
+		"region-split-keys", // coprocessor.region-split-keys
+	}
+	for _, keyword := range regionKeywords {
+		if strings.Contains(paramNameLower, keyword) {
+			return true
+		}
+	}
+
+	// SST-related parameters that may vary based on deployment environment
+	// These include: sst-max-size
+	if strings.Contains(paramNameLower, "sst-max-size") {
+		return true
+	}
+
+	// Compression-related parameters that may vary based on deployment environment
+	// These include: batch-compression-threshold, blob-file-compression
+	compressionKeywords := []string{
+		"batch-compression-threshold", // raft-engine.batch-compression-threshold
+		"blob-file-compression",       // raftdb.defaultcf.titan.blob-file-compression
+	}
+	for _, keyword := range compressionKeywords {
+		if strings.Contains(paramNameLower, keyword) {
+			return true
+		}
+	}
+
+	return false
 }

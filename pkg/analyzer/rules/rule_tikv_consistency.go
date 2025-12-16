@@ -245,6 +245,30 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 				if len(diffs) > 0 {
 					// Create a separate CheckResult for each differing field
 					for fieldPath, diff := range diffs {
+						// Check if current == target but != source, and this is a resource-dependent parameter
+						// If so, skip reporting as the current value is already correct for target version
+						if targetDefault != nil {
+							targetMap := ConvertToMapStringInterface(targetDefault)
+							if targetMap != nil {
+								fieldKeys := strings.Split(fieldPath, ".")
+								targetFieldValue := getNestedMapValue(targetMap, fieldKeys)
+								if targetFieldValue != nil {
+									currentEqualsTarget := CompareValues(diff.Current, targetFieldValue)
+									currentEqualsSource := CompareValues(diff.Current, diff.Source)
+
+									if currentEqualsTarget && !currentEqualsSource {
+										fullParamName := fmt.Sprintf("%s.%s", paramName, fieldPath)
+										if IsResourceDependentParameter(fieldPath) || IsResourceDependentParameter(fullParamName) {
+											// Current value matches target default, but differs from source default
+											// This is likely due to deployment environment differences (e.g., different hardware)
+											// Skip reporting as the current value is already correct for target version
+											continue
+										}
+									}
+								}
+							}
+						}
+
 						fieldDetails := FormatValueDiff(diff.Current, diff.Source) // Current vs Source
 						if targetDefault != nil {
 							targetMap := ConvertToMapStringInterface(targetDefault)
@@ -297,6 +321,22 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 				}
 
 				if differs {
+					// Check if current == target but != source, and this is a resource-dependent parameter
+					// If so, skip reporting as the current value is already correct for target version
+					if targetDefault != nil {
+						currentEqualsTarget := CompareValues(currentValue, targetDefault)
+						currentEqualsSource := CompareValues(currentValue, sourceDefault)
+
+						if currentEqualsTarget && !currentEqualsSource {
+							if IsResourceDependentParameter(paramName) {
+								// Current value matches target default, but differs from source default
+								// This is likely due to deployment environment differences (e.g., different hardware)
+								// Skip reporting as the current value is already correct for target version
+								continue
+							}
+						}
+					}
+
 					// Difference found: medium risk (warning)
 					details := FormatValueDiff(currentValue, sourceDefault)
 					if targetDefault != nil {

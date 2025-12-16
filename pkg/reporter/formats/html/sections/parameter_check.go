@@ -358,11 +358,12 @@ function toggleDeprecated() {
 }
 
 // formatValue formats a value for display
+// Uses rules.FormatValue to properly handle scientific notation and numeric types
 func formatValue(v interface{}) string {
 	if v == nil {
 		return "<em>N/A</em>"
 	}
-	return fmt.Sprintf("%v", v)
+	return rules.FormatValue(v)
 }
 
 // formatValueWithHighlight formats a value with highlighting for differences
@@ -372,15 +373,16 @@ func formatValueWithHighlight(value, sourceDefault, targetDefault interface{}, r
 		return "<em>N/A</em>"
 	}
 
-	valueStr := fmt.Sprintf("%v", value)
+	// Use rules.FormatValue to properly format values (handles scientific notation)
+	valueStr := rules.FormatValue(value)
 	sourceStr := ""
 	targetStr := ""
 
 	if sourceDefault != nil {
-		sourceStr = fmt.Sprintf("%v", sourceDefault)
+		sourceStr = rules.FormatValue(sourceDefault)
 	}
 	if targetDefault != nil {
-		targetStr = fmt.Sprintf("%v", targetDefault)
+		targetStr = rules.FormatValue(targetDefault)
 	}
 
 	// If source and target are the same, no highlighting needed
