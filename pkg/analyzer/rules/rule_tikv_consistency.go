@@ -214,7 +214,7 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 			if sourceDefault == nil {
 				continue
 			}
-			
+
 			// Skip all path-related parameters
 			if IsPathParameter(paramName) {
 				continue
@@ -292,7 +292,8 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 				if filenameOnlyParams[paramName] {
 					differs = !CompareFileNames(currentValue, sourceDefault)
 				} else {
-					differs = fmt.Sprintf("%v", currentValue) != fmt.Sprintf("%v", sourceDefault)
+					// Use proper value comparison to avoid scientific notation issues
+					differs = !CompareValues(currentValue, sourceDefault)
 				}
 
 				if differs {

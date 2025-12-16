@@ -344,8 +344,8 @@ func (r *HighRiskParamsRule) checkParameter(
 			// No default found, skip
 			return nil
 		}
-		// Compare values
-		if fmt.Sprintf("%v", currentValue) == fmt.Sprintf("%v", sourceDefault) {
+		// Compare values using proper comparison to avoid scientific notation issues
+		if CompareValues(currentValue, sourceDefault) {
 			// Value matches default, skip
 			return nil
 		}
@@ -355,7 +355,7 @@ func (r *HighRiskParamsRule) checkParameter(
 	if len(paramConfig.AllowedValues) > 0 {
 		valueAllowed := false
 		for _, allowedValue := range paramConfig.AllowedValues {
-			if fmt.Sprintf("%v", currentValue) == fmt.Sprintf("%v", allowedValue) {
+			if CompareValues(currentValue, allowedValue) {
 				valueAllowed = true
 				break
 			}

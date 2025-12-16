@@ -459,3 +459,55 @@ func IsPathParameter(paramName string) bool {
 	}
 	return false
 }
+
+// CompareValues compares two values properly, handling numeric types to avoid scientific notation issues
+// Returns true if values are equal, false otherwise
+func CompareValues(v1, v2 interface{}) bool {
+	if v1 == nil && v2 == nil {
+		return true
+	}
+	if v1 == nil || v2 == nil {
+		return false
+	}
+
+	// Try numeric comparison first
+	val1 := reflect.ValueOf(v1)
+	val2 := reflect.ValueOf(v2)
+
+	// Check if both are numeric types
+	if isNumeric(val1) && isNumeric(val2) {
+		// Convert both to float64 for comparison
+		f1 := toFloat64(val1)
+		f2 := toFloat64(val2)
+		return f1 == f2
+	}
+
+	// For non-numeric types, use string comparison with proper formatting
+	return FormatValue(v1) == FormatValue(v2)
+}
+
+// isNumeric checks if a reflect.Value is a numeric type
+func isNumeric(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64:
+		return true
+	default:
+		return false
+	}
+}
+
+// toFloat64 converts a reflect.Value to float64
+func toFloat64(v reflect.Value) float64 {
+	switch v.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return float64(v.Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return float64(v.Uint())
+	case reflect.Float32, reflect.Float64:
+		return v.Float()
+	default:
+		return 0
+	}
+}

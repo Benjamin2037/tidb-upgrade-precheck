@@ -159,7 +159,7 @@ func (r *UserModifiedParamsRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			if ignoredParamsForUserModification[displayName] || ignoredParamsForUserModification[paramName] {
 				continue
 			}
-			
+
 			// Skip all path-related parameters
 			if IsPathParameter(displayName) || IsPathParameter(paramName) {
 				continue
@@ -204,7 +204,8 @@ func (r *UserModifiedParamsRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				if filenameOnlyParams[displayName] || filenameOnlyParams[paramName] {
 					differs = !CompareFileNames(currentValue, sourceDefault)
 				} else {
-					differs = fmt.Sprintf("%v", currentValue) != fmt.Sprintf("%v", sourceDefault)
+					// Use proper value comparison to avoid scientific notation issues
+					differs = !CompareValues(currentValue, sourceDefault)
 				}
 
 				if differs {

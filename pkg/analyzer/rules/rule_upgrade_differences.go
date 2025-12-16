@@ -262,30 +262,20 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			// Compare target default with current cluster value
 			// For filename-only parameters, compare by filename only (ignore path)
 			var targetDiffersFromCurrent bool
-			var sourceDefaultStr, targetDefaultStr string
 
 			if filenameOnlyParams[displayName] || filenameOnlyParams[paramName] {
 				// Compare by filename only
 				targetDiffersFromCurrent = !CompareFileNames(targetDefault, currentValue)
-				sourceDefaultStr = ExtractFileName(sourceDefault)
-				targetDefaultStr = ExtractFileName(targetDefault)
 			} else {
-				// Compare full values
-				targetDiffersFromCurrent = fmt.Sprintf("%v", targetDefault) != fmt.Sprintf("%v", currentValue)
-				sourceDefaultStr = fmt.Sprintf("%v", sourceDefault)
-				targetDefaultStr = fmt.Sprintf("%v", targetDefault)
+				// Compare full values using proper comparison to avoid scientific notation issues
+				targetDiffersFromCurrent = !CompareValues(targetDefault, currentValue)
 			}
 
 			// Filter: If source default == target default and current == target, skip (no difference)
 			// Exception: forced changes should always be reported
-			if sourceDefault != nil && targetDefault != nil && sourceDefaultStr == targetDefaultStr {
-				var currentValueStr string
-				if filenameOnlyParams[displayName] || filenameOnlyParams[paramName] {
-					currentValueStr = ExtractFileName(currentValue)
-				} else {
-					currentValueStr = fmt.Sprintf("%v", currentValue)
-				}
-				if currentValueStr == targetDefaultStr {
+			if sourceDefault != nil && targetDefault != nil && CompareValues(sourceDefault, targetDefault) {
+				// Check if current value equals target default
+				if CompareValues(currentValue, targetDefault) {
 					// All values are the same: source == target == current
 					// Check if it's a forced change - if not, skip
 					if _, isForced := forcedChanges[displayName]; !isForced {
@@ -309,10 +299,8 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 
 			if hasForcedChange && forcedValue != nil {
 				// This parameter is in upgrade_logic.json and we found a matching entry
-				forcedValueStr := fmt.Sprintf("%v", forcedValue)
-				currentValueStr := fmt.Sprintf("%v", currentValue)
-
-				if forcedValueStr != currentValueStr {
+				// Use proper value comparison to avoid scientific notation issues
+				if !CompareValues(forcedValue, currentValue) {
 					// Forced value differs from current value: warning severity (error for critical TiDB params, but tidb_scatter_region is warning)
 					severity := "warning"
 					riskLevel := RiskLevelMedium
