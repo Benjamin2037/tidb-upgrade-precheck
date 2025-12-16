@@ -367,3 +367,25 @@ func FormatDefaultChangeDiff(current, source, target interface{}, ignoredParams 
 
 	return fmt.Sprintf("Current: %s | Source Default: %s | Target Default: %s", currentStr, sourceStr, targetStr)
 }
+
+// getNestedMapValue gets a value from a nested map using a path (e.g., ["backup", "num-threads"])
+func getNestedMapValue(m map[string]interface{}, path []string) interface{} {
+	if m == nil || len(path) == 0 {
+		return nil
+	}
+
+	current := m
+	for i, key := range path {
+		if i == len(path)-1 {
+			// Last key, return the value
+			return current[key]
+		}
+		// Not the last key, go deeper
+		if nextMap, ok := current[key].(map[string]interface{}); ok {
+			current = nextMap
+		} else {
+			return nil
+		}
+	}
+	return nil
+}

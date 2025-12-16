@@ -309,9 +309,22 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 					}
 					sourceTargetDiffs := CompareMapsDeep(sourceDefault, targetDefault, opts)
 
+					// Convert currentValue to map for field extraction
+					currentMap := ConvertToMapStringInterface(currentValue)
+
 					for fieldPath, diff := range sourceTargetDiffs {
+						// Extract current value for this specific field from the map
+						var currentFieldValue interface{}
+						if currentMap != nil {
+							fieldKeys := strings.Split(fieldPath, ".")
+							currentFieldValue = getNestedMapValue(currentMap, fieldKeys)
+						} else {
+							currentFieldValue = currentValue // Fallback to full value if not a map
+						}
+
 						fieldMessage := fmt.Sprintf("Parameter %s.%s in %s: %s", displayName, fieldPath, compType, baseMessage)
-						fieldDetails := FormatValueDiff(diff.Source, diff.Current) // Source -> Target (diff.Current is target in this context)
+						// Format details with current field value
+						fieldDetails := FormatValueDiff(currentFieldValue, diff.Source) + " → " + FormatValue(diff.Current)
 
 						// Add component-specific note
 						if compType == "pd" && paramType == "config" {
@@ -330,9 +343,9 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 							RiskLevel:     riskLevel,
 							Message:       fieldMessage,
 							Details:       fieldDetails,
-							CurrentValue:  currentValue, // Keep full current value for reference
-							TargetDefault: diff.Current, // Target value for this field
-							SourceDefault: diff.Source,  // Source value for this field
+							CurrentValue:  currentFieldValue, // Extract field value from current map
+							TargetDefault: diff.Current,      // Target value for this field
+							SourceDefault: diff.Source,       // Source value for this field
 							Suggestions: []string{
 								"Default value has changed in target version",
 								"Review if the new default is acceptable",
@@ -381,9 +394,21 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 						}
 						sourceTargetDiffs := CompareMapsDeep(sourceDefault, targetDefault, opts)
 
+						// Convert currentValue to map for field extraction
+						currentMap := ConvertToMapStringInterface(currentValue)
+
 						for fieldPath, diff := range sourceTargetDiffs {
+							// Extract current value for this specific field from the map
+							var currentFieldValue interface{}
+							if currentMap != nil {
+								fieldKeys := strings.Split(fieldPath, ".")
+								currentFieldValue = getNestedMapValue(currentMap, fieldKeys)
+							} else {
+								currentFieldValue = currentValue // Fallback to full value if not a map
+							}
+
 							fieldDetails := FormatValueDiff(diff.Source, diff.Current) // Source -> Target
-							fieldDetails = "Current value matches target default.\n\n" + fieldDetails
+							fieldDetails = fmt.Sprintf("Current: %s (matches target default)\n\n", FormatValue(currentFieldValue)) + fieldDetails
 
 							results = append(results, CheckResult{
 								RuleID:        r.Name(),
@@ -395,7 +420,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 								RiskLevel:     RiskLevelLow,
 								Message:       fmt.Sprintf("Parameter %s.%s in %s: default value changed between source and target versions", displayName, fieldPath, compType),
 								Details:       fieldDetails,
-								CurrentValue:  currentValue,
+								CurrentValue:  currentFieldValue, // Extract field value from current map
 								TargetDefault: diff.Current,
 								SourceDefault: diff.Source,
 								Suggestions: []string{
