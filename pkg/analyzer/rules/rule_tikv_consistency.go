@@ -217,7 +217,12 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 			}
 
 			// For map types, use deep comparison to show only differing fields
-			if IsMapType(currentValue) && IsMapType(sourceDefault) {
+			// Try to convert to map even if IsMapType returns false (might be map[interface{}]interface{})
+			currentMap := ConvertToMapStringInterface(currentValue)
+			sourceMap := ConvertToMapStringInterface(sourceDefault)
+			
+			if currentMap != nil && sourceMap != nil {
+				// Both are maps, use deep comparison to show only differing fields
 				opts := CompareOptions{
 					IgnoredParams: nil, // Don't ignore any fields for consistency checks
 					BasePath:      paramName,
@@ -229,8 +234,7 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 					// Create a separate CheckResult for each differing field
 					for fieldPath, diff := range diffs {
 						fieldDetails := FormatValueDiff(diff.Current, diff.Source) // Current vs Source
-						if targetDefault != nil && IsMapType(targetDefault) {
-							// Try to get target value for this field
+						if targetDefault != nil {
 							targetMap := ConvertToMapStringInterface(targetDefault)
 							if targetMap != nil {
 								fieldKeys := strings.Split(fieldPath, ".")
@@ -267,6 +271,8 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 						})
 					}
 				}
+				// Skip reporting the entire map - we only report individual fields
+				continue
 			} else {
 				// For non-map types, use simple comparison
 				if fmt.Sprintf("%v", currentValue) != fmt.Sprintf("%v", sourceDefault) {
