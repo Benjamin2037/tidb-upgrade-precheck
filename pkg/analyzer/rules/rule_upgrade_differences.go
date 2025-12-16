@@ -493,6 +493,11 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				}
 			}
 
+			// Skip ignored parameters (deployment-specific paths, etc.)
+			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] {
+				continue
+			}
+
 			// Parameter deprecated: low risk (info)
 			results = append(results, CheckResult{
 				RuleID:        r.Name(),
