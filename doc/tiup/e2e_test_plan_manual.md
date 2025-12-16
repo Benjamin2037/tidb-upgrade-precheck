@@ -728,19 +728,79 @@ export TIDB_UPGRADE_PRECHECK_KB=/home/bearc/workspace/sourcecode/tidb-upgrade-pr
 
 **检查报告文件**:
 ```bash
-# 列出所有 HTML 报告
-ls -lh ~/.tiup/upgrade_precheck/reports/*.html
+# 1. 确认报告目录存在
+ls -ld ~/.tiup/upgrade_precheck/reports/ || echo "Reports directory does not exist"
 
-# 查看最新报告内容
-REPORT_FILE=$(ls -t ~/.tiup/upgrade_precheck/reports/*.html | head -1)
+# 2. 列出所有报告文件（包括所有格式）
+echo "=== All reports ==="
+ls -lh ~/.tiup/upgrade_precheck/reports/ 2>/dev/null || echo "No reports directory found"
+
+# 3. 列出所有 HTML 报告
+echo "=== HTML reports ==="
+ls -lh ~/.tiup/upgrade_precheck/reports/*.html 2>/dev/null || echo "No HTML reports found"
+
+# 4. 查看最新 HTML 报告内容
+REPORT_FILE=$(ls -t ~/.tiup/upgrade_precheck/reports/*.html 2>/dev/null | head -1)
 if [ -n "$REPORT_FILE" ]; then
   echo "Latest HTML report: $REPORT_FILE"
+  echo "File size: $(ls -lh "$REPORT_FILE" | awk '{print $5}')"
   head -50 "$REPORT_FILE"
-  # 在 Linux 上可以用浏览器打开（如果支持）
-  # xdg-open "$REPORT_FILE"  # 或者用其他浏览器命令
+  # 检查 HTML 结构
+  echo "=== HTML structure check ==="
+  grep -E "<html|<head|<body|</html>" "$REPORT_FILE" | head -5
 else
-  echo "No HTML reports found. Run with --precheck-output html to generate HTML report."
+  echo "No HTML reports found."
+  echo "Debugging steps:"
+  echo "1. Check if command was executed with --precheck-output html"
+  echo "2. Check command output for errors"
+  echo "3. Check if reports directory exists: ls -ld ~/.tiup/upgrade_precheck/reports/"
+  echo "4. Re-run command and check full output:"
+  echo "   ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck --precheck-output html 2>&1 | tee /tmp/precheck-output.log"
 fi
+```
+
+**从 VM 下载报告到本地（macOS）**:
+```bash
+# 在本地 macOS 机器上执行（替换 VM_IP 和 VM_USER 为实际值）
+# 例如：VM_IP=192.168.1.100, VM_USER=bearc
+
+# 方法 1: 使用 scp 下载单个最新 HTML 报告
+VM_IP="your-vm-ip"
+VM_USER="bearc"
+REPORT_FILE="upgrade_precheck_report_*.html"
+scp ${VM_USER}@${VM_IP}:~/.tiup/upgrade_precheck/reports/${REPORT_FILE} ~/Downloads/
+
+# 方法 2: 使用 scp 下载整个 reports 目录
+scp -r ${VM_USER}@${VM_IP}:~/.tiup/upgrade_precheck/reports/ ~/Downloads/precheck-reports/
+
+# 方法 3: 使用 rsync（推荐，支持断点续传）
+rsync -avz --progress ${VM_USER}@${VM_IP}:~/.tiup/upgrade_precheck/reports/ ~/Downloads/precheck-reports/
+
+# 方法 4: 如果 VM 有 HTTP 服务，可以通过 HTTP 下载
+# 在 VM 上启动简单的 HTTP 服务器：
+# cd ~/.tiup/upgrade_precheck/reports/ && python3 -m http.server 8000
+# 然后在本地浏览器访问: http://VM_IP:8000/
+```
+
+**在 VM 上验证报告生成**:
+```bash
+# 运行命令并保存完整输出
+./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck --precheck-output html 2>&1 | tee /tmp/precheck-output.log
+
+# 检查输出中是否有 "Report generated successfully"
+grep -i "report generated" /tmp/precheck-output.log
+
+# 检查报告路径
+grep -i "report\|\.html" /tmp/precheck-output.log
+
+# 检查报告目录
+find ~/.tiup -name "*.html" -type f 2>/dev/null | head -5
+
+# 检查所有可能的报告位置
+echo "=== Checking all possible report locations ==="
+ls -lh ~/.tiup/upgrade_precheck/reports/*.html 2>/dev/null
+ls -lh ~/.tiup/storage/cluster/upgrade_precheck/reports/*.html 2>/dev/null
+find ~/.tiup -name "*precheck*" -type d 2>/dev/null
 ```
 
 #### Test 1.4: Precheck-Only with Markdown Format
@@ -756,13 +816,13 @@ fi
   ```bash
   ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck --precheck-output markdown 2>&1 | grep -i "markdown\|report generated"
   ```
-- [ ] 报告文件生成
+- [ ] 报告文件生成在 `~/.tiup/upgrade_precheck/reports/`
   ```bash
-  ls -lh ~/.tiup/storage/cluster/upgrade_precheck/reports/*.md
+  ls -lh ~/.tiup/upgrade_precheck/reports/*.md
   ```
 - [ ] Markdown 格式正确
   ```bash
-  REPORT_FILE=$(ls -t ~/.tiup/storage/cluster/upgrade_precheck/reports/*.md | head -1)
+  REPORT_FILE=$(ls -t ~/.tiup/upgrade_precheck/reports/*.md | head -1)
   echo "Report file: $REPORT_FILE"
   head -30 "$REPORT_FILE"
   # 检查 Markdown 语法
