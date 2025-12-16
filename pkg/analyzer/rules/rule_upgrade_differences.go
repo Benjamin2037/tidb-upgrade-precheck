@@ -62,7 +62,7 @@ func isPathParameter(paramName string) bool {
 		"info-log-dir",
 		"raftdb-path",
 	}
-	
+
 	paramNameLower := strings.ToLower(paramName)
 	for _, keyword := range pathKeywords {
 		if strings.Contains(paramNameLower, keyword) {
@@ -252,7 +252,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				totalSkipped++
 				continue
 			}
-			
+
 			// Skip all path-related parameters (check by parameter name)
 			if IsPathParameter(displayName) || IsPathParameter(paramName) {
 				totalSkipped++
@@ -313,10 +313,11 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				currentValueStr := fmt.Sprintf("%v", currentValue)
 
 				if forcedValueStr != currentValueStr {
-					// Forced value differs from current value: error severity for TiDB (critical), warning for others
+					// Forced value differs from current value: warning severity (error for critical TiDB params, but tidb_scatter_region is warning)
 					severity := "warning"
 					riskLevel := RiskLevelMedium
-					if compType == "tidb" {
+					if compType == "tidb" && displayName != "tidb_scatter_region" {
+						// Most TiDB forced changes are error, but tidb_scatter_region is warning
 						severity = "error"
 						riskLevel = RiskLevelHigh
 					}
@@ -627,13 +628,13 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			// Check if current value is empty/nil (parameter not actually used or already deprecated)
 			currentValueStr := fmt.Sprintf("%v", currentValue)
 			isEmpty := currentValue == nil || currentValueStr == "" || currentValueStr == "<nil>" || currentValueStr == "N/A"
-			
+
 			// If parameter is not present in current cluster (empty value), skip
 			// This means the parameter was already deprecated/removed in source version
 			if isEmpty {
 				continue
 			}
-			
+
 			// Build details message
 			details := fmt.Sprintf("Current cluster value: %v, Source default: %v. This parameter will be removed in target version.", currentValue, sourceDefault)
 

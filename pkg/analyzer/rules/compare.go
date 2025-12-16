@@ -228,6 +228,21 @@ func FormatValue(v interface{}) string {
 		return fmt.Sprintf("%v", v)
 	case reflect.String:
 		return fmt.Sprintf("%q", v)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		// Format integers without scientific notation
+		return fmt.Sprintf("%d", val.Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		// Format unsigned integers without scientific notation
+		return fmt.Sprintf("%d", val.Uint())
+	case reflect.Float32, reflect.Float64:
+		// For floats, check if it's a whole number
+		f := val.Float()
+		if f == float64(int64(f)) {
+			// Whole number, format as integer to avoid scientific notation
+			return fmt.Sprintf("%.0f", f)
+		}
+		// Decimal number, use standard format
+		return fmt.Sprintf("%v", v)
 	default:
 		return fmt.Sprintf("%v", v)
 	}
