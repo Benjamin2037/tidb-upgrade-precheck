@@ -12,11 +12,33 @@ import (
 // parameters (paths, hostnames, etc.) that differ between environments but don't
 // represent actual configuration changes that users need to be aware of.
 var ignoredParamsForUpgradeDifferences = map[string]bool{
-	// Deployment-specific path parameters
+	// Deployment-specific path parameters (TiDB)
 	"host":                true, // Host binding address (deployment-specific)
+	"path":                true, // TiDB storage path (deployment-specific)
+	"socket":              true, // Socket file path (deployment-specific)
+	"temp-dir":            true, // Temporary directory (deployment-specific)
+	"tmp-storage-path":    true, // Temporary storage path (deployment-specific)
 	"log.file.filename":   true, // Log file path (deployment-specific)
 	"log.slow-query-file": true, // Slow query log file path (deployment-specific)
-	"tmp-storage-path":    true, // Temporary storage path (deployment-specific)
+	"log.file.max-size":   true, // Log file max size (deployment-specific, may vary)
+	"log.file.max-days":   true, // Log file max days (deployment-specific, may vary)
+	"log.file.max-backups": true, // Log file max backups (deployment-specific, may vary)
+	
+	// Deployment-specific path parameters (TiKV)
+	"data-dir":            true, // Data directory (deployment-specific)
+	"log-file":            true, // Log file path (deployment-specific)
+	"deploy-dir":          true, // Deploy directory (deployment-specific)
+	"log-dir":             true, // Log directory (deployment-specific)
+	
+	// Deployment-specific path parameters (PD)
+	// data-dir, log-file, deploy-dir, log-dir are already covered above
+	
+	// Deployment-specific path parameters (TiFlash)
+	"tmp_path":            true, // Temporary path (deployment-specific)
+	"storage.main.dir":     true, // Storage main directory (deployment-specific)
+	"storage.latest.dir":   true, // Storage latest directory (deployment-specific)
+	"storage.raft.dir":     true, // Storage raft directory (deployment-specific)
+	
 	// Other parameters to ignore
 	"deprecate-integer-display-length": true, // Deprecated parameter, no need to report
 }
@@ -304,7 +326,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				// For map types, create separate CheckResult for each differing field
 				if IsMapType(sourceDefault) && IsMapType(targetDefault) {
 					opts := CompareOptions{
-						IgnoredParams: nil, // Don't ignore any fields for default changes
+						IgnoredParams: ignoredParamsForUpgradeDifferences, // Use ignore list for nested fields
 						BasePath:      displayName,
 					}
 					sourceTargetDiffs := CompareMapsDeep(sourceDefault, targetDefault, opts)
@@ -389,7 +411,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 					// For map types, create separate CheckResult for each differing field
 					if IsMapType(sourceDefault) && IsMapType(targetDefault) {
 						opts := CompareOptions{
-							IgnoredParams: nil,
+							IgnoredParams: ignoredParamsForUpgradeDifferences, // Use ignore list for nested fields
 							BasePath:      displayName,
 						}
 						sourceTargetDiffs := CompareMapsDeep(sourceDefault, targetDefault, opts)

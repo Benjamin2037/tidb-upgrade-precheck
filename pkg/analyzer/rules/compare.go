@@ -102,10 +102,22 @@ func CompareMapsDeep(current, source interface{}, opts CompareOptions) map[strin
 			continue
 		}
 
-		// Build field path for recursive calls (but don't use for ignore checks)
+		// Build field path for recursive calls
 		fieldPath := key
 		if opts.BasePath != "" {
 			fieldPath = fmt.Sprintf("%s.%s", opts.BasePath, key)
+		}
+
+		// Check if this field path (including nested paths) should be ignored
+		if opts.IgnoredParams != nil {
+			// Check full path (e.g., "log.file.filename")
+			if opts.IgnoredParams[fieldPath] {
+				continue
+			}
+			// Also check just the key for top-level parameters
+			if opts.BasePath == "" && opts.IgnoredParams[key] {
+				continue
+			}
 		}
 
 		if !exists {
