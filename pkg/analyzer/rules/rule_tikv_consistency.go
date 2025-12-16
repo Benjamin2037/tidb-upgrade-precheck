@@ -156,6 +156,13 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 		return results, nil
 	}
 
+	// If there's only one TiKV node, skip consistency check
+	// (upgrade differences rule already handles single-node comparisons with defaults)
+	// Consistency rule should focus on multi-node consistency
+	if len(tikvNodes) == 1 {
+		return results, nil
+	}
+
 	// Connect to TiDB to get runtime configs via SHOW CONFIG (if available)
 	var db *sql.DB
 	var collector tidbCollector.TiDBCollector // TiDBCollector is an interface, not a pointer
@@ -220,7 +227,7 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 			// Try to convert to map even if IsMapType returns false (might be map[interface{}]interface{})
 			currentMap := ConvertToMapStringInterface(currentValue)
 			sourceMap := ConvertToMapStringInterface(sourceDefault)
-			
+
 			if currentMap != nil && sourceMap != nil {
 				// Both are maps, use deep comparison to show only differing fields
 				opts := CompareOptions{
