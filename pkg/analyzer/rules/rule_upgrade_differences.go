@@ -236,8 +236,19 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			}
 
 			// Check if this parameter is in upgrade_logic.json (forced change)
-			if forcedValue, isForced := forcedChanges[displayName]; isForced {
-				// This parameter is in upgrade_logic.json
+			// First check if there's a forced change entry for this parameter
+			fallbackForcedValue, hasForcedChange := forcedChanges[displayName]
+			
+			// Get the forced value that matches the current value (using from_value matching)
+			forcedValue := ruleCtx.GetForcedChangeForValue(compType, displayName, currentValue)
+			
+			// If no matching from_value found, use fallback value (for entries without from_value)
+			if forcedValue == nil && hasForcedChange {
+				forcedValue = fallbackForcedValue
+			}
+			
+			if hasForcedChange && forcedValue != nil {
+				// This parameter is in upgrade_logic.json and we found a matching entry
 				forcedValueStr := fmt.Sprintf("%v", forcedValue)
 				currentValueStr := fmt.Sprintf("%v", currentValue)
 
@@ -255,6 +266,29 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 					if !strings.Contains(details, "Will be forced to") {
 						details = fmt.Sprintf("Will be forced to: %s\n\n%s", forcedStr, details)
 					}
+					
+					// Add specific information for tidb_scatter_region
+					if displayName == "tidb_scatter_region" {
+						details += "\n\nNote: This parameter supports values 'table' (recommended) or 'global'. For detailed parameter description, please refer to the TiDB documentation center."
+					}
+					// Build suggestions based on parameter
+					suggestions := []string{
+						"This parameter will be forcibly changed during upgrade",
+						"Review the forced change and its impact",
+						"Test the new value in a staging environment",
+						"Plan for the change before upgrading",
+					}
+					
+					// Add specific suggestions for tidb_scatter_region
+					if displayName == "tidb_scatter_region" {
+						suggestions = []string{
+							"This parameter will be forcibly changed during upgrade",
+							"Recommended values: 'table' (recommended) or 'global'",
+							"For detailed parameter description, please refer to the TiDB documentation center",
+							"Test the new value in a staging environment before upgrading",
+						}
+					}
+					
 					results = append(results, CheckResult{
 						RuleID:        r.Name(),
 						Category:      r.Category(),
@@ -269,12 +303,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 						TargetDefault: targetDefault,
 						SourceDefault: sourceDefault,
 						ForcedValue:   forcedValue,
-						Suggestions: []string{
-							"This parameter will be forcibly changed during upgrade",
-							"Review the forced change and its impact",
-							"Test the new value in a staging environment",
-							"Plan for the change before upgrading",
-						},
+						Suggestions:   suggestions,
 					})
 				} else {
 					// Forced value equals current value: info (default value changed)
@@ -352,13 +381,13 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 						currentValueStr := fmt.Sprintf("%v", currentFieldValue)
 						sourceValueStr := fmt.Sprintf("%v", diff.Source)
 						targetValueStr := fmt.Sprintf("%v", diff.Current)
-						
+
 						// If current value differs from both source and target, indicate user modification
 						if currentValueStr != sourceValueStr && currentValueStr != targetValueStr {
-							fieldDetails += fmt.Sprintf("\n\n⚠️ User Modified: Current value (%v) differs from both source default (%v) and target default (%v)", 
+							fieldDetails += fmt.Sprintf("\n\n⚠️ User Modified: Current value (%v) differs from both source default (%v) and target default (%v)",
 								FormatValue(currentFieldValue), FormatValue(diff.Source), FormatValue(diff.Current))
 						} else if currentValueStr != sourceValueStr {
-							fieldDetails += fmt.Sprintf("\n\n⚠️ User Modified: Current value (%v) differs from source default (%v)", 
+							fieldDetails += fmt.Sprintf("\n\n⚠️ User Modified: Current value (%v) differs from source default (%v)",
 								FormatValue(currentFieldValue), FormatValue(diff.Source))
 						}
 

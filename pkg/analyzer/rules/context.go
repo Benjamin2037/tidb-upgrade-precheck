@@ -283,6 +283,87 @@ func (ctx *RuleContext) GetForcedChanges(component string) map[string]interface{
 	return result
 }
 
+// GetForcedChangeForValue gets the forced change value for a specific parameter and current value
+// This method matches the from_value field in upgrade_logic.json to determine the correct forced value
+// Returns the forced value if a match is found, nil otherwise
+func (ctx *RuleContext) GetForcedChangeForValue(component, paramName string, currentValue interface{}) interface{} {
+	if len(ctx.UpgradeLogic) == 0 {
+		return nil
+	}
+
+	if logic, ok := ctx.UpgradeLogic[component]; ok {
+		if logicMap, ok := logic.(map[string]interface{}); ok {
+			if changes, ok := logicMap["changes"].([]interface{}); ok {
+				currentValueStr := fmt.Sprintf("%v", currentValue)
+				
+				for _, change := range changes {
+					if changeMap, ok := change.(map[string]interface{}); ok {
+						// Get bootstrap version from change
+						var changeBootstrapVersion int64
+						if versionStr, ok := changeMap["version"].(string); ok {
+							if versionNum, err := strconv.ParseInt(versionStr, 10, 64); err == nil {
+								changeBootstrapVersion = versionNum
+							} else {
+								continue
+							}
+						} else if versionNum, ok := changeMap["version"].(float64); ok {
+							changeBootstrapVersion = int64(versionNum)
+						} else {
+							continue
+						}
+
+						// Check if bootstrap version is in range
+						var versionInRange bool
+						if ctx.SourceBootstrapVersion > 0 && ctx.TargetBootstrapVersion > 0 {
+							versionInRange = changeBootstrapVersion > ctx.SourceBootstrapVersion && changeBootstrapVersion <= ctx.TargetBootstrapVersion
+						} else {
+							// Fallback to release version comparison
+							changeVersion := fmt.Sprintf("%d", changeBootstrapVersion)
+							versionInRange = isVersionInRange(changeVersion, ctx.SourceVersion, ctx.TargetVersion)
+						}
+
+						if !versionInRange {
+							continue
+						}
+
+						// Check if parameter name matches
+						var changeParamName string
+						if name, ok := changeMap["name"].(string); ok {
+							changeParamName = name
+						} else if varName, ok := changeMap["var_name"].(string); ok {
+							changeParamName = varName
+						} else {
+							continue
+						}
+
+						if changeParamName != paramName {
+							continue
+						}
+
+						// Check if from_value matches current value
+						if fromValue, ok := changeMap["from_value"]; ok {
+							fromValueStr := fmt.Sprintf("%v", fromValue)
+							if fromValueStr != currentValueStr {
+								// from_value doesn't match current value, skip this entry
+								continue
+							}
+						}
+
+						// Extract forced value
+						if value, ok := changeMap["value"]; ok {
+							return value
+						} else if defaultVal, ok := changeMap["default_value"]; ok {
+							return defaultVal
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 // Helper function to get map keys for debugging
 func getMapKeys(m map[string]interface{}) []string {
 	keys := make([]string, 0, len(m))
