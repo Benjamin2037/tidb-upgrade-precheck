@@ -35,8 +35,10 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 		return "", nil
 	}
 
-	// Group CheckResults by risk level, then by component
-	resultsByRiskLevel := make(map[formats.RiskLevel]map[string][]rules.CheckResult)
+	// Separate deprecated parameters from other results
+	var deprecatedResults []rules.CheckResult
+	var otherResults []rules.CheckResult
+
 	for _, check := range result.CheckResults {
 		// Skip if no parameter name (not a parameter check)
 		if check.ParameterName == "" {
@@ -51,6 +53,19 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 		if check.ParameterName == "__statistics__" {
 			continue
 		}
+
+		// Check if this is a deprecated parameter
+		reportType := formats.GetReportType(check)
+		if reportType == formats.ReportTypeDeprecated {
+			deprecatedResults = append(deprecatedResults, check)
+		} else {
+			otherResults = append(otherResults, check)
+		}
+	}
+
+	// Group non-deprecated CheckResults by risk level, then by component
+	resultsByRiskLevel := make(map[formats.RiskLevel]map[string][]rules.CheckResult)
+	for _, check := range otherResults {
 		riskLevel := check.RiskLevel
 		if riskLevel == "" {
 			// Fallback: determine from severity if risk level not set
@@ -208,6 +223,135 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 				content.WriteString("</table>\n")
 			}
 		}
+	}
+
+	// Add deprecated parameters section at the bottom (collapsible)
+	if len(deprecatedResults) > 0 {
+		// Group deprecated results by component
+		deprecatedByComponent := make(map[string][]rules.CheckResult)
+		for _, check := range deprecatedResults {
+			component := check.Component
+			if component == "" {
+				component = "unknown"
+			}
+			deprecatedByComponent[component] = append(deprecatedByComponent[component], check)
+		}
+
+		// Add collapsible section for deprecated parameters
+		content.WriteString(`
+<script>
+function toggleDeprecated() {
+    var section = document.getElementById('deprecated-section');
+    var button = document.getElementById('deprecated-toggle');
+    if (section.style.display === 'none') {
+        section.style.display = 'block';
+        button.textContent = '▼ Hide Deprecated Parameters';
+    } else {
+        section.style.display = 'none';
+        button.textContent = '▶ Show Deprecated Parameters';
+    }
+}
+</script>
+`)
+
+		content.WriteString(fmt.Sprintf(`
+<h2>🗑️ Deprecated Parameters</h2>
+<p><strong>Note:</strong> The following parameters exist in the source version but will be removed in the target version. These are typically low-priority informational items.</p>
+<button id="deprecated-toggle" onclick="toggleDeprecated()" style="padding: 8px 16px; margin: 10px 0; cursor: pointer; background-color: #f0f0f0; border: 1px solid #ccc; border-radius: 4px;">
+▶ Show Deprecated Parameters (%d)
+</button>
+<div id="deprecated-section" style="display: none;">
+`, len(deprecatedResults)))
+
+		// Display deprecated parameters by component
+		componentOrder := []string{"tidb", "pd", "tikv", "tiflash"}
+		for _, compType := range componentOrder {
+			compChecks := deprecatedByComponent[compType]
+			if len(compChecks) == 0 {
+				continue
+			}
+
+			content.WriteString(fmt.Sprintf("<h3>%s Component</h3>\n", strings.ToUpper(compType)))
+
+			// Sort checks by parameter name
+			sort.Slice(compChecks, func(i, j int) bool {
+				return compChecks[i].ParameterName < compChecks[j].ParameterName
+			})
+
+			// Table header
+			content.WriteString("<table>\n")
+			content.WriteString("<tr><th>Parameter</th><th>Type</th><th>Current Value</th><th>Source Default</th><th>Severity</th><th>Message</th><th>Details</th></tr>\n")
+
+			// Render each deprecated check result as a table row
+			for _, check := range compChecks {
+				paramType := check.ParamType
+				if paramType == "" {
+					paramType = "config"
+				}
+				severityClass := ""
+				switch check.Severity {
+				case "error", "critical":
+					severityClass = "error"
+				case "warning":
+					severityClass = "warning"
+				case "info":
+					severityClass = "info"
+				}
+
+				// Format values
+				currentFormatted := formatValue(check.CurrentValue)
+				sourceFormatted := formatValue(check.SourceDefault)
+
+				content.WriteString(fmt.Sprintf(
+					"<tr class=\"%s\"><td><code>%s</code><br/><small>🗑️ Deprecated</small></td><td>%s</td><td>%s</td><td>%s</td><td class=\"%s\">%s</td><td>%s</td><td>%s</td></tr>\n",
+					severityClass, check.ParameterName, paramType,
+					currentFormatted, sourceFormatted,
+					severityClass, check.Severity, check.Message, check.Details))
+			}
+
+			content.WriteString("</table>\n")
+		}
+
+		// Display unknown components if any
+		for compType, compChecks := range deprecatedByComponent {
+			found := false
+			for _, knownComp := range componentOrder {
+				if compType == knownComp {
+					found = true
+					break
+				}
+			}
+			if !found && len(compChecks) > 0 {
+				content.WriteString(fmt.Sprintf("<h3>%s Component</h3>\n", strings.ToUpper(compType)))
+				content.WriteString("<table>\n")
+				content.WriteString("<tr><th>Parameter</th><th>Type</th><th>Current Value</th><th>Source Default</th><th>Severity</th><th>Message</th><th>Details</th></tr>\n")
+				for _, check := range compChecks {
+					paramType := check.ParamType
+					if paramType == "" {
+						paramType = "config"
+					}
+					severityClass := ""
+					switch check.Severity {
+					case "error", "critical":
+						severityClass = "error"
+					case "warning":
+						severityClass = "warning"
+					case "info":
+						severityClass = "info"
+					}
+					currentFormatted := formatValue(check.CurrentValue)
+					sourceFormatted := formatValue(check.SourceDefault)
+					content.WriteString(fmt.Sprintf(
+						"<tr class=\"%s\"><td><code>%s</code><br/><small>🗑️ Deprecated</small></td><td>%s</td><td>%s</td><td>%s</td><td class=\"%s\">%s</td><td>%s</td><td>%s</td></tr>\n",
+						severityClass, check.ParameterName, paramType,
+						currentFormatted, sourceFormatted,
+						severityClass, check.Severity, check.Message, check.Details))
+				}
+				content.WriteString("</table>\n")
+			}
+		}
+
+		content.WriteString("</div>\n")
 	}
 
 	return content.String(), nil
