@@ -91,6 +91,9 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 		return results, nil
 	}
 
+	// Get target version defaults for TiKV (optional, for reference)
+	targetDefaults := ruleCtx.TargetDefaults["tikv"]
+
 	// Find TiDB component to get connection info
 	var tidbAddr string
 	var tidbUser, tidbPassword string
@@ -205,32 +208,99 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 				continue
 			}
 
-			// Compare current value with source default
-			if fmt.Sprintf("%v", currentValue) != fmt.Sprintf("%v", sourceDefault) {
-				// Difference found: medium risk (warning)
-				results = append(results, CheckResult{
-					RuleID:        r.Name(),
-					Category:      r.Category(),
-					Component:     "tikv",
-					ParameterName: paramName,
-					ParamType:     "config",
-					Severity:      "warning",
-					RiskLevel:     RiskLevelMedium,
-					Message:       fmt.Sprintf("Parameter %s in TiKV node %s differs from source version default", paramName, node.name),
-					Details:       fmt.Sprintf("Node: %s (instance: %s), Current value: %v, Source version default: %v", node.name, node.instance, currentValue, sourceDefault),
-					CurrentValue:  currentValue,
-					SourceDefault: sourceDefault,
-					Suggestions: []string{
-						"This parameter differs from the source version default",
-						"Review if this difference is intentional",
-						"Ensure the value is compatible with target version",
-					},
-					Metadata: map[string]interface{}{
-						"node_name":      node.name,
-						"node_instance":  node.instance,
-						"config_sources": []string{"last_tikv.toml", "SHOW CONFIG WHERE type='tikv' AND instance='...'"},
-					},
-				})
+			// Get target default (if available)
+			var targetDefault interface{}
+			if targetDefaults != nil {
+				if targetDefaultValue, existsInTarget := targetDefaults[paramName]; existsInTarget {
+					targetDefault = extractValueFromDefault(targetDefaultValue)
+				}
+			}
+
+			// For map types, use deep comparison to show only differing fields
+			if IsMapType(currentValue) && IsMapType(sourceDefault) {
+				opts := CompareOptions{
+					IgnoredParams: nil, // Don't ignore any fields for consistency checks
+					BasePath:      paramName,
+				}
+				diffs := CompareMapsDeep(currentValue, sourceDefault, opts)
+
+				// Only report if there are differences
+				if len(diffs) > 0 {
+					// Create a separate CheckResult for each differing field
+					for fieldPath, diff := range diffs {
+						fieldDetails := FormatValueDiff(diff.Current, diff.Source) // Current vs Source
+						if targetDefault != nil && IsMapType(targetDefault) {
+							// Try to get target value for this field
+							targetMap := ConvertToMapStringInterface(targetDefault)
+							if targetMap != nil {
+								fieldKeys := strings.Split(fieldPath, ".")
+								targetFieldValue := getNestedMapValue(targetMap, fieldKeys)
+								if targetFieldValue != nil {
+									fieldDetails += fmt.Sprintf("\nTarget Default: %v", FormatValue(targetFieldValue))
+								}
+							}
+						}
+
+						results = append(results, CheckResult{
+							RuleID:        r.Name(),
+							Category:      r.Category(),
+							Component:     "tikv",
+							ParameterName: fmt.Sprintf("%s.%s", paramName, fieldPath),
+							ParamType:     "config",
+							Severity:      "warning",
+							RiskLevel:     RiskLevelMedium,
+							Message:       fmt.Sprintf("Parameter %s.%s in TiKV node %s differs from source version default", paramName, fieldPath, node.name),
+							Details:       fmt.Sprintf("Node: %s (instance: %s)\n%s", node.name, node.instance, fieldDetails),
+							CurrentValue:  diff.Current,
+							SourceDefault: diff.Source,
+							TargetDefault: getNestedMapValue(ConvertToMapStringInterface(targetDefault), strings.Split(fieldPath, ".")),
+							Suggestions: []string{
+								"This parameter differs from the source version default",
+								"Review if this difference is intentional",
+								"Ensure the value is compatible with target version",
+							},
+							Metadata: map[string]interface{}{
+								"node_name":      node.name,
+								"node_instance":  node.instance,
+								"config_sources": []string{"last_tikv.toml", "SHOW CONFIG WHERE type='tikv' AND instance='...'"},
+							},
+						})
+					}
+				}
+			} else {
+				// For non-map types, use simple comparison
+				if fmt.Sprintf("%v", currentValue) != fmt.Sprintf("%v", sourceDefault) {
+					// Difference found: medium risk (warning)
+					details := FormatValueDiff(currentValue, sourceDefault)
+					if targetDefault != nil {
+						details += fmt.Sprintf("\nTarget Default: %v", FormatValue(targetDefault))
+					}
+
+					results = append(results, CheckResult{
+						RuleID:        r.Name(),
+						Category:      r.Category(),
+						Component:     "tikv",
+						ParameterName: paramName,
+						ParamType:     "config",
+						Severity:      "warning",
+						RiskLevel:     RiskLevelMedium,
+						Message:       fmt.Sprintf("Parameter %s in TiKV node %s differs from source version default", paramName, node.name),
+						Details:       fmt.Sprintf("Node: %s (instance: %s)\n%s", node.name, node.instance, details),
+						CurrentValue:  currentValue,
+						SourceDefault: sourceDefault,
+						TargetDefault: targetDefault,
+						Suggestions: []string{
+							"This parameter differs from the source version default",
+							"Review if this difference is intentional",
+							"Ensure the value is compatible with target version",
+						},
+						Metadata: map[string]interface{}{
+							"node_name":      node.name,
+							"node_instance":  node.instance,
+							"config_sources": []string{"last_tikv.toml", "SHOW CONFIG WHERE type='tikv' AND instance='...'"},
+						},
+					})
+				}
 			}
 		}
 	}
@@ -252,4 +322,26 @@ func determineValueType(v interface{}) string {
 	default:
 		return "string"
 	}
+}
+
+// getNestedMapValue gets a value from a nested map using a path (e.g., ["backup", "num-threads"])
+func getNestedMapValue(m map[string]interface{}, path []string) interface{} {
+	if m == nil || len(path) == 0 {
+		return nil
+	}
+
+	current := m
+	for i, key := range path {
+		if i == len(path)-1 {
+			// Last key, return the value
+			return current[key]
+		}
+		// Not the last key, go deeper
+		if nextMap, ok := current[key].(map[string]interface{}); ok {
+			current = nextMap
+		} else {
+			return nil
+		}
+	}
+	return nil
 }
