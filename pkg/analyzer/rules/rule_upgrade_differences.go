@@ -238,15 +238,15 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			// Check if this parameter is in upgrade_logic.json (forced change)
 			// First check if there's a forced change entry for this parameter
 			fallbackForcedValue, hasForcedChange := forcedChanges[displayName]
-			
+
 			// Get the forced value that matches the current value (using from_value matching)
 			forcedValue := ruleCtx.GetForcedChangeForValue(compType, displayName, currentValue)
-			
+
 			// If no matching from_value found, use fallback value (for entries without from_value)
 			if forcedValue == nil && hasForcedChange {
 				forcedValue = fallbackForcedValue
 			}
-			
+
 			if hasForcedChange && forcedValue != nil {
 				// This parameter is in upgrade_logic.json and we found a matching entry
 				forcedValueStr := fmt.Sprintf("%v", forcedValue)
@@ -266,7 +266,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 					if !strings.Contains(details, "Will be forced to") {
 						details = fmt.Sprintf("Will be forced to: %s\n\n%s", forcedStr, details)
 					}
-					
+
 					// Add specific information for tidb_scatter_region
 					if displayName == "tidb_scatter_region" {
 						details += "\n\nNote: This parameter supports values 'table' (recommended) or 'global'. For detailed parameter description, please refer to the TiDB documentation center."
@@ -278,7 +278,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 						"Test the new value in a staging environment",
 						"Plan for the change before upgrading",
 					}
-					
+
 					// Add specific suggestions for tidb_scatter_region
 					if displayName == "tidb_scatter_region" {
 						suggestions = []string{
@@ -288,7 +288,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 							"Test the new value in a staging environment before upgrading",
 						}
 					}
-					
+
 					results = append(results, CheckResult{
 						RuleID:        r.Name(),
 						Category:      r.Category(),
@@ -393,9 +393,9 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 
 						// Add component-specific note
 						if compType == "pd" && paramType == "config" {
-							fieldDetails += "\n\nPD maintains existing configuration"
+							fieldDetails += "\n\nCurrent value will be kept.\n\nPD maintains existing configuration"
 						} else if compType == "tidb" && paramType == "system_variable" {
-							fieldDetails += "\n\nTiDB system variables keep old values"
+							fieldDetails += "\n\nCurrent value will be kept.\n\nTiDB system variables keep old values"
 						}
 
 						results = append(results, CheckResult{
@@ -421,9 +421,9 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 					// For non-map types, use simple format
 					details := FormatDefaultChangeDiff(currentValue, sourceDefault, targetDefault, nil)
 					if compType == "pd" && paramType == "config" {
-						details += "\n\nPD maintains existing configuration"
+						details += "\n\nCurrent value will be kept.\n\nPD maintains existing configuration"
 					} else if compType == "tidb" && paramType == "system_variable" {
-						details += "\n\nTiDB system variables keep old values"
+						details += "\n\nCurrent value will be kept.\n\nTiDB system variables keep old values"
 					}
 
 					results = append(results, CheckResult{
