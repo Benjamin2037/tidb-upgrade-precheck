@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -227,6 +228,25 @@ func FormatValue(v interface{}) string {
 		// Fall back to simple format if JSON marshaling fails
 		return fmt.Sprintf("%v", v)
 	case reflect.String:
+		// Try to parse string as number to handle scientific notation
+		str := val.String()
+		// Try parsing as float64 first (handles scientific notation)
+		if f, err := strconv.ParseFloat(str, 64); err == nil {
+			// Successfully parsed as float, format it properly
+			if f == float64(int64(f)) {
+				// Whole number, format as integer to avoid scientific notation
+				return fmt.Sprintf("%.0f", f)
+			}
+			// Decimal number, use %f to avoid scientific notation
+			if f >= 1 && f < 1000000 {
+				return fmt.Sprintf("%.6f", f)
+			} else if f >= 0.001 && f < 1 {
+				return fmt.Sprintf("%.9f", f)
+			} else {
+				return fmt.Sprintf("%.0f", f)
+			}
+		}
+		// Not a number, return as quoted string
 		return fmt.Sprintf("%q", v)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		// Format integers without scientific notation
@@ -241,10 +261,39 @@ func FormatValue(v interface{}) string {
 			// Whole number, format as integer to avoid scientific notation
 			return fmt.Sprintf("%.0f", f)
 		}
-		// Decimal number, use standard format
-		return fmt.Sprintf("%v", v)
+		// Decimal number, use %f to avoid scientific notation
+		// Determine appropriate precision based on magnitude
+		if f >= 1 && f < 1000000 {
+			// For numbers in this range, use up to 6 decimal places
+			return fmt.Sprintf("%.6f", f)
+		} else if f >= 0.001 && f < 1 {
+			// For small decimals, use more precision
+			return fmt.Sprintf("%.9f", f)
+		} else {
+			// For very large numbers, use %f with no decimal places (they should be integers anyway)
+			return fmt.Sprintf("%.0f", f)
+		}
 	default:
-		return fmt.Sprintf("%v", v)
+		// Try to convert to string and parse as number if possible
+		str := fmt.Sprintf("%v", v)
+		// Try parsing as float64 to handle scientific notation
+		if f, err := strconv.ParseFloat(str, 64); err == nil {
+			// Successfully parsed as float, format it properly
+			if f == float64(int64(f)) {
+				// Whole number, format as integer to avoid scientific notation
+				return fmt.Sprintf("%.0f", f)
+			}
+			// Decimal number, use %f to avoid scientific notation
+			if f >= 1 && f < 1000000 {
+				return fmt.Sprintf("%.6f", f)
+			} else if f >= 0.001 && f < 1 {
+				return fmt.Sprintf("%.9f", f)
+			} else {
+				return fmt.Sprintf("%.0f", f)
+			}
+		}
+		// Not a number, return as-is
+		return str
 	}
 }
 
@@ -470,19 +519,44 @@ func CompareValues(v1, v2 interface{}) bool {
 		return false
 	}
 
-	// Try numeric comparison first
+	// Try to convert both values to float64 for numeric comparison
+	// This handles cases where one value is a number and the other is a string (e.g., "1.44e+06")
+	var f1, f2 float64
+	var ok1, ok2 bool
+
 	val1 := reflect.ValueOf(v1)
 	val2 := reflect.ValueOf(v2)
 
-	// Check if both are numeric types
-	if isNumeric(val1) && isNumeric(val2) {
-		// Convert both to float64 for comparison
-		f1 := toFloat64(val1)
-		f2 := toFloat64(val2)
+	// Try to get numeric value from v1
+	if isNumeric(val1) {
+		f1 = toFloat64(val1)
+		ok1 = true
+	} else if val1.Kind() == reflect.String {
+		// Try parsing string as float (handles scientific notation)
+		if parsed, err := strconv.ParseFloat(val1.String(), 64); err == nil {
+			f1 = parsed
+			ok1 = true
+		}
+	}
+
+	// Try to get numeric value from v2
+	if isNumeric(val2) {
+		f2 = toFloat64(val2)
+		ok2 = true
+	} else if val2.Kind() == reflect.String {
+		// Try parsing string as float (handles scientific notation)
+		if parsed, err := strconv.ParseFloat(val2.String(), 64); err == nil {
+			f2 = parsed
+			ok2 = true
+		}
+	}
+
+	// If both values can be converted to float64, compare numerically
+	if ok1 && ok2 {
 		return f1 == f2
 	}
 
-	// For non-numeric types, use string comparison with proper formatting
+	// For non-numeric types or when parsing fails, use string comparison with proper formatting
 	return FormatValue(v1) == FormatValue(v2)
 }
 

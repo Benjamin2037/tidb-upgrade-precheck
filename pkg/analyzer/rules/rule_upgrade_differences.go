@@ -44,6 +44,10 @@ var ignoredParamsForUpgradeDifferences = map[string]bool{
 
 	// Other parameters to ignore
 	"deprecate-integer-display-length": true, // Deprecated parameter, no need to report
+
+	// Compile-time platform information (not user-configurable)
+	"version_compile_machine": true, // Compilation machine architecture (e.g., amd64, arm64)
+	"version_compile_os":      true, // Compilation OS (e.g., linux, darwin)
 }
 
 // isPathParameter checks if a parameter name indicates a path-related parameter
@@ -426,19 +430,18 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 						// Format details with current field value
 						fieldDetails := FormatValueDiff(currentFieldValue, diff.Source) + " → " + FormatValue(diff.Current)
 
-						// Check if user has modified this parameter (current != source)
-						currentValueStr := fmt.Sprintf("%v", currentFieldValue)
-						sourceValueStr := fmt.Sprintf("%v", diff.Source)
-						targetValueStr := fmt.Sprintf("%v", diff.Current)
+						// Check if user has modified this parameter
+						// Only mark as "User Modified" if current differs from BOTH source and target
+						// If current == target, it means the user hasn't modified it, just the default changed
+						currentEqualsSource := CompareValues(currentFieldValue, diff.Source)
+						currentEqualsTarget := CompareValues(currentFieldValue, diff.Current)
 
-						// If current value differs from both source and target, indicate user modification
-						if currentValueStr != sourceValueStr && currentValueStr != targetValueStr {
+						// Only mark as user modified if current differs from both source and target
+						if !currentEqualsSource && !currentEqualsTarget {
 							fieldDetails += fmt.Sprintf("\n\n⚠️ User Modified: Current value (%v) differs from both source default (%v) and target default (%v)",
 								FormatValue(currentFieldValue), FormatValue(diff.Source), FormatValue(diff.Current))
-						} else if currentValueStr != sourceValueStr {
-							fieldDetails += fmt.Sprintf("\n\n⚠️ User Modified: Current value (%v) differs from source default (%v)",
-								FormatValue(currentFieldValue), FormatValue(diff.Source))
 						}
+						// If current == target but != source, it's just a default change, not user modification
 
 						// Add component-specific note
 						if compType == "pd" && paramType == "config" {

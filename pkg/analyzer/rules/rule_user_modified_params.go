@@ -17,6 +17,47 @@ var ignoredParamsForUserModification = map[string]bool{
 	"data-dir":   true,
 	"log-dir":    true,
 	"deploy-dir": true,
+
+	// Compile-time platform information (not user-configurable)
+	"version_compile_machine": true, // Compilation machine architecture (e.g., amd64, arm64)
+	"version_compile_os":      true, // Compilation OS (e.g., linux, darwin)
+}
+
+// isResourceDependentParameter checks if a parameter name indicates a resource-dependent parameter
+// Resource-dependent parameters are automatically adjusted by TiKV/TiFlash based on system resources
+// (CPU cores, memory, etc.) and should not be reported as "user modified" if source == target default
+// Returns true if the parameter name contains resource-related keywords
+func isResourceDependentParameter(paramName string) bool {
+	paramNameLower := strings.ToLower(paramName)
+
+	// Auto-tune parameters
+	if strings.Contains(paramNameLower, "auto-tune") || strings.Contains(paramNameLower, "auto_tune") {
+		return true
+	}
+
+	// Thread-related parameters that are adjusted based on CPU cores
+	// These include: num-threads, thread-count, threads, concurrency
+	threadKeywords := []string{
+		"num-threads",  // backup.num-threads, import.num-threads
+		"num_threads",  // Alternative naming
+		"thread-count", // Alternative naming
+		"thread_count", // Alternative naming
+		"threads",      // Generic threads parameter
+		"concurrency",  // Concurrency parameters (may be CPU-dependent)
+	}
+	for _, keyword := range threadKeywords {
+		if strings.Contains(paramNameLower, keyword) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// isAutoTuneParameter is kept for backward compatibility
+// Deprecated: Use isResourceDependentParameter instead
+func isAutoTuneParameter(paramName string) bool {
+	return isResourceDependentParameter(paramName)
 }
 
 // UserModifiedParamsRule detects parameters that have been modified by the user
@@ -165,6 +206,23 @@ func (r *UserModifiedParamsRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				continue
 			}
 
+			// Check if this is a resource-dependent parameter
+			// If source default == target default but current differs, it's likely adjusted by TiKV/TiFlash
+			// based on system resources (CPU cores, memory, etc.)
+			// Skip reporting these as "user modified" to avoid false positives
+			if isResourceDependentParameter(displayName) || isResourceDependentParameter(paramName) {
+				targetDefault := ruleCtx.GetTargetDefault(compType, paramName)
+				if targetDefault != nil {
+					sourceEqualsTarget := CompareValues(sourceDefault, targetDefault)
+					if sourceEqualsTarget {
+						// Source default == target default, but current differs
+						// This is likely auto-tuned by TiKV based on system resources
+						// Skip reporting as "user modified"
+						continue
+					}
+				}
+			}
+
 			// For map types, do deep comparison to find only differing fields
 			if IsMapType(currentValue) && IsMapType(sourceDefault) {
 				opts := CompareOptions{
@@ -173,6 +231,27 @@ func (r *UserModifiedParamsRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				}
 				differingFields := CompareMapsDeep(currentValue, sourceDefault, opts)
 				for fieldPath, diff := range differingFields {
+					// Check if this nested field is a resource-dependent parameter
+					// For nested fields like "backup.auto-tune-remain-threads" or "backup.num-threads", check the full path
+					fullFieldPath := fmt.Sprintf("%s.%s", displayName, fieldPath)
+					if isResourceDependentParameter(fieldPath) || isResourceDependentParameter(fullFieldPath) {
+						// Get target default for the parent map
+						targetDefaultMap := ruleCtx.GetTargetDefault(compType, paramName)
+						if targetDefaultMap != nil {
+							// Extract the nested field value from target default
+							targetDefaultValue := getNestedMapValue(ConvertToMapStringInterface(targetDefaultMap), strings.Split(fieldPath, "."))
+							if targetDefaultValue != nil {
+								sourceEqualsTarget := CompareValues(diff.Source, targetDefaultValue)
+								if sourceEqualsTarget {
+									// Source default == target default, but current differs
+									// This is likely auto-tuned by TiKV based on system resources
+									// Skip reporting as "user modified"
+									continue
+								}
+							}
+						}
+					}
+
 					// Show all differences in map, don't ignore nested fields
 					paramType := "config"
 					if isSystemVar {

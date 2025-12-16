@@ -523,7 +523,7 @@ func (a *Analyzer) organizeResults(checkResults []rules.CheckResult, sourceVersi
 		}
 		filteredResults = append(filteredResults, check)
 	}
-	
+
 	// Deduplicate results: same parameter (Component + ParameterName + ParamType) should only appear once
 	// Priority: Forced > User Modified > Upgrade Difference > Consistency
 	deduplicatedResults := deduplicateCheckResults(filteredResults)
@@ -637,7 +637,7 @@ func deduplicateCheckResults(results []rules.CheckResult) []rules.CheckResult {
 	// Map to store the best result for each parameter
 	// Key: Component + ParameterName + ParamType
 	bestResults := make(map[string]rules.CheckResult)
-	
+
 	// Priority order: higher number = higher priority
 	getPriority := func(check rules.CheckResult) int {
 		// Forced changes have highest priority
@@ -658,19 +658,19 @@ func deduplicateCheckResults(results []rules.CheckResult) []rules.CheckResult {
 		}
 		return 0
 	}
-	
+
 	// Process all results
 	for _, check := range results {
 		// Create unique key: Component + ParameterName + ParamType
 		key := fmt.Sprintf("%s:%s:%s", check.Component, check.ParameterName, check.ParamType)
-		
+
 		// If this is the first result for this parameter, or this result has higher priority
 		if existing, exists := bestResults[key]; !exists {
 			bestResults[key] = check
 		} else {
 			existingPriority := getPriority(existing)
 			currentPriority := getPriority(check)
-			
+
 			// If current result has higher priority, replace
 			if currentPriority > existingPriority {
 				bestResults[key] = check
@@ -690,12 +690,12 @@ func deduplicateCheckResults(results []rules.CheckResult) []rules.CheckResult {
 			}
 		}
 	}
-	
+
 	// Convert map back to slice
 	deduplicated := make([]rules.CheckResult, 0, len(bestResults))
 	for _, check := range bestResults {
 		deduplicated = append(deduplicated, check)
 	}
-	
+
 	return deduplicated
 }
