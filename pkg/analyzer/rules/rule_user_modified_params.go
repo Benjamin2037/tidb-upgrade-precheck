@@ -159,6 +159,11 @@ func (r *UserModifiedParamsRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			if ignoredParamsForUserModification[displayName] || ignoredParamsForUserModification[paramName] {
 				continue
 			}
+			
+			// Skip all path-related parameters
+			if IsPathParameter(displayName) || IsPathParameter(paramName) {
+				continue
+			}
 
 			// For map types, do deep comparison to find only differing fields
 			if IsMapType(currentValue) && IsMapType(sourceDefault) {
@@ -201,7 +206,7 @@ func (r *UserModifiedParamsRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				} else {
 					differs = fmt.Sprintf("%v", currentValue) != fmt.Sprintf("%v", sourceDefault)
 				}
-				
+
 				if differs {
 					paramType := "config"
 					if isSystemVar {

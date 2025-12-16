@@ -214,6 +214,11 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 			if sourceDefault == nil {
 				continue
 			}
+			
+			// Skip all path-related parameters
+			if IsPathParameter(paramName) {
+				continue
+			}
 
 			// Get target default (if available)
 			var targetDefault interface{}
@@ -289,7 +294,7 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 				} else {
 					differs = fmt.Sprintf("%v", currentValue) != fmt.Sprintf("%v", sourceDefault)
 				}
-				
+
 				if differs {
 					// Difference found: medium risk (warning)
 					details := FormatValueDiff(currentValue, sourceDefault)

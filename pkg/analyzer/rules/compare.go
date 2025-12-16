@@ -428,3 +428,19 @@ func CompareFileNames(path1, path2 interface{}) bool {
 	filename2 := ExtractFileName(path2)
 	return filename1 == filename2 && filename1 != ""
 }
+
+// IsPathParameter checks if a parameter name indicates a path-related parameter
+// Returns true if the parameter name contains path-related keywords
+func IsPathParameter(paramName string) bool {
+	paramNameLower := strings.ToLower(paramName)
+	pathKeywords := []string{
+		"path", "dir", "file", "log", "data", "deploy", "temp", "tmp",
+		"storage", "socket", "home", "root", "cache", "config",
+	}
+	for _, keyword := range pathKeywords {
+		if strings.Contains(paramNameLower, keyword) {
+			return true
+		}
+	}
+	return false
+}
