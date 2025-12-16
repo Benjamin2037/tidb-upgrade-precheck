@@ -3360,6 +3360,29 @@ cat /tmp/precheck-text.txt</pre>
                             </div>
                         </div>
                     </div>
+
+                    <div class="checkpoint">
+                        <div class="checkpoint-item">
+                            <input type="checkbox" class="checkpoint-checkbox" data-id="phase-6-test-6.1-cp7" onchange="updateProgress()">
+                            <div class="checkpoint-text">
+                                <strong>**参数采集准确性验证**：不应该出现参数缺失的误报错误</strong>
+                                
+                            <div class="command-block" style="margin-top: 5px;">
+                                <button class="copy-btn" onclick="copyCommand(this)">复制</button>
+                                <pre># 验证：不应该出现 "was expected but not found in runtime (validation mismatch)" 这样的错误
+  # 这些错误通常是因为知识库中有参数但运行时采集不到导致的误报
+  # 改进后的运行时采集使用 SHOW CONFIG 补充参数，应该能够正确获取所有参数
+  cat /tmp/precheck-text.txt | grep -i "expected but not found in runtime.*validation mismatch" && echo "✗ Found validation mismatch errors (should not appear)" || echo "✓ No validation mismatch errors (expected)"
+  
+  # 验证：不应该出现 backup.* 参数缺失的错误（这些是可选参数，如果不存在应该被跳过）
+  cat /tmp/precheck-text.txt | grep -i "backup\..*expected but not found" && echo "✗ Found backup parameter errors (should not appear)" || echo "✓ No backup parameter errors (expected)"</pre>
+                            </div>
+
+                                <textarea class="remark-input" placeholder="添加备注..." data-id="phase-6-test-6.1-cp7-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
+                                <div class="remark-display" data-id="phase-6-test-6.1-cp7-remark-display" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
 </div>
 
                 <div class="test">

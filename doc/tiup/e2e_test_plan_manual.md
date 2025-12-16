@@ -10,6 +10,25 @@
 4. 验证报告生成和显示
 5. 验证完整升级流程中的 precheck 集成
 6. 验证错误处理和边界情况
+7. 验证运行时采集的准确性和完整性（使用 SHOW CONFIG 补充参数）
+
+## 重要改进说明
+
+### 运行时采集改进（v2024-12）
+
+**改进内容：**
+- **TiKV 运行时采集**：现在使用 `SHOW CONFIG WHERE type='tikv'` 补充 `last_tikv.toml` 中的参数，确保获取所有参数（包括可选参数如 `backup.*`）
+- **TiFlash 运行时采集**：现在使用 `SHOW CONFIG WHERE type='tiflash'` 补充 HTTP API 配置，确保获取所有参数
+- **参数缺失处理**：如果参数在知识库中存在但在运行时不存在，现在会跳过而不是报告错误（避免误报）
+
+**预期效果：**
+- 不应该出现 "Parameter backup.* was expected but not found in runtime (validation mismatch)" 这样的误报错误
+- 运行时采集应该能够正确获取所有参数，与知识库生成方式保持一致
+- 预检查报告更加准确，减少误报
+
+**验证方法：**
+- 在 Test 6.1 的验证点中检查是否出现参数缺失的误报错误
+- 确认报告中只包含实际需要关注的参数差异
 
 ---
 
@@ -1364,6 +1383,16 @@ cat /tmp/precheck-text.txt
 - [ ] 包含风险等级（如果有）
   ```bash
   cat /tmp/precheck-text.txt | grep -E "risk|severity|error|warning" | head -5
+  ```
+- [ ] **参数采集准确性验证**：不应该出现参数缺失的误报错误
+  ```bash
+  # 验证：不应该出现 "was expected but not found in runtime (validation mismatch)" 这样的错误
+  # 这些错误通常是因为知识库中有参数但运行时采集不到导致的误报
+  # 改进后的运行时采集使用 SHOW CONFIG 补充参数，应该能够正确获取所有参数
+  cat /tmp/precheck-text.txt | grep -i "expected but not found in runtime.*validation mismatch" && echo "✗ Found validation mismatch errors (should not appear)" || echo "✓ No validation mismatch errors (expected)"
+  
+  # 验证：不应该出现 backup.* 参数缺失的错误（这些是可选参数，如果不存在应该被跳过）
+  cat /tmp/precheck-text.txt | grep -i "backup\..*expected but not found" && echo "✗ Found backup parameter errors (should not appear)" || echo "✓ No backup parameter errors (expected)"
   ```
 
 #### Test 6.2: 验证 HTML 报告内容
