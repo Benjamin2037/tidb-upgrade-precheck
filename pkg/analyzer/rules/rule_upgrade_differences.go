@@ -243,6 +243,16 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				}
 			}
 
+			// PD Component: All current values will be kept during upgrade (compatible)
+			// If current value exists and parameter exists in source version (not a new parameter), filter it
+			// New parameters in PD should still be reported
+			if compType == "pd" && paramType == "config" && currentValue != nil && sourceDefault != nil {
+				// PD maintains existing configuration for parameters that exist in source version
+				// Skip reporting as current value will be kept
+				totalFiltered++
+				continue
+			}
+
 			// Skip ignored parameters (deployment-specific paths, etc.)
 			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] || isPathParameter(displayName) || isPathParameter(paramName) {
 				totalFiltered++
@@ -746,6 +756,12 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				paramType = "config"
 			}
 
+			// Skip ignored parameters (deployment-specific paths, etc.)
+			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] || IsPathParameter(displayName) || IsPathParameter(paramName) {
+				totalFiltered++
+				continue
+			}
+
 			// Check if this new parameter exists in current cluster
 			var currentValue interface{}
 			if isSystemVar {
@@ -755,6 +771,23 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			} else {
 				if paramValue, ok := component.Config[displayName]; ok {
 					currentValue = paramValue.Value
+				}
+			}
+
+			// Filter: If current value equals target default, skip (no action needed after upgrade)
+			// The parameter is new in target version, but current value already matches target default
+			// Exception: PD component's new parameters should still be reported even if current == target
+			if currentValue != nil && targetDefault != nil {
+				if CompareValues(currentValue, targetDefault) {
+					// For PD component, still report new parameters even if current == target
+					// (PD will keep current value, but user should be aware of the new parameter)
+					if compType == "pd" && paramType == "config" {
+						// Don't filter PD new parameters, let them be reported
+					} else {
+						// Current value equals target default, no action needed
+						totalFiltered++
+						continue
+					}
 				}
 			}
 
