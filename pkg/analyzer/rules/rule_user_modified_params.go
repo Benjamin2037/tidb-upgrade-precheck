@@ -194,7 +194,15 @@ func (r *UserModifiedParamsRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				}
 			} else {
 				// For non-map types, do simple comparison
-				if fmt.Sprintf("%v", currentValue) != fmt.Sprintf("%v", sourceDefault) {
+				// For filename-only parameters, compare by filename only (ignore path)
+				var differs bool
+				if filenameOnlyParams[displayName] || filenameOnlyParams[paramName] {
+					differs = !CompareFileNames(currentValue, sourceDefault)
+				} else {
+					differs = fmt.Sprintf("%v", currentValue) != fmt.Sprintf("%v", sourceDefault)
+				}
+				
+				if differs {
 					paramType := "config"
 					if isSystemVar {
 						paramType = "system_variable"

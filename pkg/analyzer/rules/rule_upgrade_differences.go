@@ -25,10 +25,13 @@ var ignoredParamsForUpgradeDifferences = map[string]bool{
 	"log.file.max-backups": true, // Log file max backups (deployment-specific, may vary)
 
 	// Deployment-specific path parameters (TiKV)
-	"data-dir":   true, // Data directory (deployment-specific)
-	"log-file":   true, // Log file path (deployment-specific)
-	"deploy-dir": true, // Deploy directory (deployment-specific)
-	"log-dir":    true, // Log directory (deployment-specific)
+	"data-dir":              true, // Data directory (deployment-specific)
+	"log-file":             true, // Log file path (deployment-specific)
+	"deploy-dir":           true, // Deploy directory (deployment-specific)
+	"log-dir":              true, // Log directory (deployment-specific)
+	"log-backup.temp-path": true, // Log backup temporary path (deployment-specific)
+	"backup.temp-path":     true, // Backup temporary path (deployment-specific)
+	"temp-path":            true, // Temporary path (deployment-specific)
 
 	// Deployment-specific path parameters (PD)
 	// data-dir, log-file, deploy-dir, log-dir are already covered above
@@ -41,6 +44,14 @@ var ignoredParamsForUpgradeDifferences = map[string]bool{
 
 	// Other parameters to ignore
 	"deprecate-integer-display-length": true, // Deprecated parameter, no need to report
+}
+
+// filenameOnlyParams contains parameters that should be compared by filename only (ignoring path)
+// For these parameters, only the filename part is compared, not the full path
+var filenameOnlyParams = map[string]bool{
+	"log.file.filename": true, // Log file - compare filename only
+	"log-file":          true, // Log file - compare filename only
+	"log.slow-query-file": true, // Slow query log file - compare filename only
 }
 
 // UpgradeDifferencesRule detects parameters that will differ after upgrade
@@ -217,14 +228,31 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			}
 
 			// Compare target default with current cluster value
-			targetDiffersFromCurrent := fmt.Sprintf("%v", targetDefault) != fmt.Sprintf("%v", currentValue)
-			sourceDefaultStr := fmt.Sprintf("%v", sourceDefault)
-			targetDefaultStr := fmt.Sprintf("%v", targetDefault)
+			// For filename-only parameters, compare by filename only (ignore path)
+			var targetDiffersFromCurrent bool
+			var sourceDefaultStr, targetDefaultStr string
+			
+			if filenameOnlyParams[displayName] || filenameOnlyParams[paramName] {
+				// Compare by filename only
+				targetDiffersFromCurrent = !CompareFileNames(targetDefault, currentValue)
+				sourceDefaultStr = ExtractFileName(sourceDefault)
+				targetDefaultStr = ExtractFileName(targetDefault)
+			} else {
+				// Compare full values
+				targetDiffersFromCurrent = fmt.Sprintf("%v", targetDefault) != fmt.Sprintf("%v", currentValue)
+				sourceDefaultStr = fmt.Sprintf("%v", sourceDefault)
+				targetDefaultStr = fmt.Sprintf("%v", targetDefault)
+			}
 
 			// Filter: If source default == target default and current == target, skip (no difference)
 			// Exception: forced changes should always be reported
 			if sourceDefault != nil && targetDefault != nil && sourceDefaultStr == targetDefaultStr {
-				currentValueStr := fmt.Sprintf("%v", currentValue)
+				var currentValueStr string
+				if filenameOnlyParams[displayName] || filenameOnlyParams[paramName] {
+					currentValueStr = ExtractFileName(currentValue)
+				} else {
+					currentValueStr = fmt.Sprintf("%v", currentValue)
+				}
 				if currentValueStr == targetDefaultStr {
 					// All values are the same: source == target == current
 					// Check if it's a forced change - if not, skip
@@ -566,7 +594,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			// Check if current value is empty/nil (parameter not actually used)
 			currentValueStr := fmt.Sprintf("%v", currentValue)
 			isEmpty := currentValue == nil || currentValueStr == "" || currentValueStr == "<nil>" || currentValueStr == "N/A"
-			
+
 			// Build details message
 			var details string
 			if isEmpty {

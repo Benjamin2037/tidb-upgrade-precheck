@@ -401,3 +401,30 @@ func getNestedMapValue(m map[string]interface{}, path []string) interface{} {
 	}
 	return nil
 }
+
+// ExtractFileName extracts the filename from a file path
+// Returns the filename without the directory path
+func ExtractFileName(filePath interface{}) string {
+	if filePath == nil {
+		return ""
+	}
+	pathStr := fmt.Sprintf("%v", filePath)
+	if pathStr == "" {
+		return ""
+	}
+	// Handle both Unix and Windows path separators
+	pathStr = strings.ReplaceAll(pathStr, "\\", "/")
+	parts := strings.Split(pathStr, "/")
+	if len(parts) > 0 {
+		return parts[len(parts)-1]
+	}
+	return pathStr
+}
+
+// CompareFileNames compares two file paths by filename only (ignoring directory path)
+// Returns true if filenames are the same, false otherwise
+func CompareFileNames(path1, path2 interface{}) bool {
+	filename1 := ExtractFileName(path1)
+	filename2 := ExtractFileName(path2)
+	return filename1 == filename2 && filename1 != ""
+}

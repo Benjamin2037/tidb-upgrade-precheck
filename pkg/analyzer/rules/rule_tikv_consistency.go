@@ -282,15 +282,35 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 				continue
 			} else {
 				// For non-map types, use simple comparison
-				if fmt.Sprintf("%v", currentValue) != fmt.Sprintf("%v", sourceDefault) {
+				// For filename-only parameters, compare by filename only (ignore path)
+				var differs bool
+				if filenameOnlyParams[paramName] {
+					differs = !CompareFileNames(currentValue, sourceDefault)
+				} else {
+					differs = fmt.Sprintf("%v", currentValue) != fmt.Sprintf("%v", sourceDefault)
+				}
+				
+				if differs {
 					// Difference found: medium risk (warning)
 					details := FormatValueDiff(currentValue, sourceDefault)
 					if targetDefault != nil {
-						details += fmt.Sprintf("\nTarget Default: %v", FormatValue(targetDefault))
-						
+						// For filename-only parameters, show filename only
+						var targetDefaultStr string
+						if filenameOnlyParams[paramName] {
+							targetDefaultStr = ExtractFileName(targetDefault)
+							details += fmt.Sprintf("\nTarget Default: %s (filename only)", targetDefaultStr)
+						} else {
+							details += fmt.Sprintf("\nTarget Default: %v", FormatValue(targetDefault))
+							targetDefaultStr = fmt.Sprintf("%v", targetDefault)
+						}
+
 						// If source default == target default but current differs, add note about auto-tuning
-						sourceDefaultStr := fmt.Sprintf("%v", sourceDefault)
-						targetDefaultStr := fmt.Sprintf("%v", targetDefault)
+						var sourceDefaultStr string
+						if filenameOnlyParams[paramName] {
+							sourceDefaultStr = ExtractFileName(sourceDefault)
+						} else {
+							sourceDefaultStr = fmt.Sprintf("%v", sourceDefault)
+						}
 						if sourceDefaultStr == targetDefaultStr {
 							details += "\n\nNote: Source and target defaults are the same. The current value may be auto-tuned by TiKV based on system resources (e.g., CPU cores)."
 						}
