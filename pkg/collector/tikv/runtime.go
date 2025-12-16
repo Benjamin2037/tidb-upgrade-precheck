@@ -1,6 +1,7 @@
 package tikv
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,13 +9,19 @@ import (
 	"path/filepath"
 	"time"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/pelletier/go-toml/v2"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector/tidb"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/types"
 )
 
 // TiKVCollector handles collection of TiKV configuration
 type TiKVCollector interface {
 	Collect(addrs []string, dataDirs map[string]string) ([]types.ComponentState, error)
+	// CollectWithTiDB collects TiKV configuration with optional TiDB connection
+	// This allows supplementing last_tikv.toml with SHOW CONFIG data for consistency
+	// with knowledge base generation approach
+	CollectWithTiDB(addrs []string, dataDirs map[string]string, tidbAddr, tidbUser, tidbPassword string) ([]types.ComponentState, error)
 }
 
 type tikvCollector struct {
@@ -32,12 +39,38 @@ func NewTiKVCollector() TiKVCollector {
 
 // Collect gathers configuration from TiKV instances
 // dataDirs maps TiKV address to its data_dir path (from topology file)
+// This method only collects from last_tikv.toml (for backward compatibility)
 func (c *tikvCollector) Collect(addrs []string, dataDirs map[string]string) ([]types.ComponentState, error) {
+	return c.CollectWithTiDB(addrs, dataDirs, "", "", "")
+}
+
+// CollectWithTiDB gathers configuration from TiKV instances with optional TiDB connection
+// This matches the knowledge base generation approach:
+// 1. Collects user-set configuration from last_tikv.toml
+// 2. Collects runtime configuration via SHOW CONFIG WHERE type='tikv' (if TiDB connection available)
+// 3. Merges them with priority: runtime values > user-set values
+// dataDirs maps TiKV address to its data_dir path (from topology file)
+func (c *tikvCollector) CollectWithTiDB(addrs []string, dataDirs map[string]string, tidbAddr, tidbUser, tidbPassword string) ([]types.ComponentState, error) {
 	var states []types.ComponentState
+
+	// Collect TiKV config via SHOW CONFIG if TiDB connection is available
+	// This ensures we get all parameters (including optional ones like backup.*)
+	var tikvConfigFromSHOW types.ConfigDefaults
+	if tidbAddr != "" {
+		var err error
+		tikvConfigFromSHOW, err = c.collectTiKVConfigViaSHOWCONFIG(tidbAddr, tidbUser, tidbPassword)
+		if err != nil {
+			fmt.Printf("Warning: failed to collect TiKV config via SHOW CONFIG: %v\n", err)
+			// Continue without SHOW CONFIG data
+			tikvConfigFromSHOW = make(types.ConfigDefaults)
+		} else {
+			fmt.Printf("Collected %d runtime parameters via SHOW CONFIG\n", len(tikvConfigFromSHOW))
+		}
+	}
 
 	for _, addr := range addrs {
 		dataDir := dataDirs[addr]
-		state, err := c.collectFromInstance(addr, dataDir)
+		state, err := c.collectFromInstance(addr, dataDir, tikvConfigFromSHOW)
 		if err != nil {
 			// Log error but continue with other instances
 			fmt.Printf("Warning: failed to collect from TiKV instance %s: %v\n", addr, err)
@@ -49,7 +82,7 @@ func (c *tikvCollector) Collect(addrs []string, dataDirs map[string]string) ([]t
 	return states, nil
 }
 
-func (c *tikvCollector) collectFromInstance(addr string, dataDir string) (*types.ComponentState, error) {
+func (c *tikvCollector) collectFromInstance(addr string, dataDir string, tikvConfigFromSHOW types.ConfigDefaults) (*types.ComponentState, error) {
 	state := &types.ComponentState{
 		Type:      types.ComponentTiKV,
 		Config:    make(types.ConfigDefaults),
@@ -68,19 +101,23 @@ func (c *tikvCollector) collectFromInstance(addr string, dataDir string) (*types
 	}
 	state.Version = version
 
-	// Collect configuration from last_tikv.toml file
+	// Step 1: Collect user-set values from last_tikv.toml
 	// This file contains the actual runtime configuration used by TiKV, including all user modifications
-	if dataDir == "" {
-		return nil, fmt.Errorf("data_dir not provided for TiKV instance %s (required to read last_tikv.toml)", addr)
+	userConfig := make(types.ConfigDefaults)
+	if dataDir != "" {
+		config, err := c.getConfigFromFile(dataDir)
+		if err != nil {
+			fmt.Printf("Warning: failed to read last_tikv.toml from %s for TiKV instance %s: %v\n", dataDir, addr, err)
+		} else {
+			userConfig = types.ConvertConfigToDefaults(config)
+			fmt.Printf("Collected %d user-set parameters from last_tikv.toml for %s\n", len(userConfig), addr)
+		}
 	}
 
-	config, err := c.getConfigFromFile(dataDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read last_tikv.toml from %s for TiKV instance %s: %w", dataDir, addr, err)
-	}
-
-	// Convert to pkg/types.ConfigDefaults format
-	state.Config = types.ConvertConfigToDefaults(config)
+	// Step 2: Merge with SHOW CONFIG data (if available)
+	// Priority: SHOW CONFIG values > last_tikv.toml values
+	// This matches the knowledge base generation approach
+	state.Config = c.mergeConfigsWithPriority(userConfig, tikvConfigFromSHOW)
 
 	return state, nil
 }
@@ -132,4 +169,50 @@ func (c *tikvCollector) getConfigFromFile(dataDir string) (map[string]interface{
 	}
 
 	return config, nil
+}
+
+// collectTiKVConfigViaSHOWCONFIG collects TiKV config via SHOW CONFIG WHERE type='tikv'
+// This matches the knowledge base generation approach for consistency
+func (c *tikvCollector) collectTiKVConfigViaSHOWCONFIG(tidbAddr, tidbUser, tidbPassword string) (types.ConfigDefaults, error) {
+	// Build DSN for TiDB connection
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/", tidbUser, tidbPassword, tidbAddr)
+	if tidbUser == "" {
+		dsn = fmt.Sprintf("root@tcp(%s)/", tidbAddr)
+	}
+
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database connection: %w", err)
+	}
+	defer db.Close()
+	db.SetConnMaxLifetime(10 * time.Second)
+
+	// Use TiDB collector's GetConfigByType method to get TiKV config
+	collector := tidb.NewTiDBCollector()
+	config, err := collector.GetConfigByType(db, "tikv")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get TiKV config via SHOW CONFIG: %w", err)
+	}
+
+	// Convert map[string]interface{} to types.ConfigDefaults
+	return types.ConvertConfigToDefaults(config), nil
+}
+
+// mergeConfigsWithPriority merges user-set and runtime configs with priority
+// Priority: runtime values (from SHOW CONFIG) > user-set values (from last_tikv.toml)
+// This matches the knowledge base generation approach
+func (c *tikvCollector) mergeConfigsWithPriority(userConfig, runtimeConfig types.ConfigDefaults) types.ConfigDefaults {
+	merged := make(types.ConfigDefaults)
+
+	// Step 1: Start with user-set values (lower priority)
+	for k, v := range userConfig {
+		merged[k] = v
+	}
+
+	// Step 2: Override with runtime values (higher priority)
+	for k, v := range runtimeConfig {
+		merged[k] = v
+	}
+
+	return merged
 }

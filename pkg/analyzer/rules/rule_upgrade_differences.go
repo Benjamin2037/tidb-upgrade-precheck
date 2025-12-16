@@ -266,21 +266,21 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				severity := "warning"
 				riskLevel := RiskLevelMedium
 				baseMessage := "default value changed (target default differs from current)"
-				
+
 				// PD maintains existing configuration
 				if compType == "pd" && paramType == "config" {
 					severity = "info"
 					riskLevel = RiskLevelLow
 					baseMessage = "default value changed (current value will be kept)"
 				}
-				
+
 				// TiDB system variables keep old values unless forced
 				if compType == "tidb" && paramType == "system_variable" {
 					severity = "info"
 					riskLevel = RiskLevelLow
 					baseMessage = "default value changed (current value will be kept)"
 				}
-				
+
 				// For map types, create separate CheckResult for each differing field
 				if IsMapType(sourceDefault) && IsMapType(targetDefault) {
 					opts := CompareOptions{
@@ -288,18 +288,18 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 						BasePath:      displayName,
 					}
 					sourceTargetDiffs := CompareMapsDeep(sourceDefault, targetDefault, opts)
-					
+
 					for fieldPath, diff := range sourceTargetDiffs {
 						fieldMessage := fmt.Sprintf("Parameter %s.%s in %s: %s", displayName, fieldPath, compType, baseMessage)
 						fieldDetails := FormatValueDiff(diff.Source, diff.Current) // Source -> Target (diff.Current is target in this context)
-						
+
 						// Add component-specific note
 						if compType == "pd" && paramType == "config" {
 							fieldDetails += "\n\nPD maintains existing configuration"
 						} else if compType == "tidb" && paramType == "system_variable" {
 							fieldDetails += "\n\nTiDB system variables keep old values"
 						}
-						
+
 						results = append(results, CheckResult{
 							RuleID:        r.Name(),
 							Category:      r.Category(),
@@ -312,7 +312,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 							Details:       fieldDetails,
 							CurrentValue:  currentValue, // Keep full current value for reference
 							TargetDefault: diff.Current, // Target value for this field
-							SourceDefault: diff.Source,   // Source value for this field
+							SourceDefault: diff.Source,  // Source value for this field
 							Suggestions: []string{
 								"Default value has changed in target version",
 								"Review if the new default is acceptable",
@@ -327,7 +327,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 					} else if compType == "tidb" && paramType == "system_variable" {
 						details += "\n\nTiDB system variables keep old values"
 					}
-					
+
 					results = append(results, CheckResult{
 						RuleID:        r.Name(),
 						Category:      r.Category(),
@@ -360,11 +360,11 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 							BasePath:      displayName,
 						}
 						sourceTargetDiffs := CompareMapsDeep(sourceDefault, targetDefault, opts)
-						
+
 						for fieldPath, diff := range sourceTargetDiffs {
 							fieldDetails := FormatValueDiff(diff.Source, diff.Current) // Source -> Target
 							fieldDetails = "Current value matches target default.\n\n" + fieldDetails
-							
+
 							results = append(results, CheckResult{
 								RuleID:        r.Name(),
 								Category:      r.Category(),

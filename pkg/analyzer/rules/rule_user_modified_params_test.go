@@ -291,7 +291,7 @@ func TestUserModifiedParamsRule_RealWorldScenario(t *testing.T) {
 								"block-cache": map[string]interface{}{
 									"capacity":            "7373835KiB",
 									"high-pri-pool-ratio": 0.8,
-									"num-shard-bits":       6,
+									"num-shard-bits":      6,
 								},
 								"api-version": 1,
 								"engine":      "raft-kv",
@@ -311,7 +311,7 @@ func TestUserModifiedParamsRule_RealWorldScenario(t *testing.T) {
 					"block-cache": map[string]interface{}{
 						"capacity":            "23192823398B",
 						"high-pri-pool-ratio": 0.8,
-						"num-shard-bits":       6,
+						"num-shard-bits":      6,
 					},
 					"api-version": 1,
 					"engine":      "raft-kv",
@@ -409,7 +409,7 @@ func TestUserModifiedParamsRule_ComplexNestedMap(t *testing.T) {
 								"block-cache": map[string]interface{}{
 									"capacity":            "7373835KiB",
 									"high-pri-pool-ratio": 0.9, // Changed from 0.8
-									"num-shard-bits":       6,
+									"num-shard-bits":      6,
 								},
 								"io-rate-limit": map[string]interface{}{
 									"max-bytes-per-sec": "100MiB", // Changed
@@ -428,7 +428,7 @@ func TestUserModifiedParamsRule_ComplexNestedMap(t *testing.T) {
 					"block-cache": map[string]interface{}{
 						"capacity":            "23192823398B",
 						"high-pri-pool-ratio": 0.8,
-						"num-shard-bits":       6,
+						"num-shard-bits":      6,
 					},
 					"io-rate-limit": map[string]interface{}{
 						"max-bytes-per-sec": "0KiB",
@@ -468,20 +468,20 @@ func TestUserModifiedParamsRule_OnlyDifferingFields(t *testing.T) {
 					Config: types.ConfigDefaults{
 						"storage": types.ParameterValue{
 							Value: map[string]interface{}{
-								"api-version":                        1,
-								"background-error-recovery-window":   "1h",
-								"enable-async-apply-prewrite":         false,
-								"enable-ttl":                          false,
-								"engine":                              "raft-kv",
-								"gc-ratio-threshold":                  1.1,
-								"max-key-size":                        8192,
-								"reserve-space":                        "5GiB", // Only this differs
-								"reserve-raft-space":                  "0KiB",
-								"scheduler-concurrency":               524288,
-								"scheduler-pending-write-threshold":   "100MiB",
-								"scheduler-worker-pool-size":          4,
-								"ttl-check-poll-interval":             "12h",
-								"txn-status-cache-capacity":           5120000,
+								"api-version":                       1,
+								"background-error-recovery-window":  "1h",
+								"enable-async-apply-prewrite":       false,
+								"enable-ttl":                        false,
+								"engine":                            "raft-kv",
+								"gc-ratio-threshold":                1.1,
+								"max-key-size":                      8192,
+								"reserve-space":                     "5GiB", // Only this differs
+								"reserve-raft-space":                "0KiB",
+								"scheduler-concurrency":             524288,
+								"scheduler-pending-write-threshold": "100MiB",
+								"scheduler-worker-pool-size":        4,
+								"ttl-check-poll-interval":           "12h",
+								"txn-status-cache-capacity":         5120000,
 							},
 							Type: "map",
 						},
@@ -492,20 +492,20 @@ func TestUserModifiedParamsRule_OnlyDifferingFields(t *testing.T) {
 		SourceDefaults: map[string]map[string]interface{}{
 			"tikv": {
 				"storage": map[string]interface{}{
-					"api-version":                        1,
-					"background-error-recovery-window":   "1h",
-					"enable-async-apply-prewrite":         false,
-					"enable-ttl":                          false,
-					"engine":                              "raft-kv",
-					"gc-ratio-threshold":                  1.1,
-					"max-key-size":                        8192,
-					"reserve-space":                        "0KiB", // Only this differs
-					"reserve-raft-space":                  "0KiB",
-					"scheduler-concurrency":               524288,
-					"scheduler-pending-write-threshold":   "100MiB",
-					"scheduler-worker-pool-size":          4,
-					"ttl-check-poll-interval":             "12h",
-					"txn-status-cache-capacity":           5120000,
+					"api-version":                       1,
+					"background-error-recovery-window":  "1h",
+					"enable-async-apply-prewrite":       false,
+					"enable-ttl":                        false,
+					"engine":                            "raft-kv",
+					"gc-ratio-threshold":                1.1,
+					"max-key-size":                      8192,
+					"reserve-space":                     "0KiB", // Only this differs
+					"reserve-raft-space":                "0KiB",
+					"scheduler-concurrency":             524288,
+					"scheduler-pending-write-threshold": "100MiB",
+					"scheduler-worker-pool-size":        4,
+					"ttl-check-poll-interval":           "12h",
+					"txn-status-cache-capacity":         5120000,
 				},
 			},
 		},

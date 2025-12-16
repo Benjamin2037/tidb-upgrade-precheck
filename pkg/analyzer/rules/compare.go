@@ -367,4 +367,3 @@ func FormatDefaultChangeDiff(current, source, target interface{}, ignoredParams 
 
 	return fmt.Sprintf("Current: %s | Source Default: %s | Target Default: %s", currentStr, sourceStr, targetStr)
 }
-
