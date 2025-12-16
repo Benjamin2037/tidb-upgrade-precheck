@@ -148,9 +148,10 @@ func (r *UpgradeDifferencesRule) DataRequirements() DataSourceRequirement {
 // 6. Otherwise (consistent): skip (don't show)
 func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleContext) ([]CheckResult, error) {
 	var results []CheckResult
-	// Track statistics: total parameters compared and skipped
+	// Track statistics: total parameters compared, skipped, and filtered
 	totalCompared := 0
 	totalSkipped := 0
+	totalFiltered := 0
 
 	if ruleCtx.SourceClusterSnapshot == nil {
 		return results, nil
@@ -244,13 +245,13 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 
 			// Skip ignored parameters (deployment-specific paths, etc.)
 			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] || isPathParameter(displayName) || isPathParameter(paramName) {
-				totalSkipped++
+				totalFiltered++
 				continue
 			}
 
 			// Skip all path-related parameters (check by parameter name)
 			if IsPathParameter(displayName) || IsPathParameter(paramName) {
-				totalSkipped++
+				totalFiltered++
 				continue
 			}
 
@@ -276,6 +277,33 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 					if _, isForced := forcedChanges[displayName]; !isForced {
 						totalSkipped++
 						continue // Skip: no difference between source and target
+					}
+				} else {
+					// Source default == target default, but current != target
+					// If this is a resource-dependent parameter, filter it (difference is due to deployment environment)
+					if IsResourceDependentParameter(displayName) || IsResourceDependentParameter(paramName) {
+						// Resource-dependent parameters may differ due to deployment environment (e.g., CPU cores)
+						// Since source == target, the difference is not due to version change
+						if _, isForced := forcedChanges[displayName]; !isForced {
+							totalFiltered++
+							continue // Skip: difference is due to deployment environment, not version change
+						}
+					}
+				}
+			}
+
+			// Filter: If current == target default but source != target, skip (no action needed after upgrade)
+			// This means the current value already matches the target default, so no change will occur
+			// Exception: forced changes should always be reported
+			if !targetDiffersFromCurrent && sourceDefault != nil && targetDefault != nil {
+				// Current value equals target default
+				if !CompareValues(sourceDefault, targetDefault) {
+					// Source default differs from target default, but current equals target
+					// This means upgrade will not change the value (already at target default)
+					// Check if it's a forced change - if not, skip
+					if _, isForced := forcedChanges[displayName]; !isForced {
+						totalFiltered++
+						continue // Skip: current already matches target, no action needed
 					}
 				}
 			}
@@ -436,6 +464,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 								// Current value matches target default, but differs from source default
 								// This is likely due to deployment environment differences (e.g., different hardware)
 								// Skip reporting as the current value is already correct for target version
+								totalFiltered++
 								continue
 							}
 						}
@@ -496,6 +525,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 							// Current value matches target default, but differs from source default
 							// This is likely due to deployment environment differences (e.g., different hardware)
 							// Skip reporting as the current value is already correct for target version
+							totalFiltered++
 							continue
 						}
 					}
@@ -765,7 +795,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			Category:      r.Category(),
 			Component:     "",
 			ParameterName: "__statistics__",
-			Description:   fmt.Sprintf("Compared %d parameters, skipped %d (source == target)", totalCompared, totalSkipped),
+			Description:   fmt.Sprintf("Compared %d parameters, skipped %d (source == target), filtered %d (deployment-specific)", totalCompared, totalSkipped, totalFiltered),
 			Severity:      "info",
 			RiskLevel:     RiskLevelLow,
 		})

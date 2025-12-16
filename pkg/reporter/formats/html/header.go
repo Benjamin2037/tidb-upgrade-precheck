@@ -55,6 +55,7 @@ func (h *HTMLHeader) Render(result *analyzer.AnalysisResult) (string, error) {
         <tr><td>Parameters Compared</td><td>{{.TotalParametersCompared}}</td></tr>
         <tr><td>Parameters with Differences</td><td>{{.ParametersWithDifferences}}</td></tr>
         <tr><td>Parameters Skipped (source == target)</td><td>{{.ParametersSkipped}}</td></tr>
+        <tr><td>Parameters Filtered (deployment-specific)</td><td>{{.ParametersFiltered}}</td></tr>
         {{end}}
     </table>`
 
@@ -71,6 +72,7 @@ func (h *HTMLHeader) Render(result *analyzer.AnalysisResult) (string, error) {
 		TotalParametersCompared   int
 		ParametersWithDifferences int
 		ParametersSkipped         int
+		ParametersFiltered        int
 	}{
 		SourceVersion:             result.SourceVersion,
 		TargetVersion:             result.TargetVersion,
@@ -84,6 +86,7 @@ func (h *HTMLHeader) Render(result *analyzer.AnalysisResult) (string, error) {
 		TotalParametersCompared:   result.Statistics.TotalParametersCompared,
 		ParametersWithDifferences: result.Statistics.ParametersWithDifferences,
 		ParametersSkipped:         result.Statistics.ParametersSkipped,
+		ParametersFiltered:        result.Statistics.ParametersFiltered,
 	}
 
 	tmpl, err := template.New("header").Parse(headerTemplate)

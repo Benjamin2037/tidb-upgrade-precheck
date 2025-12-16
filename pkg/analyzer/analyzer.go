@@ -513,12 +513,19 @@ func (a *Analyzer) organizeResults(checkResults []rules.CheckResult, sourceVersi
 		// Check if this is a statistics CheckResult
 		if check.ParameterName == "__statistics__" && strings.HasSuffix(check.RuleID, "_STATS") {
 			// Extract statistics from Description
-			// Format: "Compared X parameters, skipped Y (source == target)"
-			var totalCompared, totalSkipped int
-			fmt.Sscanf(check.Description, "Compared %d parameters, skipped %d", &totalCompared, &totalSkipped)
+			// Format: "Compared X parameters, skipped Y (source == target), filtered Z (deployment-specific)"
+			var totalCompared, totalSkipped, totalFiltered int
+			// Try to parse with filtered count first
+			n, _ := fmt.Sscanf(check.Description, "Compared %d parameters, skipped %d (source == target), filtered %d (deployment-specific)", &totalCompared, &totalSkipped, &totalFiltered)
+			if n < 3 {
+				// Fallback to old format without filtered count
+				fmt.Sscanf(check.Description, "Compared %d parameters, skipped %d", &totalCompared, &totalSkipped)
+				totalFiltered = 0
+			}
 			result.Statistics.TotalParametersCompared += totalCompared
 			result.Statistics.ParametersSkipped += totalSkipped
-			result.Statistics.ParametersWithDifferences = totalCompared - totalSkipped
+			result.Statistics.ParametersFiltered += totalFiltered
+			result.Statistics.ParametersWithDifferences = totalCompared - totalSkipped - totalFiltered
 			continue // Skip this CheckResult
 		}
 		filteredResults = append(filteredResults, check)

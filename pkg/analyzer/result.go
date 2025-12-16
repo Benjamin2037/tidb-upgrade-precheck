@@ -49,6 +49,8 @@ type Statistics struct {
 	ParametersWithDifferences int `json:"parameters_with_differences,omitempty"`
 	// ParametersSkipped is the number of parameters skipped (source == target, no difference)
 	ParametersSkipped int `json:"parameters_skipped,omitempty"`
+	// ParametersFiltered is the number of parameters filtered out (deployment-specific, resource-dependent, etc.)
+	ParametersFiltered int `json:"parameters_filtered,omitempty"`
 }
 
 // ModifiedParamInfo contains information about a modified parameter

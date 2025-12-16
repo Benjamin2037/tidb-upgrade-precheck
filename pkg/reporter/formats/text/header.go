@@ -39,6 +39,7 @@ func (h *TextHeader) Render(result *analyzer.AnalysisResult) (string, error) {
 		content.WriteString(fmt.Sprintf("  Parameters Compared: %d\n", result.Statistics.TotalParametersCompared))
 		content.WriteString(fmt.Sprintf("  Parameters with Differences: %d\n", result.Statistics.ParametersWithDifferences))
 		content.WriteString(fmt.Sprintf("  Parameters Skipped (source == target): %d\n", result.Statistics.ParametersSkipped))
+		content.WriteString(fmt.Sprintf("  Parameters Filtered (deployment-specific): %d\n", result.Statistics.ParametersFiltered))
 	}
 	content.WriteString("\n")
 

@@ -255,6 +255,7 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 								if targetFieldValue != nil {
 									currentEqualsTarget := CompareValues(diff.Current, targetFieldValue)
 									currentEqualsSource := CompareValues(diff.Current, diff.Source)
+									sourceEqualsTarget := CompareValues(diff.Source, targetFieldValue)
 
 									if currentEqualsTarget && !currentEqualsSource {
 										fullParamName := fmt.Sprintf("%s.%s", paramName, fieldPath)
@@ -262,6 +263,18 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 											// Current value matches target default, but differs from source default
 											// This is likely due to deployment environment differences (e.g., different hardware)
 											// Skip reporting as the current value is already correct for target version
+											continue
+										}
+									}
+
+									// Filter: If source default == target default, but current != source, and this is a resource-dependent parameter
+									// The difference is due to deployment environment, not version change
+									if sourceEqualsTarget && !currentEqualsSource {
+										fullParamName := fmt.Sprintf("%s.%s", paramName, fieldPath)
+										if IsResourceDependentParameter(fieldPath) || IsResourceDependentParameter(fullParamName) {
+											// Source default equals target default, but current differs
+											// This is likely due to deployment environment differences (e.g., different CPU cores)
+											// Skip reporting as the difference is not due to version change
 											continue
 										}
 									}
@@ -326,12 +339,24 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 					if targetDefault != nil {
 						currentEqualsTarget := CompareValues(currentValue, targetDefault)
 						currentEqualsSource := CompareValues(currentValue, sourceDefault)
+						sourceEqualsTarget := CompareValues(sourceDefault, targetDefault)
 
 						if currentEqualsTarget && !currentEqualsSource {
 							if IsResourceDependentParameter(paramName) {
 								// Current value matches target default, but differs from source default
 								// This is likely due to deployment environment differences (e.g., different hardware)
 								// Skip reporting as the current value is already correct for target version
+								continue
+							}
+						}
+
+						// Filter: If source default == target default, but current != source, and this is a resource-dependent parameter
+						// The difference is due to deployment environment, not version change
+						if sourceEqualsTarget && !currentEqualsSource {
+							if IsResourceDependentParameter(paramName) {
+								// Source default equals target default, but current differs
+								// This is likely due to deployment environment differences (e.g., different CPU cores)
+								// Skip reporting as the difference is not due to version change
 								continue
 							}
 						}
