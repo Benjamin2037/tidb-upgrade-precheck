@@ -13,32 +13,32 @@ import (
 // represent actual configuration changes that users need to be aware of.
 var ignoredParamsForUpgradeDifferences = map[string]bool{
 	// Deployment-specific path parameters (TiDB)
-	"host":                true, // Host binding address (deployment-specific)
-	"path":                true, // TiDB storage path (deployment-specific)
-	"socket":              true, // Socket file path (deployment-specific)
-	"temp-dir":            true, // Temporary directory (deployment-specific)
-	"tmp-storage-path":    true, // Temporary storage path (deployment-specific)
-	"log.file.filename":   true, // Log file path (deployment-specific)
-	"log.slow-query-file": true, // Slow query log file path (deployment-specific)
-	"log.file.max-size":   true, // Log file max size (deployment-specific, may vary)
-	"log.file.max-days":   true, // Log file max days (deployment-specific, may vary)
+	"host":                 true, // Host binding address (deployment-specific)
+	"path":                 true, // TiDB storage path (deployment-specific)
+	"socket":               true, // Socket file path (deployment-specific)
+	"temp-dir":             true, // Temporary directory (deployment-specific)
+	"tmp-storage-path":     true, // Temporary storage path (deployment-specific)
+	"log.file.filename":    true, // Log file path (deployment-specific)
+	"log.slow-query-file":  true, // Slow query log file path (deployment-specific)
+	"log.file.max-size":    true, // Log file max size (deployment-specific, may vary)
+	"log.file.max-days":    true, // Log file max days (deployment-specific, may vary)
 	"log.file.max-backups": true, // Log file max backups (deployment-specific, may vary)
-	
+
 	// Deployment-specific path parameters (TiKV)
-	"data-dir":            true, // Data directory (deployment-specific)
-	"log-file":            true, // Log file path (deployment-specific)
-	"deploy-dir":          true, // Deploy directory (deployment-specific)
-	"log-dir":             true, // Log directory (deployment-specific)
-	
+	"data-dir":   true, // Data directory (deployment-specific)
+	"log-file":   true, // Log file path (deployment-specific)
+	"deploy-dir": true, // Deploy directory (deployment-specific)
+	"log-dir":    true, // Log directory (deployment-specific)
+
 	// Deployment-specific path parameters (PD)
 	// data-dir, log-file, deploy-dir, log-dir are already covered above
-	
+
 	// Deployment-specific path parameters (TiFlash)
-	"tmp_path":            true, // Temporary path (deployment-specific)
-	"storage.main.dir":     true, // Storage main directory (deployment-specific)
-	"storage.latest.dir":   true, // Storage latest directory (deployment-specific)
-	"storage.raft.dir":     true, // Storage raft directory (deployment-specific)
-	
+	"tmp_path":           true, // Temporary path (deployment-specific)
+	"storage.main.dir":   true, // Storage main directory (deployment-specific)
+	"storage.latest.dir": true, // Storage latest directory (deployment-specific)
+	"storage.raft.dir":   true, // Storage raft directory (deployment-specific)
+
 	// Other parameters to ignore
 	"deprecate-integer-display-length": true, // Deprecated parameter, no need to report
 }
@@ -347,6 +347,20 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 						fieldMessage := fmt.Sprintf("Parameter %s.%s in %s: %s", displayName, fieldPath, compType, baseMessage)
 						// Format details with current field value
 						fieldDetails := FormatValueDiff(currentFieldValue, diff.Source) + " → " + FormatValue(diff.Current)
+
+						// Check if user has modified this parameter (current != source)
+						currentValueStr := fmt.Sprintf("%v", currentFieldValue)
+						sourceValueStr := fmt.Sprintf("%v", diff.Source)
+						targetValueStr := fmt.Sprintf("%v", diff.Current)
+						
+						// If current value differs from both source and target, indicate user modification
+						if currentValueStr != sourceValueStr && currentValueStr != targetValueStr {
+							fieldDetails += fmt.Sprintf("\n\n⚠️ User Modified: Current value (%v) differs from both source default (%v) and target default (%v)", 
+								FormatValue(currentFieldValue), FormatValue(diff.Source), FormatValue(diff.Current))
+						} else if currentValueStr != sourceValueStr {
+							fieldDetails += fmt.Sprintf("\n\n⚠️ User Modified: Current value (%v) differs from source default (%v)", 
+								FormatValue(currentFieldValue), FormatValue(diff.Source))
+						}
 
 						// Add component-specific note
 						if compType == "pd" && paramType == "config" {
