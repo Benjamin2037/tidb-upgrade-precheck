@@ -207,6 +207,12 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 						severity = "error"
 						riskLevel = RiskLevelHigh
 					}
+					details := FormatDefaultChangeDiff(currentValue, sourceDefault, targetDefault, nil)
+					// Add forced value information
+					forcedStr := FormatValue(forcedValue)
+					if !strings.Contains(details, "Will be forced to") {
+						details = fmt.Sprintf("Will be forced to: %s\n\n%s", forcedStr, details)
+					}
 					results = append(results, CheckResult{
 						RuleID:        r.Name(),
 						Category:      r.Category(),
@@ -216,7 +222,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 						Severity:      severity,
 						RiskLevel:     riskLevel,
 						Message:       fmt.Sprintf("Parameter %s in %s will be forcibly changed during upgrade (forced value differs from current)", displayName, compType),
-						Details:       fmt.Sprintf("Current cluster value: %v, Will be forced to: %v, Target default: %v, Source default: %v", currentValue, forcedValue, targetDefault, sourceDefault),
+						Details:       details,
 						CurrentValue:  currentValue,
 						TargetDefault: targetDefault,
 						SourceDefault: sourceDefault,
@@ -230,6 +236,10 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 					})
 				} else {
 					// Forced value equals current value: info (default value changed)
+					details := FormatDefaultChangeDiff(currentValue, sourceDefault, targetDefault, nil)
+					if !strings.Contains(details, "matches forced value") {
+						details = "Current value matches forced value.\n\n" + details
+					}
 					results = append(results, CheckResult{
 						RuleID:        r.Name(),
 						Category:      r.Category(),
@@ -239,7 +249,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 						Severity:      "info",
 						RiskLevel:     RiskLevelLow,
 						Message:       fmt.Sprintf("Parameter %s in %s: default value changed (forced change matches current value)", displayName, compType),
-						Details:       fmt.Sprintf("Current cluster value: %v (matches forced value), Target default: %v, Source default: %v", currentValue, targetDefault, sourceDefault),
+						Details:       details,
 						CurrentValue:  currentValue,
 						TargetDefault: targetDefault,
 						SourceDefault: sourceDefault,
@@ -255,67 +265,150 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				// Special handling for PD and system variables
 				severity := "warning"
 				riskLevel := RiskLevelMedium
-				message := fmt.Sprintf("Parameter %s in %s: default value changed (target default differs from current)", displayName, compType)
-				details := fmt.Sprintf("Current cluster value: %v, Target default: %v, Source default: %v", currentValue, targetDefault, sourceDefault)
+				baseMessage := "default value changed (target default differs from current)"
 				
 				// PD maintains existing configuration
 				if compType == "pd" && paramType == "config" {
 					severity = "info"
 					riskLevel = RiskLevelLow
-					message = fmt.Sprintf("Parameter %s in %s: default value changed (current value will be kept)", displayName, compType)
-					details = fmt.Sprintf("Current cluster value: %v (will be kept), Target default: %v, Source default: %v. PD maintains existing configuration", currentValue, targetDefault, sourceDefault)
+					baseMessage = "default value changed (current value will be kept)"
 				}
 				
 				// TiDB system variables keep old values unless forced
 				if compType == "tidb" && paramType == "system_variable" {
 					severity = "info"
 					riskLevel = RiskLevelLow
-					message = fmt.Sprintf("Parameter %s in %s: default value changed (current value will be kept)", displayName, compType)
-					details = fmt.Sprintf("Current cluster value: %v (will be kept), Target default: %v, Source default: %v. TiDB system variables keep old values", currentValue, targetDefault, sourceDefault)
+					baseMessage = "default value changed (current value will be kept)"
 				}
 				
-				results = append(results, CheckResult{
-					RuleID:        r.Name(),
-					Category:      r.Category(),
-					Component:     compType,
-					ParameterName: displayName,
-					ParamType:     paramType,
-					Severity:      severity,
-					RiskLevel:     riskLevel,
-					Message:       message,
-					Details:       details,
-					CurrentValue:  currentValue,
-					TargetDefault: targetDefault,
-					SourceDefault: sourceDefault,
-					Suggestions: []string{
-						"Default value has changed in target version",
-						"Review if the new default is acceptable",
-					},
-				})
-			} else if sourceDefault != nil && targetDefault != nil {
-				// Target default == current value, but source default != target default: info (default value changed)
-				// Note: We already checked sourceDefaultStr == targetDefaultStr above and skipped, so this case is source != target
-				sourceDefaultStr := fmt.Sprintf("%v", sourceDefault)
-				targetDefaultStr := fmt.Sprintf("%v", targetDefault)
-				if sourceDefaultStr != targetDefaultStr {
+				// For map types, create separate CheckResult for each differing field
+				if IsMapType(sourceDefault) && IsMapType(targetDefault) {
+					opts := CompareOptions{
+						IgnoredParams: nil, // Don't ignore any fields for default changes
+						BasePath:      displayName,
+					}
+					sourceTargetDiffs := CompareMapsDeep(sourceDefault, targetDefault, opts)
+					
+					for fieldPath, diff := range sourceTargetDiffs {
+						fieldMessage := fmt.Sprintf("Parameter %s.%s in %s: %s", displayName, fieldPath, compType, baseMessage)
+						fieldDetails := FormatValueDiff(diff.Source, diff.Current) // Source -> Target (diff.Current is target in this context)
+						
+						// Add component-specific note
+						if compType == "pd" && paramType == "config" {
+							fieldDetails += "\n\nPD maintains existing configuration"
+						} else if compType == "tidb" && paramType == "system_variable" {
+							fieldDetails += "\n\nTiDB system variables keep old values"
+						}
+						
+						results = append(results, CheckResult{
+							RuleID:        r.Name(),
+							Category:      r.Category(),
+							Component:     compType,
+							ParameterName: fmt.Sprintf("%s.%s", displayName, fieldPath),
+							ParamType:     paramType,
+							Severity:      severity,
+							RiskLevel:     riskLevel,
+							Message:       fieldMessage,
+							Details:       fieldDetails,
+							CurrentValue:  currentValue, // Keep full current value for reference
+							TargetDefault: diff.Current, // Target value for this field
+							SourceDefault: diff.Source,   // Source value for this field
+							Suggestions: []string{
+								"Default value has changed in target version",
+								"Review if the new default is acceptable",
+							},
+						})
+					}
+				} else {
+					// For non-map types, use simple format
+					details := FormatDefaultChangeDiff(currentValue, sourceDefault, targetDefault, nil)
+					if compType == "pd" && paramType == "config" {
+						details += "\n\nPD maintains existing configuration"
+					} else if compType == "tidb" && paramType == "system_variable" {
+						details += "\n\nTiDB system variables keep old values"
+					}
+					
 					results = append(results, CheckResult{
 						RuleID:        r.Name(),
 						Category:      r.Category(),
 						Component:     compType,
 						ParameterName: displayName,
 						ParamType:     paramType,
-						Severity:      "info",
-						RiskLevel:     RiskLevelLow,
-						Message:       fmt.Sprintf("Parameter %s in %s: default value changed between source and target versions", displayName, compType),
-						Details:       fmt.Sprintf("Current cluster value: %v (matches target default), Target default: %v, Source default: %v", currentValue, targetDefault, sourceDefault),
+						Severity:      severity,
+						RiskLevel:     riskLevel,
+						Message:       fmt.Sprintf("Parameter %s in %s: %s", displayName, compType, baseMessage),
+						Details:       details,
 						CurrentValue:  currentValue,
 						TargetDefault: targetDefault,
 						SourceDefault: sourceDefault,
 						Suggestions: []string{
-							"Default value has changed between source and target versions",
-							"Your current value matches the new target default",
+							"Default value has changed in target version",
+							"Review if the new default is acceptable",
 						},
 					})
+				}
+			} else if sourceDefault != nil && targetDefault != nil {
+				// Target default == current value, but source default != target default: info (default value changed)
+				// Note: We already checked sourceDefaultStr == targetDefaultStr above and skipped, so this case is source != target
+				sourceDefaultStr := fmt.Sprintf("%v", sourceDefault)
+				targetDefaultStr := fmt.Sprintf("%v", targetDefault)
+				if sourceDefaultStr != targetDefaultStr {
+					// For map types, create separate CheckResult for each differing field
+					if IsMapType(sourceDefault) && IsMapType(targetDefault) {
+						opts := CompareOptions{
+							IgnoredParams: nil,
+							BasePath:      displayName,
+						}
+						sourceTargetDiffs := CompareMapsDeep(sourceDefault, targetDefault, opts)
+						
+						for fieldPath, diff := range sourceTargetDiffs {
+							fieldDetails := FormatValueDiff(diff.Source, diff.Current) // Source -> Target
+							fieldDetails = "Current value matches target default.\n\n" + fieldDetails
+							
+							results = append(results, CheckResult{
+								RuleID:        r.Name(),
+								Category:      r.Category(),
+								Component:     compType,
+								ParameterName: fmt.Sprintf("%s.%s", displayName, fieldPath),
+								ParamType:     paramType,
+								Severity:      "info",
+								RiskLevel:     RiskLevelLow,
+								Message:       fmt.Sprintf("Parameter %s.%s in %s: default value changed between source and target versions", displayName, fieldPath, compType),
+								Details:       fieldDetails,
+								CurrentValue:  currentValue,
+								TargetDefault: diff.Current,
+								SourceDefault: diff.Source,
+								Suggestions: []string{
+									"Default value has changed between source and target versions",
+									"Your current value matches the new target default",
+								},
+							})
+						}
+					} else {
+						// For non-map types
+						details := FormatDefaultChangeDiff(currentValue, sourceDefault, targetDefault, nil)
+						if !strings.Contains(details, "matches target default") {
+							details = "Current value matches target default.\n\n" + details
+						}
+						results = append(results, CheckResult{
+							RuleID:        r.Name(),
+							Category:      r.Category(),
+							Component:     compType,
+							ParameterName: displayName,
+							ParamType:     paramType,
+							Severity:      "info",
+							RiskLevel:     RiskLevelLow,
+							Message:       fmt.Sprintf("Parameter %s in %s: default value changed between source and target versions", displayName, compType),
+							Details:       details,
+							CurrentValue:  currentValue,
+							TargetDefault: targetDefault,
+							SourceDefault: sourceDefault,
+							Suggestions: []string{
+								"Default value has changed between source and target versions",
+								"Your current value matches the new target default",
+							},
+						})
+					}
 				}
 				// Otherwise: target default == current value == source default, skip (consistent)
 			}
