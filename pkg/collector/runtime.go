@@ -14,14 +14,17 @@
 package collector
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector/pd"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector/tidb"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector/tiflash"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector/tikv"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/types"
 )
 
 // CollectDataRequirements defines what data needs to be collected from the cluster
@@ -125,12 +128,37 @@ func (c *Collector) collectWithRequirements(endpoints ClusterEndpoints, req Coll
 			if err != nil {
 				fmt.Printf("Warning: failed to collect from TiKV: %v\n", err)
 			} else {
+				// Supplement TiKV config with SHOW CONFIG if TiDB connection is available
+				// This ensures we get all parameters (including optional ones like backup.*)
+				// that may not be in last_tikv.toml but are available via SHOW CONFIG
+				var tikvConfigFromSHOW map[string]interface{}
+				if endpoints.TiDBAddr != "" {
+					tikvConfigFromSHOW, err = c.supplementTiKVConfigViaSHOWCONFIG(
+						endpoints.TiDBAddr, endpoints.TiDBUser, endpoints.TiDBPassword)
+					if err != nil {
+						fmt.Printf("Warning: failed to supplement TiKV config via SHOW CONFIG: %v\n", err)
+						// Continue without SHOW CONFIG data
+						tikvConfigFromSHOW = nil
+					}
+				}
+
 				// Store TiKV instances
 				// If NeedAllTikvNodes is false, only store the first one
 				// If true, store all nodes
 				for i, state := range tikvStates {
 					if !req.NeedAllTikvNodes && i > 0 {
 						break // Only need first instance
+					}
+
+					// Merge SHOW CONFIG data into state.Config (priority: SHOW CONFIG > last_tikv.toml)
+					if tikvConfigFromSHOW != nil {
+						// Convert SHOW CONFIG result to ConfigDefaults format
+						showConfigDefaults := types.ConvertConfigToDefaults(tikvConfigFromSHOW)
+						// Merge: SHOW CONFIG values override last_tikv.toml values
+						// This ensures we have all parameters, including optional ones
+						for k, v := range showConfigDefaults {
+							state.Config[k] = v
+						}
 					}
 
 					addr := endpoints.TiKVAddrs[i]
@@ -196,4 +224,31 @@ func contains(slice []string, value string) bool {
 		}
 	}
 	return false
+}
+
+// supplementTiKVConfigViaSHOWCONFIG supplements TiKV configuration using SHOW CONFIG
+// This ensures we get all parameters (including optional ones like backup.*) that may
+// not be in last_tikv.toml but are available via SHOW CONFIG WHERE type='tikv'
+// This matches the approach used in knowledge base generation for consistency
+func (c *Collector) supplementTiKVConfigViaSHOWCONFIG(tidbAddr, tidbUser, tidbPassword string) (map[string]interface{}, error) {
+	// Build DSN for TiDB connection
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/", tidbUser, tidbPassword, tidbAddr)
+	if tidbUser == "" {
+		dsn = fmt.Sprintf("root@tcp(%s)/", tidbAddr)
+	}
+
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database connection: %w", err)
+	}
+	defer db.Close()
+	db.SetConnMaxLifetime(10 * time.Second)
+
+	// Use TiDB collector's GetConfigByType method to get TiKV config
+	config, err := c.tidbCollector.GetConfigByType(db, "tikv")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get TiKV config via SHOW CONFIG: %w", err)
+	}
+
+	return config, nil
 }
