@@ -143,22 +143,44 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 					reportTypeLabel = "[High Risk]"
 				}
 
-				content.WriteString(fmt.Sprintf("   - [%s] %s %s (%s):\n", check.Severity, reportTypeLabel, check.ParameterName, paramType))
-				content.WriteString(fmt.Sprintf("     Current: %v\n", formatValue(check.CurrentValue)))
-				if check.SourceDefault != nil {
-					content.WriteString(fmt.Sprintf("     Source Default: %v\n", formatValue(check.SourceDefault)))
+				// Format as checklist item
+				content.WriteString(fmt.Sprintf("   - [%s] %s %s (%s)\n", check.Severity, reportTypeLabel, check.ParameterName, paramType))
+
+				// If Details contains formatted content, use it; otherwise show individual values
+				if check.Details != "" && strings.Contains(check.Details, "Current Value:") {
+					// Details already contains formatted comparison, use it
+					detailsLines := strings.Split(check.Details, "\n")
+					for _, line := range detailsLines {
+						if line != "" {
+							content.WriteString(fmt.Sprintf("     %s\n", line))
+						}
+					}
+				} else {
+					// Fall back to individual value display
+					if check.CurrentValue != nil {
+						content.WriteString(fmt.Sprintf("     Current: %s\n", formatValueForDisplay(check.CurrentValue)))
+					}
+					if check.SourceDefault != nil {
+						content.WriteString(fmt.Sprintf("     Source Default: %s\n", formatValueForDisplay(check.SourceDefault)))
+					}
+					if check.TargetDefault != nil {
+						content.WriteString(fmt.Sprintf("     Target Default: %s\n", formatValueForDisplay(check.TargetDefault)))
+					}
+					if check.ForcedValue != nil {
+						content.WriteString(fmt.Sprintf("     Forced To: %s\n", formatValueForDisplay(check.ForcedValue)))
+					}
+					if check.Details != "" {
+						detailsLines := strings.Split(check.Details, "\n")
+						for _, line := range detailsLines {
+							if line != "" {
+								content.WriteString(fmt.Sprintf("     %s\n", line))
+							}
+						}
+					}
 				}
-				if check.TargetDefault != nil {
-					content.WriteString(fmt.Sprintf("     Target Default: %v\n", formatValue(check.TargetDefault)))
-				}
-				if check.ForcedValue != nil {
-					content.WriteString(fmt.Sprintf("     Forced To: %v\n", formatValue(check.ForcedValue)))
-				}
+
 				if check.Message != "" {
 					content.WriteString(fmt.Sprintf("     Message: %s\n", check.Message))
-				}
-				if check.Details != "" {
-					content.WriteString(fmt.Sprintf("     Details: %s\n", check.Details))
 				}
 				if len(check.Suggestions) > 0 {
 					content.WriteString("     Suggestions:\n")
@@ -201,4 +223,19 @@ func formatValue(v interface{}) string {
 		return "N/A"
 	}
 	return fmt.Sprintf("%v", v)
+}
+
+// formatValueForDisplay formats a value for clear display, handling complex types
+func formatValueForDisplay(v interface{}) string {
+	if v == nil {
+		return "N/A"
+	}
+
+	// For complex types (maps, slices), try JSON formatting for readability
+	valStr := fmt.Sprintf("%v", v)
+	if len(valStr) > 200 {
+		// For very long values, truncate and add ellipsis
+		return valStr[:200] + "..."
+	}
+	return valStr
 }
