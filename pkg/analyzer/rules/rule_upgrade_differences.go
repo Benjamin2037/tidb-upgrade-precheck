@@ -7,6 +7,20 @@ import (
 	"strings"
 )
 
+// ignoredParamsForUpgradeDifferences contains parameters that should be ignored
+// when reporting default value changes. These are typically deployment-specific
+// parameters (paths, hostnames, etc.) that differ between environments but don't
+// represent actual configuration changes that users need to be aware of.
+var ignoredParamsForUpgradeDifferences = map[string]bool{
+	// Deployment-specific path parameters
+	"host":                true, // Host binding address (deployment-specific)
+	"log.file.filename":   true, // Log file path (deployment-specific)
+	"log.slow-query-file": true, // Slow query log file path (deployment-specific)
+	"tmp-storage-path":    true, // Temporary storage path (deployment-specific)
+	// Other parameters to ignore
+	"deprecate-integer-display-length": true, // Deprecated parameter, no need to report
+}
+
 // UpgradeDifferencesRule detects parameters that will differ after upgrade
 // Rule 2.2: Compare current cluster values with target version defaults
 // and identify forced changes from upgrade logic
@@ -172,6 +186,12 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 					// Config parameter not in current cluster, skip
 					continue
 				}
+			}
+
+			// Skip ignored parameters (deployment-specific paths, etc.)
+			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] {
+				totalSkipped++
+				continue
 			}
 
 			// Compare target default with current cluster value
