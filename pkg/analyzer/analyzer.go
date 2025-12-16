@@ -523,10 +523,14 @@ func (a *Analyzer) organizeResults(checkResults []rules.CheckResult, sourceVersi
 		}
 		filteredResults = append(filteredResults, check)
 	}
-	result.CheckResults = filteredResults
+	
+	// Deduplicate results: same parameter (Component + ParameterName + ParamType) should only appear once
+	// Priority: Forced > User Modified > Upgrade Difference > Consistency
+	deduplicatedResults := deduplicateCheckResults(filteredResults)
+	result.CheckResults = deduplicatedResults
 
 	// Organize results by category
-	for _, check := range filteredResults {
+	for _, check := range deduplicatedResults {
 		switch check.Category {
 		case "user_modified":
 			a.addModifiedParam(result, check)
@@ -624,4 +628,74 @@ func mergeStringSlices(slice1, slice2 []string) []string {
 	}
 
 	return result
+}
+
+// deduplicateCheckResults removes duplicate check results for the same parameter
+// Priority: Forced > User Modified > Upgrade Difference > Consistency
+// Key: Component + ParameterName + ParamType
+func deduplicateCheckResults(results []rules.CheckResult) []rules.CheckResult {
+	// Map to store the best result for each parameter
+	// Key: Component + ParameterName + ParamType
+	bestResults := make(map[string]rules.CheckResult)
+	
+	// Priority order: higher number = higher priority
+	getPriority := func(check rules.CheckResult) int {
+		// Forced changes have highest priority
+		if check.ForcedValue != nil {
+			return 4
+		}
+		// User modified has second priority
+		if check.Category == "user_modified" {
+			return 3
+		}
+		// Upgrade difference has third priority
+		if check.Category == "upgrade_difference" {
+			return 2
+		}
+		// Consistency has lowest priority
+		if check.Category == "consistency" {
+			return 1
+		}
+		return 0
+	}
+	
+	// Process all results
+	for _, check := range results {
+		// Create unique key: Component + ParameterName + ParamType
+		key := fmt.Sprintf("%s:%s:%s", check.Component, check.ParameterName, check.ParamType)
+		
+		// If this is the first result for this parameter, or this result has higher priority
+		if existing, exists := bestResults[key]; !exists {
+			bestResults[key] = check
+		} else {
+			existingPriority := getPriority(existing)
+			currentPriority := getPriority(check)
+			
+			// If current result has higher priority, replace
+			if currentPriority > existingPriority {
+				bestResults[key] = check
+			} else if currentPriority == existingPriority {
+				// If same priority, prefer higher severity
+				severityOrder := map[string]int{
+					"critical": 4,
+					"error":    3,
+					"warning":  2,
+					"info":     1,
+				}
+				existingSeverity := severityOrder[existing.Severity]
+				currentSeverity := severityOrder[check.Severity]
+				if currentSeverity > existingSeverity {
+					bestResults[key] = check
+				}
+			}
+		}
+	}
+	
+	// Convert map back to slice
+	deduplicated := make([]rules.CheckResult, 0, len(bestResults))
+	for _, check := range bestResults {
+		deduplicated = append(deduplicated, check)
+	}
+	
+	return deduplicated
 }

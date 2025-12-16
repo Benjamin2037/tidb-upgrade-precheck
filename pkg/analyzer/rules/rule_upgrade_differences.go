@@ -25,7 +25,7 @@ var ignoredParamsForUpgradeDifferences = map[string]bool{
 	"log.file.max-backups": true, // Log file max backups (deployment-specific, may vary)
 
 	// Deployment-specific path parameters (TiKV)
-	"data-dir":              true, // Data directory (deployment-specific)
+	"data-dir":             true, // Data directory (deployment-specific)
 	"log-file":             true, // Log file path (deployment-specific)
 	"deploy-dir":           true, // Deploy directory (deployment-specific)
 	"log-dir":              true, // Log directory (deployment-specific)
@@ -46,11 +46,37 @@ var ignoredParamsForUpgradeDifferences = map[string]bool{
 	"deprecate-integer-display-length": true, // Deprecated parameter, no need to report
 }
 
+// isPathParameter checks if a parameter name indicates a path-related parameter
+// This is a catch-all for any path parameters we might have missed
+func isPathParameter(paramName string) bool {
+	// Check if parameter name contains path-related keywords
+	pathKeywords := []string{
+		"-path", ".path", "path",
+		"-dir", ".dir", "dir",
+		"filename", "file-name",
+		"log-file", "log-dir",
+		"data-dir", "deploy-dir",
+		"temp", "tmp",
+		"ca-path", "cert-path", "key-path",
+		"dirname", "dir-name",
+		"info-log-dir",
+		"raftdb-path",
+	}
+	
+	paramNameLower := strings.ToLower(paramName)
+	for _, keyword := range pathKeywords {
+		if strings.Contains(paramNameLower, keyword) {
+			return true
+		}
+	}
+	return false
+}
+
 // filenameOnlyParams contains parameters that should be compared by filename only (ignoring path)
 // For these parameters, only the filename part is compared, not the full path
 var filenameOnlyParams = map[string]bool{
-	"log.file.filename": true, // Log file - compare filename only
-	"log-file":          true, // Log file - compare filename only
+	"log.file.filename":   true, // Log file - compare filename only
+	"log-file":            true, // Log file - compare filename only
 	"log.slow-query-file": true, // Slow query log file - compare filename only
 }
 
@@ -222,7 +248,13 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			}
 
 			// Skip ignored parameters (deployment-specific paths, etc.)
-			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] {
+			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] || isPathParameter(displayName) || isPathParameter(paramName) {
+				totalSkipped++
+				continue
+			}
+			
+			// Skip all path-related parameters (check by parameter name)
+			if IsPathParameter(displayName) || IsPathParameter(paramName) {
 				totalSkipped++
 				continue
 			}
@@ -231,7 +263,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			// For filename-only parameters, compare by filename only (ignore path)
 			var targetDiffersFromCurrent bool
 			var sourceDefaultStr, targetDefaultStr string
-			
+
 			if filenameOnlyParams[displayName] || filenameOnlyParams[paramName] {
 				// Compare by filename only
 				targetDiffersFromCurrent = !CompareFileNames(targetDefault, currentValue)
@@ -582,26 +614,28 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				if paramValue, ok := component.Config[paramName]; ok {
 					currentValue = paramValue.Value
 				} else {
-					continue // Not in current cluster
+					// Parameter not in current cluster - skip (already deprecated/removed)
+					continue
 				}
 			}
 
 			// Skip ignored parameters (deployment-specific paths, etc.)
-			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] {
+			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] || isPathParameter(displayName) || isPathParameter(paramName) {
 				continue
 			}
 
-			// Check if current value is empty/nil (parameter not actually used)
+			// Check if current value is empty/nil (parameter not actually used or already deprecated)
 			currentValueStr := fmt.Sprintf("%v", currentValue)
 			isEmpty := currentValue == nil || currentValueStr == "" || currentValueStr == "<nil>" || currentValueStr == "N/A"
-
-			// Build details message
-			var details string
+			
+			// If parameter is not present in current cluster (empty value), skip
+			// This means the parameter was already deprecated/removed in source version
 			if isEmpty {
-				details = fmt.Sprintf("Parameter is not present in current cluster (may have been removed or not configured). Source default: %v. This parameter will be removed in target version.", sourceDefault)
-			} else {
-				details = fmt.Sprintf("Current cluster value: %v, Source default: %v. This parameter will be removed in target version.", currentValue, sourceDefault)
+				continue
 			}
+			
+			// Build details message
+			details := fmt.Sprintf("Current cluster value: %v, Source default: %v. This parameter will be removed in target version.", currentValue, sourceDefault)
 
 			// Parameter deprecated: low risk (info)
 			results = append(results, CheckResult{
