@@ -19,7 +19,7 @@
 
 ```bash
 # 1.1 检查目录结构
-cd /Users/benjamin2037/Desktop/workspace/sourcecode
+cd /home/bearc/workspace/sourcecode
 ls -d tiup tidb-upgrade-precheck
 
 # 1.2 构建 tidb-upgrade-precheck
@@ -36,8 +36,8 @@ ls -lh bin/tiup-cluster
 # 注意：这些环境变量只在当前 shell 会话中有效
 # 如果需要在新的终端窗口中使用，需要重新执行 export 命令
 # 或者可以将这些 export 命令添加到 ~/.zshrc 或 ~/.bashrc 中使其永久生效
-export TIDB_UPGRADE_PRECHECK_BIN=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
-export TIDB_UPGRADE_PRECHECK_KB=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/knowledge
+export TIDB_UPGRADE_PRECHECK_BIN=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
+export TIDB_UPGRADE_PRECHECK_KB=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/knowledge
 
 # 验证环境变量（在同一 shell 会话中）
 echo "Binary: $TIDB_UPGRADE_PRECHECK_BIN"
@@ -49,19 +49,19 @@ ls -d "$TIDB_UPGRADE_PRECHECK_KB"
 **验证点**（执行完上述操作步骤后验证）:
 - [ ] tidb-upgrade-precheck 二进制存在且可执行（验证 1.2 步骤的编译结果）
   ```bash
-  ls -lh /Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
-  /Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck --help | head -5
+  ls -lh /home/bearc/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
+  /home/bearc/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck --help | head -5
   ```
 - [ ] tiup-cluster 二进制存在且可执行（验证 1.3 步骤的编译结果）
   ```bash
-  ls -lh /Users/benjamin2037/Desktop/workspace/sourcecode/tiup/bin/tiup-cluster
-  /Users/benjamin2037/Desktop/workspace/sourcecode/tiup/bin/tiup-cluster --help | head -5
+  ls -lh /home/bearc/workspace/sourcecode/tiup/bin/tiup-cluster
+  /home/bearc/workspace/sourcecode/tiup/bin/tiup-cluster --help | head -5
   ```
 - [ ] 环境变量正确设置（**注意：必须先执行 1.4 步骤的 export 命令，或在同一个 shell 会话中执行**）
   ```bash
   # 如果环境变量未设置，先执行以下命令：
-  export TIDB_UPGRADE_PRECHECK_BIN=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
-  export TIDB_UPGRADE_PRECHECK_KB=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/knowledge
+  export TIDB_UPGRADE_PRECHECK_BIN=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
+  export TIDB_UPGRADE_PRECHECK_KB=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/knowledge
   
   # 然后验证环境变量
   echo "TIDB_UPGRADE_PRECHECK_BIN: $TIDB_UPGRADE_PRECHECK_BIN"
@@ -74,7 +74,7 @@ ls -d "$TIDB_UPGRADE_PRECHECK_KB"
   ls -d "$TIDB_UPGRADE_PRECHECK_KB" && echo "✓ KB directory exists" || echo "✗ KB directory not found"
   
   # 如果环境变量未设置，使用绝对路径：
-  ls -d /Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/knowledge && echo "✓ KB directory exists" || echo "✗ KB directory not found"
+  ls -d /home/bearc/workspace/sourcecode/tidb-upgrade-precheck/knowledge && echo "✓ KB directory exists" || echo "✗ KB directory not found"
   ```
 
 ### 1.5 远程 Linux VM 快速准备（在有 systemd 的 Linux 上运行 tiup cluster）
@@ -164,7 +164,7 @@ $tiup_bin upgrade e2e-test-cluster v8.5.2 --precheck   --precheck-bin $TIDB_UPGR
 ### 2. 知识库准备
 
 ```bash
-cd /Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck
+cd /home/bearc/workspace/sourcecode/tidb-upgrade-precheck
 
 # 检查知识库
 ls -d knowledge/v7.5/v7.5.1 knowledge/v8.5/v8.5.4 2>/dev/null || echo "需要生成知识库"
@@ -178,12 +178,12 @@ ls -d knowledge/v7.5/v7.5.1 knowledge/v8.5/v8.5.4 2>/dev/null || echo "需要生
 
 # 方式 B: 单独生成 upgrade_logic.json（如果需要强制重新生成）
 # 注意：需要先切换到 TiDB 仓库的 master/main 分支
-# cd /Users/benjamin2037/Desktop/workspace/sourcecode/tidb
+# cd /home/bearc/workspace/sourcecode/tidb
 # git checkout master  # 或 git checkout main
 # cd ../tidb-upgrade-precheck
 # mkdir -p knowledge/tidb
 # GOWORK=off go run cmd/generate_upgrade_logic/main.go \
-#   --tidb-repo=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb \
+#   --tidb-repo=/home/bearc/workspace/sourcecode/tidb \
 #   --output=knowledge/tidb/upgrade_logic.json
 
 # 方式 1: 使用 generate_knowledge.sh 脚本生成 v7.5.1（批量生成方式）
@@ -448,7 +448,7 @@ echo "1. 检查拓扑文件:"
 echo "   cat /tmp/e2e-test-topology.yaml"
 echo ""
 echo "2. 手动部署集群:"
-echo "   cd /Users/benjamin2037/Desktop/workspace/sourcecode/tiup"
+echo "   cd /home/bearc/workspace/sourcecode/tiup"
 echo "   ./bin/tiup-cluster deploy e2e-test-cluster v7.5.1 /tmp/e2e-test-topology.yaml -y"
 echo ""
 echo "3. 检查部署结果:"
@@ -464,7 +464,7 @@ echo "启动集群 $CLUSTER_NAME..."
 if ! tiup cluster list 2>/dev/null | grep -q "^$CLUSTER_NAME"; then
     echo "✗ 错误: 集群 $CLUSTER_NAME 不存在，无法启动"
     echo "  请先执行 3.2 步骤部署集群"
-    echo "  或者手动执行: cd /Users/benjamin2037/Desktop/workspace/sourcecode/tiup && ./bin/tiup-cluster deploy $CLUSTER_NAME v7.5.1 /tmp/e2e-test-topology.yaml -y"
+    echo "  或者手动执行: cd /home/bearc/workspace/sourcecode/tiup && ./bin/tiup-cluster deploy $CLUSTER_NAME v7.5.1 /tmp/e2e-test-topology.yaml -y"
     echo ""
     echo "⚠ 警告: 集群不存在，请先部署集群"
     # 注意：不使用 exit，避免退出 shell 会话
@@ -493,7 +493,7 @@ echo "验证集群状态..."
 if ! tiup cluster list 2>/dev/null | grep -q "^$CLUSTER_NAME"; then
     echo "✗ 错误: 集群 $CLUSTER_NAME 不存在"
     echo "  请先执行 3.2 步骤部署集群"
-    echo "  或者手动执行: cd /Users/benjamin2037/Desktop/workspace/sourcecode/tiup && ./bin/tiup-cluster deploy $CLUSTER_NAME v7.5.1 /tmp/e2e-test-topology.yaml -y"
+    echo "  或者手动执行: cd /home/bearc/workspace/sourcecode/tiup && ./bin/tiup-cluster deploy $CLUSTER_NAME v7.5.1 /tmp/e2e-test-topology.yaml -y"
     echo ""
     echo "⚠ 警告: 集群不存在，请先部署集群"
     # 注意：不使用 exit，避免退出 shell 会话
@@ -525,7 +525,7 @@ fi
   else
     echo "✗ Cluster not deployed"
     echo "  请执行以下命令部署集群："
-    echo "  cd /Users/benjamin2037/Desktop/workspace/sourcecode/tiup"
+    echo "  cd /home/bearc/workspace/sourcecode/tiup"
     echo "  ./bin/tiup-cluster deploy e2e-test-cluster v7.5.1 /tmp/e2e-test-topology.yaml -y"
   fi
   ```
@@ -534,7 +534,7 @@ fi
   # 先检查集群是否存在
   if ! tiup cluster list 2>/dev/null | grep -q "^e2e-test-cluster"; then
     echo "✗ Cluster not found, please deploy first"
-    echo "  执行部署: cd /Users/benjamin2037/Desktop/workspace/sourcecode/tiup && ./bin/tiup-cluster deploy e2e-test-cluster v7.5.1 /tmp/e2e-test-topology.yaml -y"
+    echo "  执行部署: cd /home/bearc/workspace/sourcecode/tiup && ./bin/tiup-cluster deploy e2e-test-cluster v7.5.1 /tmp/e2e-test-topology.yaml -y"
     # 注意：不使用 exit，避免退出 shell 会话
   else
     # 启动集群（如果未启动）
@@ -555,7 +555,7 @@ fi
   # 检查集群是否存在
   if ! tiup cluster list 2>/dev/null | grep -q "^e2e-test-cluster"; then
     echo "✗ Cluster not found, please deploy and start cluster first"
-    echo "  执行部署: cd /Users/benjamin2037/Desktop/workspace/sourcecode/tiup && ./bin/tiup-cluster deploy e2e-test-cluster v7.5.1 /tmp/e2e-test-topology.yaml -y"
+    echo "  执行部署: cd /home/bearc/workspace/sourcecode/tiup && ./bin/tiup-cluster deploy e2e-test-cluster v7.5.1 /tmp/e2e-test-topology.yaml -y"
     # 注意：不使用 exit，避免退出 shell 会话
   else
     # 检查组件状态
@@ -603,10 +603,10 @@ fi
 #### Test 1.1: 基本 Precheck-Only 测试
 
 ```bash
-cd /Users/benjamin2037/Desktop/workspace/sourcecode/tiup
+cd /home/bearc/workspace/sourcecode/tiup
 
-export TIDB_UPGRADE_PRECHECK_BIN=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
-export TIDB_UPGRADE_PRECHECK_KB=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/knowledge
+export TIDB_UPGRADE_PRECHECK_BIN=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
+export TIDB_UPGRADE_PRECHECK_KB=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/knowledge
 
 # 执行 precheck-only
 ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck
@@ -691,38 +691,56 @@ export TIDB_UPGRADE_PRECHECK_KB=/Users/benjamin2037/Desktop/workspace/sourcecode
 ```
 
 **验证点**:
-- [ ] 报告格式为 HTML
+- [ ] 命令直接退出，无需用户交互（`--precheck` 模式下自动退出）
   ```bash
-  ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck --precheck-output html 2>&1 | grep -i "html\|report generated"
+  ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck --precheck-output html
+  echo "Exit code: $?"  # 应该返回 0
   ```
-- [ ] 报告文件生成在 `~/.tiup/storage/cluster/upgrade_precheck/reports/`
+- [ ] 退出码为 0（precheck 完成即成功，无需用户确认）
   ```bash
-  ls -lh ~/.tiup/storage/cluster/upgrade_precheck/reports/*.html
+  ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck --precheck-output html
+  [ $? -eq 0 ] && echo "✓ Exit code is 0" || echo "✗ Exit code is not 0"
+  ```
+- [ ] 报告格式为 HTML，且显示 "Precheck completed" 消息
+  ```bash
+  ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck --precheck-output html 2>&1 | grep -iE "html|report generated|precheck completed"
+  ```
+- [ ] 报告文件生成在 `~/.tiup/upgrade_precheck/reports/`（注意：不是 `~/.tiup/storage/cluster/`）
+  ```bash
+  ls -lh ~/.tiup/upgrade_precheck/reports/*.html
   ```
 - [ ] 报告文件名格式为 `upgrade_precheck_report_*.html`
   ```bash
-  ls ~/.tiup/storage/cluster/upgrade_precheck/reports/ | grep "upgrade_precheck_report_.*\.html"
+  ls ~/.tiup/upgrade_precheck/reports/ | grep "upgrade_precheck_report_.*\.html"
   ```
 - [ ] 报告内容完整且格式正确
   ```bash
-  REPORT_FILE=$(ls -t ~/.tiup/storage/cluster/upgrade_precheck/reports/*.html | head -1)
+  REPORT_FILE=$(ls -t ~/.tiup/upgrade_precheck/reports/*.html | head -1)
   echo "Report file: $REPORT_FILE"
   head -50 "$REPORT_FILE"
   # 检查 HTML 结构
   grep -E "<html|<head|<body|</html>" "$REPORT_FILE" | head -5
   ```
+- [ ] 不包含升级相关操作（只运行 precheck，不执行升级）
+  ```bash
+  ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck --precheck-output html 2>&1 | grep -iE "upgrading component|restarting instance|executing.*upgrade|download.*tar\.gz" && echo "✗ Found upgrade operations" || echo "✓ No upgrade operations"
+  ```
 
 **检查报告文件**:
 ```bash
 # 列出所有 HTML 报告
-ls -lh ~/.tiup/storage/cluster/upgrade_precheck/reports/*.html
+ls -lh ~/.tiup/upgrade_precheck/reports/*.html
 
 # 查看最新报告内容
-REPORT_FILE=$(ls -t ~/.tiup/storage/cluster/upgrade_precheck/reports/*.html | head -1)
-cat "$REPORT_FILE" | head -50
-
-# 在浏览器中打开（macOS）
-open "$REPORT_FILE"
+REPORT_FILE=$(ls -t ~/.tiup/upgrade_precheck/reports/*.html | head -1)
+if [ -n "$REPORT_FILE" ]; then
+  echo "Latest HTML report: $REPORT_FILE"
+  head -50 "$REPORT_FILE"
+  # 在 Linux 上可以用浏览器打开（如果支持）
+  # xdg-open "$REPORT_FILE"  # 或者用其他浏览器命令
+else
+  echo "No HTML reports found. Run with --precheck-output html to generate HTML report."
+fi
 ```
 
 #### Test 1.4: Precheck-Only with Markdown Format
@@ -1203,19 +1221,19 @@ unset TIDB_UPGRADE_PRECHECK_BIN
   ```bash
   unset TIDB_UPGRADE_PRECHECK_BIN
   ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck 2>&1 | grep -i "trying\|looking.*for\|searching"
-  export TIDB_UPGRADE_PRECHECK_BIN=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
+  export TIDB_UPGRADE_PRECHECK_BIN=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
   ```
 - [ ] 或显示清晰的错误信息
   ```bash
   unset TIDB_UPGRADE_PRECHECK_BIN
   ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck 2>&1 | grep -i "error.*binary\|not found\|cannot.*find"
-  export TIDB_UPGRADE_PRECHECK_BIN=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
+  export TIDB_UPGRADE_PRECHECK_BIN=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
   ```
 - [ ] 错误信息包含解决建议
   ```bash
   unset TIDB_UPGRADE_PRECHECK_BIN
   ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck 2>&1 | grep -i "set.*TIDB_UPGRADE_PRECHECK_BIN\|environment.*variable\|solution"
-  export TIDB_UPGRADE_PRECHECK_BIN=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
+  export TIDB_UPGRADE_PRECHECK_BIN=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
   ```
 
 #### Test 5.6: 缺少环境变量（知识库路径）
@@ -1230,19 +1248,19 @@ unset TIDB_UPGRADE_PRECHECK_KB
   ```bash
   unset TIDB_UPGRADE_PRECHECK_KB
   ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck 2>&1 | grep -i "trying\|looking.*for\|searching.*knowledge"
-  export TIDB_UPGRADE_PRECHECK_KB=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/knowledge
+  export TIDB_UPGRADE_PRECHECK_KB=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/knowledge
   ```
 - [ ] 或显示清晰的错误信息
   ```bash
   unset TIDB_UPGRADE_PRECHECK_KB
   ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck 2>&1 | grep -i "error.*knowledge\|knowledge.*not found\|cannot.*find.*knowledge"
-  export TIDB_UPGRADE_PRECHECK_KB=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/knowledge
+  export TIDB_UPGRADE_PRECHECK_KB=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/knowledge
   ```
 - [ ] 错误信息包含解决建议
   ```bash
   unset TIDB_UPGRADE_PRECHECK_KB
   ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck 2>&1 | grep -i "set.*TIDB_UPGRADE_PRECHECK_KB\|environment.*variable\|solution"
-  export TIDB_UPGRADE_PRECHECK_KB=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/knowledge
+  export TIDB_UPGRADE_PRECHECK_KB=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/knowledge
   ```
 
 ---
@@ -1804,7 +1822,7 @@ tikv_servers:
 EOF
 
 # 使用不包含 TiFlash 的拓扑文件部署
-cd /Users/benjamin2037/Desktop/workspace/sourcecode/tiup
+cd /home/bearc/workspace/sourcecode/tiup
 ./bin/tiup-cluster deploy e2e-test-cluster v7.5.1 /tmp/e2e-test-topology-no-tiflash.yaml -y
 
 # 如果仍然失败，说明 TiUP 会强制下载监控组件
@@ -1821,7 +1839,7 @@ ls -la ~/.tiup/storage/cluster/clusters/
 rm -rf ~/.tiup/storage/cluster/clusters/e2e-test-cluster
 
 # 3. 重新部署
-cd /Users/benjamin2037/Desktop/workspace/sourcecode/tiup
+cd /home/bearc/workspace/sourcecode/tiup
 ./bin/tiup-cluster deploy e2e-test-cluster v7.5.1 /tmp/e2e-test-topology.yaml -y
 ```
 
@@ -1831,7 +1849,7 @@ cd /Users/benjamin2037/Desktop/workspace/sourcecode/tiup
 
 ```bash
 # 1. 找到 TiUP cluster 组件的部署代码
-cd /Users/benjamin2037/Desktop/workspace/sourcecode/tiup
+cd /home/bearc/workspace/sourcecode/tiup
 grep -r "node_exporter\|blackbox_exporter" components/cluster/
 
 # 2. 修改部署逻辑，在下载组件时跳过不支持的平台

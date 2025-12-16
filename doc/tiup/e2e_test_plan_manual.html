@@ -386,8 +386,8 @@ $tiup_bin upgrade e2e-test-cluster v8.5.2 --precheck   --precheck-bin $TIDB_UPGR
                             
                             <div class="command-block" style="margin-top: 5px;">
                                 <button class="copy-btn" onclick="copyCommand(this)">复制</button>
-                                <pre>ls -lh /Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
-  /Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck --help | head -5</pre>
+                                <pre>ls -lh /home/bearc/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
+  /home/bearc/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck --help | head -5</pre>
                             </div>
 
                             <textarea class="remark-input" placeholder="添加备注..." data-id="prep-1-cp1-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
@@ -404,8 +404,8 @@ $tiup_bin upgrade e2e-test-cluster v8.5.2 --precheck   --precheck-bin $TIDB_UPGR
                             
                             <div class="command-block" style="margin-top: 5px;">
                                 <button class="copy-btn" onclick="copyCommand(this)">复制</button>
-                                <pre>ls -lh /Users/benjamin2037/Desktop/workspace/sourcecode/tiup/bin/tiup-cluster
-  /Users/benjamin2037/Desktop/workspace/sourcecode/tiup/bin/tiup-cluster --help | head -5</pre>
+                                <pre>ls -lh /home/bearc/workspace/sourcecode/tiup/bin/tiup-cluster
+  /home/bearc/workspace/sourcecode/tiup/bin/tiup-cluster --help | head -5</pre>
                             </div>
 
                             <textarea class="remark-input" placeholder="添加备注..." data-id="prep-1-cp2-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
@@ -423,8 +423,8 @@ $tiup_bin upgrade e2e-test-cluster v8.5.2 --precheck   --precheck-bin $TIDB_UPGR
                             <div class="command-block" style="margin-top: 5px;">
                                 <button class="copy-btn" onclick="copyCommand(this)">复制</button>
                                 <pre># 如果环境变量未设置，先执行以下命令：
-  export TIDB_UPGRADE_PRECHECK_BIN=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
-  export TIDB_UPGRADE_PRECHECK_KB=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/knowledge
+  export TIDB_UPGRADE_PRECHECK_BIN=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
+  export TIDB_UPGRADE_PRECHECK_KB=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/knowledge
   
   # 然后验证环境变量
   echo "TIDB_UPGRADE_PRECHECK_BIN: $TIDB_UPGRADE_PRECHECK_BIN"
@@ -450,7 +450,7 @@ $tiup_bin upgrade e2e-test-cluster v8.5.2 --precheck   --precheck-bin $TIDB_UPGR
   ls -d "$TIDB_UPGRADE_PRECHECK_KB" && echo "✓ KB directory exists" || echo "✗ KB directory not found"
   
   # 如果环境变量未设置，使用绝对路径：
-  ls -d /Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/knowledge && echo "✓ KB directory exists" || echo "✗ KB directory not found"</pre>
+  ls -d /home/bearc/workspace/sourcecode/tidb-upgrade-precheck/knowledge && echo "✓ KB directory exists" || echo "✗ KB directory not found"</pre>
                             </div>
 
                             <textarea class="remark-input" placeholder="添加备注..." data-id="prep-1-cp4-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
@@ -538,7 +538,7 @@ $tiup_bin upgrade e2e-test-cluster v8.5.2 --precheck   --precheck-bin $TIDB_UPGR
 
                 <div class="command-block">
                     <button class="copy-btn" onclick="copyCommand(this)">复制</button>
-                    <pre>cd /Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck
+                    <pre>cd /home/bearc/workspace/sourcecode/tidb-upgrade-precheck
 
 # 检查知识库
 ls -d knowledge/v7.5/v7.5.1 knowledge/v8.5/v8.5.4 2>/dev/null || echo "需要生成知识库"
@@ -552,12 +552,12 @@ ls -d knowledge/v7.5/v7.5.1 knowledge/v8.5/v8.5.4 2>/dev/null || echo "需要生
 
 # 方式 B: 单独生成 upgrade_logic.json（如果需要强制重新生成）
 # 注意：需要先切换到 TiDB 仓库的 master/main 分支
-# cd /Users/benjamin2037/Desktop/workspace/sourcecode/tidb
+# cd /home/bearc/workspace/sourcecode/tidb
 # git checkout master  # 或 git checkout main
 # cd ../tidb-upgrade-precheck
 # mkdir -p knowledge/tidb
 # GOWORK=off go run cmd/generate_upgrade_logic/main.go \
-#   --tidb-repo=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb \
+#   --tidb-repo=/home/bearc/workspace/sourcecode/tidb \
 #   --output=knowledge/tidb/upgrade_logic.json
 
 # 方式 1: 使用 generate_knowledge.sh 脚本生成 v7.5.1（批量生成方式）
@@ -872,7 +872,7 @@ echo "1. 检查拓扑文件:"
 echo "   cat /tmp/e2e-test-topology.yaml"
 echo ""
 echo "2. 手动部署集群:"
-echo "   cd /Users/benjamin2037/Desktop/workspace/sourcecode/tiup"
+echo "   cd /home/bearc/workspace/sourcecode/tiup"
 echo "   ./bin/tiup-cluster deploy e2e-test-cluster v7.5.1 /tmp/e2e-test-topology.yaml -y"
 echo ""
 echo "3. 检查部署结果:"
@@ -888,7 +888,7 @@ echo "启动集群 $CLUSTER_NAME..."
 if ! tiup cluster list 2>/dev/null | grep -q "^$CLUSTER_NAME"; then
     echo "✗ 错误: 集群 $CLUSTER_NAME 不存在，无法启动"
     echo "  请先执行 3.2 步骤部署集群"
-    echo "  或者手动执行: cd /Users/benjamin2037/Desktop/workspace/sourcecode/tiup && ./bin/tiup-cluster deploy $CLUSTER_NAME v7.5.1 /tmp/e2e-test-topology.yaml -y"
+    echo "  或者手动执行: cd /home/bearc/workspace/sourcecode/tiup && ./bin/tiup-cluster deploy $CLUSTER_NAME v7.5.1 /tmp/e2e-test-topology.yaml -y"
     echo ""
     echo "⚠ 警告: 集群不存在，请先部署集群"
     # 注意：不使用 exit，避免退出 shell 会话
@@ -917,7 +917,7 @@ echo "验证集群状态..."
 if ! tiup cluster list 2>/dev/null | grep -q "^$CLUSTER_NAME"; then
     echo "✗ 错误: 集群 $CLUSTER_NAME 不存在"
     echo "  请先执行 3.2 步骤部署集群"
-    echo "  或者手动执行: cd /Users/benjamin2037/Desktop/workspace/sourcecode/tiup && ./bin/tiup-cluster deploy $CLUSTER_NAME v7.5.1 /tmp/e2e-test-topology.yaml -y"
+    echo "  或者手动执行: cd /home/bearc/workspace/sourcecode/tiup && ./bin/tiup-cluster deploy $CLUSTER_NAME v7.5.1 /tmp/e2e-test-topology.yaml -y"
     echo ""
     echo "⚠ 警告: 集群不存在，请先部署集群"
     # 注意：不使用 exit，避免退出 shell 会话
@@ -955,7 +955,7 @@ fi</pre>
   else
     echo "✗ Cluster not deployed"
     echo "  请执行以下命令部署集群："
-    echo "  cd /Users/benjamin2037/Desktop/workspace/sourcecode/tiup"
+    echo "  cd /home/bearc/workspace/sourcecode/tiup"
     echo "  ./bin/tiup-cluster deploy e2e-test-cluster v7.5.1 /tmp/e2e-test-topology.yaml -y"
   fi</pre>
                             </div>
@@ -977,7 +977,7 @@ fi</pre>
                                 <pre># 先检查集群是否存在
   if ! tiup cluster list 2>/dev/null | grep -q "^e2e-test-cluster"; then
     echo "✗ Cluster not found, please deploy first"
-    echo "  执行部署: cd /Users/benjamin2037/Desktop/workspace/sourcecode/tiup && ./bin/tiup-cluster deploy e2e-test-cluster v7.5.1 /tmp/e2e-test-topology.yaml -y"
+    echo "  执行部署: cd /home/bearc/workspace/sourcecode/tiup && ./bin/tiup-cluster deploy e2e-test-cluster v7.5.1 /tmp/e2e-test-topology.yaml -y"
     # 注意：不使用 exit，避免退出 shell 会话
   else
     # 启动集群（如果未启动）
@@ -1011,7 +1011,7 @@ fi</pre>
                                 <pre># 检查集群是否存在
   if ! tiup cluster list 2>/dev/null | grep -q "^e2e-test-cluster"; then
     echo "✗ Cluster not found, please deploy and start cluster first"
-    echo "  执行部署: cd /Users/benjamin2037/Desktop/workspace/sourcecode/tiup && ./bin/tiup-cluster deploy e2e-test-cluster v7.5.1 /tmp/e2e-test-topology.yaml -y"
+    echo "  执行部署: cd /home/bearc/workspace/sourcecode/tiup && ./bin/tiup-cluster deploy e2e-test-cluster v7.5.1 /tmp/e2e-test-topology.yaml -y"
     # 注意：不使用 exit，避免退出 shell 会话
   else
     # 检查组件状态
@@ -1095,10 +1095,10 @@ fi</pre>
 
                     <div class="command-block">
                         <button class="copy-btn" onclick="copyCommand(this)">复制</button>
-                        <pre>cd /Users/benjamin2037/Desktop/workspace/sourcecode/tiup
+                        <pre>cd /home/bearc/workspace/sourcecode/tiup
 
-export TIDB_UPGRADE_PRECHECK_BIN=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
-export TIDB_UPGRADE_PRECHECK_KB=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/knowledge
+export TIDB_UPGRADE_PRECHECK_BIN=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck
+export TIDB_UPGRADE_PRECHECK_KB=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/knowledge
 
 # 执行 precheck-only
 ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck</pre>
@@ -1361,14 +1361,18 @@ export TIDB_UPGRADE_PRECHECK_KB=/Users/benjamin2037/Desktop/workspace/sourcecode
                     <div class="command-block">
                         <button class="copy-btn" onclick="copyCommand(this)">复制</button>
                         <pre># 列出所有 HTML 报告
-ls -lh ~/.tiup/storage/cluster/upgrade_precheck/reports/*.html
+ls -lh ~/.tiup/upgrade_precheck/reports/*.html
 
 # 查看最新报告内容
-REPORT_FILE=$(ls -t ~/.tiup/storage/cluster/upgrade_precheck/reports/*.html | head -1)
-cat "$REPORT_FILE" | head -50
-
-# 在浏览器中打开（macOS）
-open "$REPORT_FILE"</pre>
+REPORT_FILE=$(ls -t ~/.tiup/upgrade_precheck/reports/*.html | head -1)
+if [ -n "$REPORT_FILE" ]; then
+  echo "Latest HTML report: $REPORT_FILE"
+  head -50 "$REPORT_FILE"
+  # 在 Linux 上可以用浏览器打开（如果支持）
+  # xdg-open "$REPORT_FILE"  # 或者用其他浏览器命令
+else
+  echo "No HTML reports found. Run with --precheck-output html to generate HTML report."
+fi</pre>
                     </div>
 
                     <textarea class="remark-input" placeholder="添加测试备注..." data-id="phase-1-test-1.3-remark" onblur="saveRemark(this)"></textarea>
@@ -1379,11 +1383,12 @@ open "$REPORT_FILE"</pre>
                         <div class="checkpoint-item">
                             <input type="checkbox" class="checkpoint-checkbox" data-id="phase-1-test-1.3-cp1" onchange="updateProgress()">
                             <div class="checkpoint-text">
-                                <strong>报告格式为 HTML</strong>
+                                <strong>命令直接退出，无需用户交互（`--precheck` 模式下自动退出）</strong>
                                 
                             <div class="command-block" style="margin-top: 5px;">
                                 <button class="copy-btn" onclick="copyCommand(this)">复制</button>
-                                <pre>./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck --precheck-output html 2>&1 | grep -i "html\|report generated"</pre>
+                                <pre>./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck --precheck-output html
+  echo "Exit code: $?"  # 应该返回 0</pre>
                             </div>
 
                                 <textarea class="remark-input" placeholder="添加备注..." data-id="phase-1-test-1.3-cp1-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
@@ -1396,11 +1401,12 @@ open "$REPORT_FILE"</pre>
                         <div class="checkpoint-item">
                             <input type="checkbox" class="checkpoint-checkbox" data-id="phase-1-test-1.3-cp2" onchange="updateProgress()">
                             <div class="checkpoint-text">
-                                <strong>报告文件生成在 `~/.tiup/storage/cluster/upgrade_precheck/reports/`</strong>
+                                <strong>退出码为 0（precheck 完成即成功，无需用户确认）</strong>
                                 
                             <div class="command-block" style="margin-top: 5px;">
                                 <button class="copy-btn" onclick="copyCommand(this)">复制</button>
-                                <pre>ls -lh ~/.tiup/storage/cluster/upgrade_precheck/reports/*.html</pre>
+                                <pre>./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck --precheck-output html
+  [ $? -eq 0 ] && echo "✓ Exit code is 0" || echo "✗ Exit code is not 0"</pre>
                             </div>
 
                                 <textarea class="remark-input" placeholder="添加备注..." data-id="phase-1-test-1.3-cp2-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
@@ -1413,11 +1419,11 @@ open "$REPORT_FILE"</pre>
                         <div class="checkpoint-item">
                             <input type="checkbox" class="checkpoint-checkbox" data-id="phase-1-test-1.3-cp3" onchange="updateProgress()">
                             <div class="checkpoint-text">
-                                <strong>报告文件名格式为 `upgrade_precheck_report_*.html`</strong>
+                                <strong>报告格式为 HTML，且显示 "Precheck completed" 消息</strong>
                                 
                             <div class="command-block" style="margin-top: 5px;">
                                 <button class="copy-btn" onclick="copyCommand(this)">复制</button>
-                                <pre>ls ~/.tiup/storage/cluster/upgrade_precheck/reports/ | grep "upgrade_precheck_report_.*\.html"</pre>
+                                <pre>./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck --precheck-output html 2>&1 | grep -iE "html|report generated|precheck completed"</pre>
                             </div>
 
                                 <textarea class="remark-input" placeholder="添加备注..." data-id="phase-1-test-1.3-cp3-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
@@ -1430,19 +1436,70 @@ open "$REPORT_FILE"</pre>
                         <div class="checkpoint-item">
                             <input type="checkbox" class="checkpoint-checkbox" data-id="phase-1-test-1.3-cp4" onchange="updateProgress()">
                             <div class="checkpoint-text">
+                                <strong>报告文件生成在 `~/.tiup/upgrade_precheck/reports/`（注意：不是 `~/.tiup/storage/cluster/`）</strong>
+                                
+                            <div class="command-block" style="margin-top: 5px;">
+                                <button class="copy-btn" onclick="copyCommand(this)">复制</button>
+                                <pre>ls -lh ~/.tiup/upgrade_precheck/reports/*.html</pre>
+                            </div>
+
+                                <textarea class="remark-input" placeholder="添加备注..." data-id="phase-1-test-1.3-cp4-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
+                                <div class="remark-display" data-id="phase-1-test-1.3-cp4-remark-display" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="checkpoint">
+                        <div class="checkpoint-item">
+                            <input type="checkbox" class="checkpoint-checkbox" data-id="phase-1-test-1.3-cp5" onchange="updateProgress()">
+                            <div class="checkpoint-text">
+                                <strong>报告文件名格式为 `upgrade_precheck_report_*.html`</strong>
+                                
+                            <div class="command-block" style="margin-top: 5px;">
+                                <button class="copy-btn" onclick="copyCommand(this)">复制</button>
+                                <pre>ls ~/.tiup/upgrade_precheck/reports/ | grep "upgrade_precheck_report_.*\.html"</pre>
+                            </div>
+
+                                <textarea class="remark-input" placeholder="添加备注..." data-id="phase-1-test-1.3-cp5-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
+                                <div class="remark-display" data-id="phase-1-test-1.3-cp5-remark-display" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="checkpoint">
+                        <div class="checkpoint-item">
+                            <input type="checkbox" class="checkpoint-checkbox" data-id="phase-1-test-1.3-cp6" onchange="updateProgress()">
+                            <div class="checkpoint-text">
                                 <strong>报告内容完整且格式正确</strong>
                                 
                             <div class="command-block" style="margin-top: 5px;">
                                 <button class="copy-btn" onclick="copyCommand(this)">复制</button>
-                                <pre>REPORT_FILE=$(ls -t ~/.tiup/storage/cluster/upgrade_precheck/reports/*.html | head -1)
+                                <pre>REPORT_FILE=$(ls -t ~/.tiup/upgrade_precheck/reports/*.html | head -1)
   echo "Report file: $REPORT_FILE"
   head -50 "$REPORT_FILE"
   # 检查 HTML 结构
   grep -E "<html|<head|<body|</html>" "$REPORT_FILE" | head -5</pre>
                             </div>
 
-                                <textarea class="remark-input" placeholder="添加备注..." data-id="phase-1-test-1.3-cp4-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
-                                <div class="remark-display" data-id="phase-1-test-1.3-cp4-remark-display" style="display: none;"></div>
+                                <textarea class="remark-input" placeholder="添加备注..." data-id="phase-1-test-1.3-cp6-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
+                                <div class="remark-display" data-id="phase-1-test-1.3-cp6-remark-display" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="checkpoint">
+                        <div class="checkpoint-item">
+                            <input type="checkbox" class="checkpoint-checkbox" data-id="phase-1-test-1.3-cp7" onchange="updateProgress()">
+                            <div class="checkpoint-text">
+                                <strong>不包含升级相关操作（只运行 precheck，不执行升级）</strong>
+                                
+                            <div class="command-block" style="margin-top: 5px;">
+                                <button class="copy-btn" onclick="copyCommand(this)">复制</button>
+                                <pre>./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck --precheck-output html 2>&1 | grep -iE "upgrading component|restarting instance|executing.*upgrade|download.*tar\.gz" && echo "✗ Found upgrade operations" || echo "✓ No upgrade operations"</pre>
+                            </div>
+
+                                <textarea class="remark-input" placeholder="添加备注..." data-id="phase-1-test-1.3-cp7-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
+                                <div class="remark-display" data-id="phase-1-test-1.3-cp7-remark-display" style="display: none;"></div>
                             </div>
                         </div>
                     </div>
@@ -2976,7 +3033,7 @@ mv "${TIDB_UPGRADE_PRECHECK_KB}.bak" "$TIDB_UPGRADE_PRECHECK_KB"</pre>
                                 <button class="copy-btn" onclick="copyCommand(this)">复制</button>
                                 <pre>unset TIDB_UPGRADE_PRECHECK_BIN
   ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck 2>&1 | grep -i "trying\|looking.*for\|searching"
-  export TIDB_UPGRADE_PRECHECK_BIN=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck</pre>
+  export TIDB_UPGRADE_PRECHECK_BIN=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck</pre>
                             </div>
 
                                 <textarea class="remark-input" placeholder="添加备注..." data-id="phase-5-test-5.5-cp1-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
@@ -2995,7 +3052,7 @@ mv "${TIDB_UPGRADE_PRECHECK_KB}.bak" "$TIDB_UPGRADE_PRECHECK_KB"</pre>
                                 <button class="copy-btn" onclick="copyCommand(this)">复制</button>
                                 <pre>unset TIDB_UPGRADE_PRECHECK_BIN
   ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck 2>&1 | grep -i "error.*binary\|not found\|cannot.*find"
-  export TIDB_UPGRADE_PRECHECK_BIN=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck</pre>
+  export TIDB_UPGRADE_PRECHECK_BIN=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck</pre>
                             </div>
 
                                 <textarea class="remark-input" placeholder="添加备注..." data-id="phase-5-test-5.5-cp2-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
@@ -3014,7 +3071,7 @@ mv "${TIDB_UPGRADE_PRECHECK_KB}.bak" "$TIDB_UPGRADE_PRECHECK_KB"</pre>
                                 <button class="copy-btn" onclick="copyCommand(this)">复制</button>
                                 <pre>unset TIDB_UPGRADE_PRECHECK_BIN
   ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck 2>&1 | grep -i "set.*TIDB_UPGRADE_PRECHECK_BIN\|environment.*variable\|solution"
-  export TIDB_UPGRADE_PRECHECK_BIN=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck</pre>
+  export TIDB_UPGRADE_PRECHECK_BIN=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/bin/upgrade-precheck</pre>
                             </div>
 
                                 <textarea class="remark-input" placeholder="添加备注..." data-id="phase-5-test-5.5-cp3-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
@@ -3050,7 +3107,7 @@ mv "${TIDB_UPGRADE_PRECHECK_KB}.bak" "$TIDB_UPGRADE_PRECHECK_KB"</pre>
                                 <button class="copy-btn" onclick="copyCommand(this)">复制</button>
                                 <pre>unset TIDB_UPGRADE_PRECHECK_KB
   ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck 2>&1 | grep -i "trying\|looking.*for\|searching.*knowledge"
-  export TIDB_UPGRADE_PRECHECK_KB=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/knowledge</pre>
+  export TIDB_UPGRADE_PRECHECK_KB=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/knowledge</pre>
                             </div>
 
                                 <textarea class="remark-input" placeholder="添加备注..." data-id="phase-5-test-5.6-cp1-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
@@ -3069,7 +3126,7 @@ mv "${TIDB_UPGRADE_PRECHECK_KB}.bak" "$TIDB_UPGRADE_PRECHECK_KB"</pre>
                                 <button class="copy-btn" onclick="copyCommand(this)">复制</button>
                                 <pre>unset TIDB_UPGRADE_PRECHECK_KB
   ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck 2>&1 | grep -i "error.*knowledge\|knowledge.*not found\|cannot.*find.*knowledge"
-  export TIDB_UPGRADE_PRECHECK_KB=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/knowledge</pre>
+  export TIDB_UPGRADE_PRECHECK_KB=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/knowledge</pre>
                             </div>
 
                                 <textarea class="remark-input" placeholder="添加备注..." data-id="phase-5-test-5.6-cp2-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
@@ -3088,7 +3145,7 @@ mv "${TIDB_UPGRADE_PRECHECK_KB}.bak" "$TIDB_UPGRADE_PRECHECK_KB"</pre>
                                 <button class="copy-btn" onclick="copyCommand(this)">复制</button>
                                 <pre>unset TIDB_UPGRADE_PRECHECK_KB
   ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck 2>&1 | grep -i "set.*TIDB_UPGRADE_PRECHECK_KB\|environment.*variable\|solution"
-  export TIDB_UPGRADE_PRECHECK_KB=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/knowledge</pre>
+  export TIDB_UPGRADE_PRECHECK_KB=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/knowledge</pre>
                             </div>
 
                                 <textarea class="remark-input" placeholder="添加备注..." data-id="phase-5-test-5.6-cp3-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
@@ -3130,7 +3187,7 @@ mv "${TIDB_UPGRADE_PRECHECK_KB}.bak" "$TIDB_UPGRADE_PRECHECK_KB"</pre>
                                 <button class="copy-btn" onclick="copyCommand(this)">复制</button>
                                 <pre>unset TIDB_UPGRADE_PRECHECK_KB
   ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck 2>&1 | grep -i "trying\|looking.*for\|searching.*knowledge"
-  export TIDB_UPGRADE_PRECHECK_KB=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/knowledge</pre>
+  export TIDB_UPGRADE_PRECHECK_KB=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/knowledge</pre>
                             </div>
 
                                 <textarea class="remark-input" placeholder="添加备注..." data-id="phase-6-test-5.6-cp1-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
@@ -3149,7 +3206,7 @@ mv "${TIDB_UPGRADE_PRECHECK_KB}.bak" "$TIDB_UPGRADE_PRECHECK_KB"</pre>
                                 <button class="copy-btn" onclick="copyCommand(this)">复制</button>
                                 <pre>unset TIDB_UPGRADE_PRECHECK_KB
   ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck 2>&1 | grep -i "error.*knowledge\|knowledge.*not found\|cannot.*find.*knowledge"
-  export TIDB_UPGRADE_PRECHECK_KB=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/knowledge</pre>
+  export TIDB_UPGRADE_PRECHECK_KB=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/knowledge</pre>
                             </div>
 
                                 <textarea class="remark-input" placeholder="添加备注..." data-id="phase-6-test-5.6-cp2-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
@@ -3168,7 +3225,7 @@ mv "${TIDB_UPGRADE_PRECHECK_KB}.bak" "$TIDB_UPGRADE_PRECHECK_KB"</pre>
                                 <button class="copy-btn" onclick="copyCommand(this)">复制</button>
                                 <pre>unset TIDB_UPGRADE_PRECHECK_KB
   ./bin/tiup-cluster upgrade e2e-test-cluster v8.5.4 --precheck 2>&1 | grep -i "set.*TIDB_UPGRADE_PRECHECK_KB\|environment.*variable\|solution"
-  export TIDB_UPGRADE_PRECHECK_KB=/Users/benjamin2037/Desktop/workspace/sourcecode/tidb-upgrade-precheck/knowledge</pre>
+  export TIDB_UPGRADE_PRECHECK_KB=/home/bearc/workspace/sourcecode/tidb-upgrade-precheck/knowledge</pre>
                             </div>
 
                                 <textarea class="remark-input" placeholder="添加备注..." data-id="phase-6-test-5.6-cp3-remark" onblur="saveRemark(this)" style="margin-top: 5px;"></textarea>
