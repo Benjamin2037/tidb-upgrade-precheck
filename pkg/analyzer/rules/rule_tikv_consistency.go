@@ -203,6 +203,12 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 		for paramName, paramValue := range mergedConfig {
 			currentValue := paramValue.Value
 
+			// Filter deployment-specific parameters (pd.endpoints, etc.)
+			// These parameters vary by deployment environment and should not be reported
+			if ignoredParamsForUpgradeDifferences[paramName] {
+				continue
+			}
+
 			// Get source default
 			sourceDefaultValue, existsInSource := sourceDefaults[paramName]
 			if !existsInSource {
