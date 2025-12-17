@@ -51,6 +51,13 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 		if check.ParameterName == "__statistics__" {
 			continue
 		}
+
+		// Filter path-related parameters at report generation time
+		// This ensures all parameters are properly categorized before filtering
+		if rules.IsPathParameter(check.ParameterName) {
+			continue
+		}
+
 		riskLevel := check.RiskLevel
 		if riskLevel == "" {
 			// Fallback: determine from severity if risk level not set

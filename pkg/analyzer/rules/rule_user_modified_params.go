@@ -184,10 +184,8 @@ func (r *UserModifiedParamsRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				continue
 			}
 
-			// Skip all path-related parameters
-			if IsPathParameter(displayName) || IsPathParameter(paramName) {
-				continue
-			}
+			// Note: IsPathParameter filtering is done at report generation time, not here
+			// This ensures all parameters are properly categorized before filtering
 
 			// Check if this is a resource-dependent parameter
 			// If source default == target default but current differs, it's likely adjusted by TiKV/TiFlash

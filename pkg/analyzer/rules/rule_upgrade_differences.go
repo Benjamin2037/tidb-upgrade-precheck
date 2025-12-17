@@ -278,13 +278,9 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			}
 
 			// Skip ignored parameters (deployment-specific paths, etc.)
-			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] || isPathParameter(displayName) || isPathParameter(paramName) {
-				totalFiltered++
-				continue
-			}
-
-			// Skip all path-related parameters (check by parameter name)
-			if IsPathParameter(displayName) || IsPathParameter(paramName) {
+			// Note: IsPathParameter filtering is done at report generation time, not here
+			// This ensures all parameters are properly categorized (Deprecated, New, Default Changed)
+			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] {
 				totalFiltered++
 				continue
 			}
@@ -766,11 +762,9 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			}
 
 			// Skip ignored parameters (deployment-specific paths, etc.)
-			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] || isPathParameter(displayName) || isPathParameter(paramName) {
-				// Debug: For specific raftdb parameters, log why they are skipped
-				if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
-					fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Parameter '%s' skipped (ignored or path parameter)\n", paramName)
-				}
+			// Note: IsPathParameter filtering is done at report generation time, not here
+			// This ensures all parameters are properly categorized (Deprecated, New, Default Changed)
+			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] {
 				continue
 			}
 
@@ -855,7 +849,9 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			}
 
 			// Skip ignored parameters (deployment-specific paths, etc.)
-			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] || IsPathParameter(displayName) || IsPathParameter(paramName) {
+			// Note: IsPathParameter filtering is done at report generation time, not here
+			// This ensures all parameters are properly categorized (Deprecated, New, Default Changed)
+			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] {
 				totalFiltered++
 				continue
 			}

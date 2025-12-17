@@ -215,10 +215,8 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 				continue
 			}
 
-			// Skip all path-related parameters
-			if IsPathParameter(paramName) {
-				continue
-			}
+			// Note: IsPathParameter filtering is done at report generation time, not here
+			// This ensures all parameters are properly categorized before filtering
 
 			// Get target default (if available)
 			var targetDefault interface{}

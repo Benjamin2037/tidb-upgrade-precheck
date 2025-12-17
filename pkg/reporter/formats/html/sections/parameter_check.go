@@ -54,6 +54,12 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 			continue
 		}
 
+		// Filter path-related parameters at report generation time
+		// This ensures all parameters are properly categorized before filtering
+		if rules.IsPathParameter(check.ParameterName) {
+			continue
+		}
+
 		// Check if this is a deprecated parameter
 		reportType := formats.GetReportType(check)
 		if reportType == formats.ReportTypeDeprecated {
