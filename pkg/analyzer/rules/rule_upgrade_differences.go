@@ -193,8 +193,32 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 		targetDefaults := ruleCtx.TargetDefaults[compType]
 		sourceDefaults := ruleCtx.SourceDefaults[compType]
 
+		// Debug: Check if sourceDefaults is nil or empty
+		if sourceDefaults == nil || len(sourceDefaults) == 0 {
+			fmt.Printf("[ERROR rule_upgrade_differences] sourceDefaults[%s] is nil or empty! This means source KB was not loaded correctly.\n", compType)
+			// Get available component keys
+			availableComponents := make([]string, 0, len(ruleCtx.SourceDefaults))
+			for k := range ruleCtx.SourceDefaults {
+				availableComponents = append(availableComponents, k)
+			}
+			fmt.Printf("[ERROR rule_upgrade_differences] Available components in SourceDefaults: %v\n", availableComponents)
+			if targetDefaults != nil {
+				fmt.Printf("[ERROR rule_upgrade_differences] targetDefaults[%s] has %d parameters\n", compType, len(targetDefaults))
+			} else {
+				fmt.Printf("[ERROR rule_upgrade_differences] targetDefaults[%s] is also nil\n", compType)
+			}
+		} else {
+			fmt.Printf("[DEBUG rule_upgrade_differences] sourceDefaults[%s] has %d parameters\n", compType, len(sourceDefaults))
+		}
+
 		// Track which parameters we've processed
 		processedParams := make(map[string]bool)
+
+		// Check if targetDefaults is nil (should not happen, but handle gracefully)
+		if targetDefaults == nil {
+			fmt.Printf("[ERROR rule_upgrade_differences] targetDefaults[%s] is nil! Cannot process parameters.\n", compType)
+			continue
+		}
 
 		// 1. Check parameters that exist in target version (compare with current cluster)
 		for paramName, targetDefaultValue := range targetDefaults {
@@ -305,20 +329,21 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			// Filter: If current == target default but source != target, skip (no action needed after upgrade)
 			// This means the current value already matches the target default, so no change will occur
 			// Exception: forced changes should always be reported
-			// Also filter if source default is nil (parameter not in source KB) but current == target
-			// This handles cases where parameter exists in source KB but wasn't loaded correctly
+			// If sourceDefault == nil, it means the parameter doesn't exist in source KB (true "New" parameter)
+			// If current == target, filter it (no action needed after upgrade)
+			// If current != target, let step 3 handle it (true "New" parameter that needs attention)
 			if !targetDiffersFromCurrent && targetDefault != nil {
 				// Current value equals target default
 				if sourceDefault == nil {
-					// Source default is nil (parameter not in source KB or not loaded)
-					// If current == target, no action needed after upgrade
+					// Source default is nil: parameter doesn't exist in source KB (true "New" parameter)
+					// If current == target, no action needed after upgrade (filter it)
 					// Check if it's a forced change - if not, skip
 					if _, isForced := forcedChanges[displayName]; !isForced {
 						totalFiltered++
 						continue // Skip: current already matches target, no action needed
 					}
 				} else if !CompareValues(sourceDefault, targetDefault) {
-					// Source default differs from target default, but current equals target
+					// Source default exists and differs from target default, but current equals target
 					// This means upgrade will not change the value (already at target default)
 					// Check if it's a forced change - if not, skip
 					if _, isForced := forcedChanges[displayName]; !isForced {
@@ -671,6 +696,8 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				}
 				// Otherwise: target default == current value == source default, skip (consistent)
 			}
+			// Note: If sourceDefault == nil and currentValue != targetDefault, let step 3 handle it
+			// Step 3 processes all "New" parameters (parameters that exist in target but not in source)
 		}
 
 		// 2. Check parameters that exist in source version but not in target version (deprecated)
@@ -748,6 +775,11 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 		}
 
 		// 3. Check parameters that exist in target version but not in source version (new parameter)
+		// Note: targetDefaults should not be nil here (checked above), but add safety check
+		if targetDefaults == nil {
+			continue
+		}
+
 		for paramName, targetDefaultValue := range targetDefaults {
 			// Skip if already processed in step 1 (exists in current cluster)
 			if processedParams[paramName] {
@@ -757,6 +789,10 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			// Check if this parameter exists in source version
 			sourceDefault := ruleCtx.GetSourceDefault(compType, paramName)
 			if sourceDefault != nil {
+				// Parameter exists in source version, but was not processed in step 1
+				// This means it doesn't exist in current cluster, so it was skipped in step 1
+				// We should still report it if there's a difference between source and target defaults
+				// But for now, skip it to avoid duplicates
 				continue // Exists in source version, already processed or skipped
 			}
 

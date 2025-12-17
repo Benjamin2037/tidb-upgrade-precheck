@@ -254,7 +254,10 @@ func (a *Analyzer) loadKBFromRequirements(
 		}
 	}
 
+	fmt.Printf("[DEBUG loadKBFromRequirements] needConfigDefaults: %v, needSystemVariables: %v, components: %v\n", needConfigDefaults, needSystemVariables, components)
+
 	if !needConfigDefaults && !needSystemVariables {
+		fmt.Printf("[DEBUG loadKBFromRequirements] Skipping config defaults and system variables loading\n")
 		return defaults, bootstrapVersions
 	}
 
@@ -262,36 +265,90 @@ func (a *Analyzer) loadKBFromRequirements(
 	for _, comp := range components {
 		defaults[comp] = make(map[string]interface{})
 
-		if compKB, ok := kb[comp].(map[string]interface{}); ok {
-			// Load config defaults
-			if needConfigDefaults {
-				if configDefaults, ok := compKB["config_defaults"].(map[string]interface{}); ok {
-					for k, v := range configDefaults {
-						defaults[comp][k] = v
-					}
-				}
-			}
-
-			// Load system variables
-			if needSystemVariables {
-				if systemVars, ok := compKB["system_variables"].(map[string]interface{}); ok {
-					for k, v := range systemVars {
-						// Prefix with "sysvar:" to distinguish from config params
-						defaults[comp]["sysvar:"+k] = v
-					}
-				}
-			}
-
-			// Bootstrap version is already loaded above (always load if available)
+		// Check if component exists in KB
+		compKB, compExists := kb[comp]
+		if !compExists {
+			fmt.Printf("[DEBUG loadKBFromRequirements] Component '%s' not found in KB (available components: %v)\n", comp, getComponentKeys(kb))
+			continue
 		}
+
+		compKBMap, ok := compKB.(map[string]interface{})
+		if !ok {
+			fmt.Printf("[DEBUG loadKBFromRequirements] Component '%s' data is not a map, type: %T\n", comp, compKB)
+			continue
+		}
+
+		// Load config defaults
+		if needConfigDefaults {
+			configDefaults, configExists := compKBMap["config_defaults"]
+			if !configExists {
+				fmt.Printf("[DEBUG loadKBFromRequirements] config_defaults not found for component %s\n", comp)
+				continue
+			}
+
+			configDefaultsMap, ok := configDefaults.(map[string]interface{})
+			if !ok {
+				fmt.Printf("[DEBUG loadKBFromRequirements] config_defaults for component %s is not a map, type: %T\n", comp, configDefaults)
+				continue
+			}
+
+			paramCount := 0
+			for k, v := range configDefaultsMap {
+				defaults[comp][k] = v
+				paramCount++
+			}
+			fmt.Printf("[DEBUG loadKBFromRequirements] Loaded %d config defaults for component %s\n", paramCount, comp)
+
+			// Verify specific raftdb parameters are loaded
+			criticalParams := []string{
+				"raftdb.defaultcf.titan.min-blob-size",
+				"raftdb.info-log-keep-log-file-num",
+				"raftdb.info-log-level",
+				"raftdb.info-log-max-size",
+			}
+			for _, param := range criticalParams {
+				if _, exists := defaults[comp][param]; !exists {
+					fmt.Printf("[WARNING loadKBFromRequirements] Critical parameter '%s' not found in loaded defaults for component %s\n", param, comp)
+					// Try to find it in the original configDefaults
+					if val, existsInSource := configDefaultsMap[param]; existsInSource {
+						fmt.Printf("[ERROR loadKBFromRequirements] Parameter '%s' exists in source KB configDefaults but was not loaded! This is a bug. Adding it now.\n", param)
+						defaults[comp][param] = val
+					} else {
+						fmt.Printf("[DEBUG loadKBFromRequirements] Parameter '%s' also not found in original configDefaults map\n", param)
+					}
+				}
+			}
+		}
+
+		// Load system variables
+		if needSystemVariables {
+			if systemVars, ok := compKBMap["system_variables"].(map[string]interface{}); ok {
+				for k, v := range systemVars {
+					// Prefix with "sysvar:" to distinguish from config params
+					defaults[comp]["sysvar:"+k] = v
+				}
+			}
+		}
+
+		// Bootstrap version is already loaded above (always load if available)
 	}
 
 	return defaults, bootstrapVersions
 }
 
+// Helper function to get component keys from KB for debugging
+func getComponentKeys(kb map[string]interface{}) []string {
+	keys := make([]string, 0, len(kb))
+	for k := range kb {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 // loadSourceKB loads source version knowledge base data based on requirements
 // Returns: defaults map and bootstrap version map
 func (a *Analyzer) loadSourceKB(kb map[string]interface{}, req rules.DataSourceRequirement) (map[string]map[string]interface{}, map[string]int64) {
+	fmt.Printf("[DEBUG loadSourceKB] NeedConfigDefaults: %v, Components: %v\n", req.SourceKBRequirements.NeedConfigDefaults, req.SourceKBRequirements.Components)
 	return a.loadKBFromRequirements(
 		kb,
 		req.SourceKBRequirements.Components,
@@ -303,6 +360,7 @@ func (a *Analyzer) loadSourceKB(kb map[string]interface{}, req rules.DataSourceR
 // loadTargetKB loads target version knowledge base data based on requirements
 // Returns: defaults map and bootstrap version map
 func (a *Analyzer) loadTargetKB(kb map[string]interface{}, req rules.DataSourceRequirement) (map[string]map[string]interface{}, map[string]int64) {
+	fmt.Printf("[DEBUG loadTargetKB] NeedConfigDefaults: %v, Components: %v\n", req.TargetKBRequirements.NeedConfigDefaults, req.TargetKBRequirements.Components)
 	return a.loadKBFromRequirements(
 		kb,
 		req.TargetKBRequirements.Components,
