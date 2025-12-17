@@ -415,12 +415,21 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				}
 			} else if targetDiffersFromCurrent {
 				// Not in upgrade_logic.json, but target default differs from current
+				// PD Component: Filter all existing parameters (not new parameters)
+				// PD maintains existing configuration, so no need to report
+				if compType == "pd" && paramType == "config" && sourceDefault != nil {
+					// PD maintains existing configuration for parameters that exist in source version
+					// Skip reporting as current value will be kept
+					totalFiltered++
+					continue
+				}
+
 				// Special handling for PD and system variables
 				severity := "warning"
 				riskLevel := RiskLevelMedium
 				baseMessage := "default value changed (target default differs from current)"
 
-				// PD maintains existing configuration
+				// PD maintains existing configuration (for new parameters, this shouldn't be reached)
 				if compType == "pd" && paramType == "config" {
 					severity = "info"
 					riskLevel = RiskLevelLow

@@ -176,6 +176,14 @@ func (r *UserModifiedParamsRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				continue
 			}
 
+			// PD Component: All current values will be kept during upgrade (compatible)
+			// Filter all PD config parameters (not system variables) as they will be kept
+			if compType == "pd" && !isSystemVar && currentValue != nil {
+				// PD maintains existing configuration, upgrade is compatible
+				// Skip reporting as current value will be kept
+				continue
+			}
+
 			// Skip all path-related parameters
 			if IsPathParameter(displayName) || IsPathParameter(paramName) {
 				continue
