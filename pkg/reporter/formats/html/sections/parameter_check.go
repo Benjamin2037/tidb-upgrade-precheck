@@ -60,6 +60,16 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 			continue
 		}
 
+		// Filter: If current value, source default, and target default are all the same, skip
+		// No action is needed after upgrade, so no need to report
+		if check.CurrentValue != nil && check.SourceDefault != nil && check.TargetDefault != nil {
+			if rules.CompareValues(check.CurrentValue, check.SourceDefault) &&
+				rules.CompareValues(check.CurrentValue, check.TargetDefault) {
+				// All three values are the same, skip reporting
+				continue
+			}
+		}
+
 		// Check if this is a deprecated parameter
 		reportType := formats.GetReportType(check)
 		if reportType == formats.ReportTypeDeprecated {
