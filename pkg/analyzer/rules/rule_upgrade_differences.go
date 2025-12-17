@@ -452,8 +452,10 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				// Not in upgrade_logic.json, but target default differs from current
 				// If sourceDefault == nil, this is a "New" parameter (exists in target but not in source)
 				// Let step 3 handle it to avoid duplicates
+				// Step 3 will filter it if current == target
 				if sourceDefault == nil {
 					// This is a new parameter, step 3 will handle it
+					// Step 3 will filter it if current == target (no action needed)
 					// Skip here to avoid duplicates
 					continue
 				}
