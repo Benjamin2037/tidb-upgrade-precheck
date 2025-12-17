@@ -84,6 +84,23 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 
 	var content strings.Builder
 
+	// Add JavaScript functions for collapsible sections
+	content.WriteString(`
+<script>
+function toggleSection(sectionId, buttonId) {
+    var section = document.getElementById(sectionId);
+    var button = document.getElementById(buttonId);
+    if (section.style.display === 'none') {
+        section.style.display = 'block';
+        button.textContent = button.textContent.replace('▶', '▼').replace('Show', 'Hide');
+    } else {
+        section.style.display = 'none';
+        button.textContent = button.textContent.replace('▼', '▶').replace('Hide', 'Show');
+    }
+}
+</script>
+`)
+
 	// Define order of risk levels
 	riskLevelOrder := []formats.RiskLevel{
 		formats.RiskLevelHigh,
@@ -103,6 +120,12 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 		formats.RiskLevelLow:    "ℹ️ <strong>Informational items for awareness.</strong>",
 	}
 
+	// Define which risk levels should be collapsible (collapsed by default)
+	collapsibleRiskLevels := map[formats.RiskLevel]bool{
+		formats.RiskLevelMedium: true,
+		formats.RiskLevelLow:    true,
+	}
+
 	// Define component order
 	componentOrder := []string{"tidb", "pd", "tikv", "tiflash"}
 
@@ -113,9 +136,27 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 			continue
 		}
 
+		// Count total items for this risk level
+		totalItems := 0
+		for _, compChecks := range byComponent {
+			totalItems += len(compChecks)
+		}
+
 		content.WriteString(fmt.Sprintf("<h2>%d. %s</h2>\n", sectionNum, riskLevelTitles[riskLevel]))
 		content.WriteString(fmt.Sprintf("<p>%s</p>\n", riskLevelDescriptions[riskLevel]))
 		sectionNum++
+
+		// Add toggle button for collapsible risk levels
+		if collapsibleRiskLevels[riskLevel] {
+			sectionId := fmt.Sprintf("risk-section-%s", riskLevel)
+			buttonId := fmt.Sprintf("risk-toggle-%s", riskLevel)
+			content.WriteString(fmt.Sprintf(`
+<button id="%s" onclick="toggleSection('%s', '%s')" style="padding: 8px 16px; margin: 10px 0; cursor: pointer; background-color: #f0f0f0; border: 1px solid #ccc; border-radius: 4px;">
+▶ Show %s (%d items)
+</button>
+<div id="%s" style="display: none;">
+`, buttonId, sectionId, buttonId, riskLevelTitles[riskLevel], totalItems, sectionId))
+		}
 
 		// Display by component in order
 		for _, compType := range componentOrder {
@@ -222,6 +263,11 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 				}
 				content.WriteString("</table>\n")
 			}
+		}
+
+		// Close collapsible section div if this risk level is collapsible
+		if collapsibleRiskLevels[riskLevel] {
+			content.WriteString("</div>\n")
 		}
 	}
 

@@ -117,6 +117,41 @@ func (ctx *RuleContext) GetSourceDefault(component, paramName string) interface{
 		if val, ok := comp[paramName]; ok {
 			return extractValueFromDefault(val)
 		}
+		// Debug: For specific raftdb parameters that should exist, log detailed info
+		if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.defaultcf.titan.min-blob-size" || paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
+			fmt.Printf("[DEBUG GetSourceDefault] Parameter '%s' not found in component '%s'\n", paramName, component)
+			fmt.Printf("[DEBUG GetSourceDefault] Component '%s' has %d parameters\n", component, len(comp))
+			// Check if parameter exists with different case or similar name
+			paramLower := strings.ToLower(paramName)
+			similar := []string{}
+			for k := range comp {
+				if strings.ToLower(k) == paramLower {
+					similar = append(similar, k)
+				}
+			}
+			if len(similar) > 0 {
+				fmt.Printf("[DEBUG GetSourceDefault] Found similar parameter names: %v\n", similar)
+			} else {
+				// List first 10 raftdb parameters to see what's actually loaded
+				raftdbParams := []string{}
+				for k := range comp {
+					if strings.HasPrefix(k, "raftdb.") {
+						raftdbParams = append(raftdbParams, k)
+						if len(raftdbParams) >= 10 {
+							break
+						}
+					}
+				}
+				fmt.Printf("[DEBUG GetSourceDefault] Sample raftdb parameters in component '%s': %v\n", component, raftdbParams)
+			}
+		}
+	} else {
+		// Get available component keys
+		availableComponents := make([]string, 0, len(ctx.SourceDefaults))
+		for k := range ctx.SourceDefaults {
+			availableComponents = append(availableComponents, k)
+		}
+		fmt.Printf("[DEBUG GetSourceDefault] Component '%s' not found in SourceDefaults (available components: %v)\n", component, availableComponents)
 	}
 	return nil
 }
@@ -295,7 +330,7 @@ func (ctx *RuleContext) GetForcedChangeForValue(component, paramName string, cur
 		if logicMap, ok := logic.(map[string]interface{}); ok {
 			if changes, ok := logicMap["changes"].([]interface{}); ok {
 				currentValueStr := fmt.Sprintf("%v", currentValue)
-				
+
 				for _, change := range changes {
 					if changeMap, ok := change.(map[string]interface{}); ok {
 						// Get bootstrap version from change
