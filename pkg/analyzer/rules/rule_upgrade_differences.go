@@ -450,6 +450,14 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				}
 			} else if targetDiffersFromCurrent {
 				// Not in upgrade_logic.json, but target default differs from current
+				// If sourceDefault == nil, this is a "New" parameter (exists in target but not in source)
+				// Let step 3 handle it to avoid duplicates
+				if sourceDefault == nil {
+					// This is a new parameter, step 3 will handle it
+					// Skip here to avoid duplicates
+					continue
+				}
+
 				// PD Component: Filter all existing parameters (not new parameters)
 				// PD maintains existing configuration, so no need to report
 				if compType == "pd" && paramType == "config" && sourceDefault != nil {
