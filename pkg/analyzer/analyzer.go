@@ -760,6 +760,8 @@ func deduplicateCheckResults(results []rules.CheckResult) []rules.CheckResult {
 		}
 
 		// Find the result with highest priority as base
+		// Special handling: if multiple results have same priority, prefer Deprecated over Default Changed
+		// Deprecated means parameter is removed in target version, which is more important than default value change
 		var baseResult rules.CheckResult
 		basePriority := -1
 		for _, check := range checks {
@@ -768,17 +770,29 @@ func deduplicateCheckResults(results []rules.CheckResult) []rules.CheckResult {
 				basePriority = priority
 				baseResult = check
 			} else if priority == basePriority {
-				// Same priority, prefer higher severity
-				severityOrder := map[string]int{
-					"critical": 4,
-					"error":    3,
-					"warning":  2,
-					"info":     1,
-				}
-				baseSeverity := severityOrder[baseResult.Severity]
-				currentSeverity := severityOrder[check.Severity]
-				if currentSeverity > baseSeverity {
+				// Same priority, check if one is Deprecated and the other is Default Changed
+				baseIsDeprecated := strings.Contains(baseResult.Message, "deprecated") || strings.Contains(baseResult.Message, "removed")
+				currentIsDeprecated := strings.Contains(check.Message, "deprecated") || strings.Contains(check.Message, "removed")
+				
+				if currentIsDeprecated && !baseIsDeprecated {
+					// Current is Deprecated, base is not - prefer Deprecated
 					baseResult = check
+				} else if !currentIsDeprecated && baseIsDeprecated {
+					// Base is Deprecated, current is not - keep base
+					// baseResult = baseResult (no change)
+				} else {
+					// Both or neither are Deprecated, prefer higher severity
+					severityOrder := map[string]int{
+						"critical": 4,
+						"error":    3,
+						"warning":  2,
+						"info":     1,
+					}
+					baseSeverity := severityOrder[baseResult.Severity]
+					currentSeverity := severityOrder[check.Severity]
+					if currentSeverity > baseSeverity {
+						baseResult = check
+					}
 				}
 			}
 		}
