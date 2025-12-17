@@ -299,20 +299,26 @@ func (a *Analyzer) loadKBFromRequirements(
 				"raftdb.info-log-keep-log-file-num",
 				"raftdb.info-log-level",
 				"raftdb.info-log-max-size",
+				"raftstore.region-compact-check-interval",
+				"raftstore.region-compact-check-step",
+				"raftstore.region-compact-min-redundant-rows",
+				"raftstore.region-compact-min-tombstones",
+				"raftstore.region-compact-redundant-rows-percent",
+				"raftstore.region-compact-tombstones-percent",
 			}
 			for _, param := range criticalParams {
 				if _, exists := configDefaultsMap[param]; exists {
 					fmt.Printf("[DEBUG loadKBFromRequirements] Parameter '%s' exists in configDefaultsMap for component %s before loading loop\n", param, comp)
 				}
 			}
-			
+
 			for k, v := range configDefaultsMap {
 				defaults[comp][k] = v
 				paramCount++
 			}
 			fmt.Printf("[DEBUG loadKBFromRequirements] Loaded %d config defaults for component %s\n", paramCount, comp)
 
-			// Verify specific raftdb parameters are loaded
+			// Verify specific critical parameters are loaded
 			for _, param := range criticalParams {
 				if _, exists := defaults[comp][param]; !exists {
 					fmt.Printf("[WARNING loadKBFromRequirements] Critical parameter '%s' not found in loaded defaults for component %s\n", param, comp)
