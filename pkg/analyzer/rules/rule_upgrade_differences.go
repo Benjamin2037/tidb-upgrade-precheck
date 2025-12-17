@@ -63,6 +63,9 @@ var ignoredParamsForUpgradeDifferences = map[string]bool{
 	// Timezone-related parameters (deployment-specific, environment-dependent)
 	"system_time_zone": true, // System timezone (deployment-specific, environment-dependent)
 	"time_zone":        true, // Timezone setting (deployment-specific, environment-dependent)
+
+	// Deployment-specific network/connection parameters
+	"pd.endpoints": true, // PD endpoints (deployment-specific, connection addresses)
 }
 
 // isPathParameter is a wrapper for the shared IsPathParameter function
