@@ -740,35 +740,131 @@ func deduplicateCheckResults(results []rules.CheckResult) []rules.CheckResult {
 	}
 
 	// Process all results
+	// First pass: collect all results for each parameter
+	resultsByKey := make(map[string][]rules.CheckResult)
 	for _, check := range results {
 		// Create unique key: Component + ParameterName + ParamType
 		key := fmt.Sprintf("%s:%s:%s", check.Component, check.ParameterName, check.ParamType)
+		resultsByKey[key] = append(resultsByKey[key], check)
+	}
 
-		// If this is the first result for this parameter, or this result has higher priority
-		if existing, exists := bestResults[key]; !exists {
-			bestResults[key] = check
-		} else {
-			existingPriority := getPriority(existing)
-			currentPriority := getPriority(check)
+	// Second pass: merge results for each parameter
+	// Rules and their data sources:
+	// - UserModifiedParamsRule: currentValue vs sourceDefault (no targetDefault)
+	// - UpgradeDifferencesRule: currentValue vs sourceDefault vs targetDefault (all three)
+	// - TikvConsistencyRule: currentValue from multiple nodes (may have sourceDefault/targetDefault as reference)
+	for key, checks := range resultsByKey {
+		if len(checks) == 1 {
+			bestResults[key] = checks[0]
+			continue
+		}
 
-			// If current result has higher priority, replace
-			if currentPriority > existingPriority {
-				bestResults[key] = check
-			} else if currentPriority == existingPriority {
-				// If same priority, prefer higher severity
+		// Find the result with highest priority as base
+		var baseResult rules.CheckResult
+		basePriority := -1
+		for _, check := range checks {
+			priority := getPriority(check)
+			if priority > basePriority {
+				basePriority = priority
+				baseResult = check
+			} else if priority == basePriority {
+				// Same priority, prefer higher severity
 				severityOrder := map[string]int{
 					"critical": 4,
 					"error":    3,
 					"warning":  2,
 					"info":     1,
 				}
-				existingSeverity := severityOrder[existing.Severity]
+				baseSeverity := severityOrder[baseResult.Severity]
 				currentSeverity := severityOrder[check.Severity]
-				if currentSeverity > existingSeverity {
-					bestResults[key] = check
+				if currentSeverity > baseSeverity {
+					baseResult = check
 				}
 			}
 		}
+
+		// Merge field values from all results
+		merged := baseResult
+
+		// Merge CurrentValue: prefer non-nil value (all rules have this)
+		for _, check := range checks {
+			if merged.CurrentValue == nil && check.CurrentValue != nil {
+				merged.CurrentValue = check.CurrentValue
+				break
+			}
+		}
+
+		// Merge SourceDefault: prefer from UpgradeDifferencesRule or UserModifiedParamsRule
+		// These rules explicitly compare with source defaults
+		for _, check := range checks {
+			if merged.SourceDefault == nil && check.SourceDefault != nil {
+				// Prefer from upgrade_difference or user_modified category
+				if check.Category == "upgrade_difference" || check.Category == "user_modified" {
+					merged.SourceDefault = check.SourceDefault
+					break
+				}
+			}
+		}
+		// If still nil, get from any result
+		if merged.SourceDefault == nil {
+			for _, check := range checks {
+				if check.SourceDefault != nil {
+					merged.SourceDefault = check.SourceDefault
+					break
+				}
+			}
+		}
+
+		// Merge TargetDefault: prefer from UpgradeDifferencesRule (only rule that uses TargetDefaults)
+		for _, check := range checks {
+			if merged.TargetDefault == nil && check.TargetDefault != nil {
+				// Prefer from upgrade_difference category (only rule that compares with target defaults)
+				if check.Category == "upgrade_difference" {
+					merged.TargetDefault = check.TargetDefault
+					break
+				}
+			}
+		}
+		// If still nil, get from any result
+		if merged.TargetDefault == nil {
+			for _, check := range checks {
+				if check.TargetDefault != nil {
+					merged.TargetDefault = check.TargetDefault
+					break
+				}
+			}
+		}
+
+		// Merge ForcedValue: prefer non-nil value
+		for _, check := range checks {
+			if merged.ForcedValue == nil && check.ForcedValue != nil {
+				merged.ForcedValue = check.ForcedValue
+				break
+			}
+		}
+
+		// Merge Details: prefer longer/more detailed message
+		for _, check := range checks {
+			if len(merged.Details) < len(check.Details) {
+				merged.Details = check.Details
+			}
+		}
+
+		// Merge Suggestions: combine unique suggestions
+		suggestionMap := make(map[string]bool)
+		for _, s := range merged.Suggestions {
+			suggestionMap[s] = true
+		}
+		for _, check := range checks {
+			for _, s := range check.Suggestions {
+				if !suggestionMap[s] {
+					merged.Suggestions = append(merged.Suggestions, s)
+					suggestionMap[s] = true
+				}
+			}
+		}
+
+		bestResults[key] = merged
 	}
 
 	// Convert map back to slice
