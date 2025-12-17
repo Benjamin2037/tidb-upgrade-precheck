@@ -293,6 +293,19 @@ func (a *Analyzer) loadKBFromRequirements(
 			}
 
 			paramCount := 0
+			// Debug: Check if critical parameters exist in configDefaultsMap before loading
+			criticalParams := []string{
+				"raftdb.defaultcf.titan.min-blob-size",
+				"raftdb.info-log-keep-log-file-num",
+				"raftdb.info-log-level",
+				"raftdb.info-log-max-size",
+			}
+			for _, param := range criticalParams {
+				if _, exists := configDefaultsMap[param]; exists {
+					fmt.Printf("[DEBUG loadKBFromRequirements] Parameter '%s' exists in configDefaultsMap for component %s before loading loop\n", param, comp)
+				}
+			}
+			
 			for k, v := range configDefaultsMap {
 				defaults[comp][k] = v
 				paramCount++
@@ -300,12 +313,6 @@ func (a *Analyzer) loadKBFromRequirements(
 			fmt.Printf("[DEBUG loadKBFromRequirements] Loaded %d config defaults for component %s\n", paramCount, comp)
 
 			// Verify specific raftdb parameters are loaded
-			criticalParams := []string{
-				"raftdb.defaultcf.titan.min-blob-size",
-				"raftdb.info-log-keep-log-file-num",
-				"raftdb.info-log-level",
-				"raftdb.info-log-max-size",
-			}
 			for _, param := range criticalParams {
 				if _, exists := defaults[comp][param]; !exists {
 					fmt.Printf("[WARNING loadKBFromRequirements] Critical parameter '%s' not found in loaded defaults for component %s\n", param, comp)
@@ -316,6 +323,8 @@ func (a *Analyzer) loadKBFromRequirements(
 					} else {
 						fmt.Printf("[DEBUG loadKBFromRequirements] Parameter '%s' also not found in original configDefaults map\n", param)
 					}
+				} else {
+					fmt.Printf("[DEBUG loadKBFromRequirements] Parameter '%s' successfully loaded for component %s\n", param, comp)
 				}
 			}
 		}
