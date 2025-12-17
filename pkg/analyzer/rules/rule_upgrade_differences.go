@@ -707,12 +707,12 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 		} else {
 			fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Checking %d parameters in sourceDefaults for component %s\n", len(sourceDefaults), compType)
 		}
-		
+
 		for paramName, sourceDefaultValue := range sourceDefaults {
 			if processedParams[paramName] {
 				continue // Already processed
 			}
-			
+
 			// Debug: For specific raftdb parameters, log processing
 			if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
 				fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Processing parameter '%s' for component %s\n", paramName, compType)
@@ -741,8 +741,16 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				paramType = "config"
 				if paramValue, ok := component.Config[paramName]; ok {
 					currentValue = paramValue.Value
+					// Debug: For specific raftdb parameters, log that they exist in current cluster
+					if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
+						fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Parameter '%s' exists in current cluster for component %s, value: %v\n", paramName, compType, currentValue)
+					}
 				} else {
 					// Parameter not in current cluster - skip (already deprecated/removed)
+					// Debug: For specific raftdb parameters, log that they don't exist in current cluster
+					if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
+						fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Parameter '%s' NOT in current cluster for component %s, skipping\n", paramName, compType)
+					}
 					continue
 				}
 			}
