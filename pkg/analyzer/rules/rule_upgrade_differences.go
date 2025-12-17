@@ -935,6 +935,19 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				}
 			}
 
+			// Filter: True "New" parameter should have no source default AND no current value
+			// If source default is nil but current value exists, it means the parameter already exists in cluster
+			// This is not a true "New" parameter - it might be:
+			// 1. A parameter that exists in source KB but GetSourceDefault returned nil (KB loading issue)
+			// 2. A user-configured parameter that's not in source defaults
+			// In either case, it's not a "New" parameter that needs to be reported
+			if currentValue != nil {
+				// Current value exists, but source default is nil
+				// This is not a true "New" parameter - filter it
+				totalFiltered++
+				continue
+			}
+
 			// Filter: If current value equals target default, skip (no action needed after upgrade)
 			// The parameter is new in target version, but current value already matches target default
 			// Exception: PD component's new parameters should still be reported even if current == target
