@@ -701,9 +701,21 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 		}
 
 		// 2. Check parameters that exist in source version but not in target version (deprecated)
+		// Debug: Check if sourceDefaults is nil or empty
+		if sourceDefaults == nil || len(sourceDefaults) == 0 {
+			fmt.Printf("[DEBUG rule_upgrade_differences] sourceDefaults is nil or empty for component %s, skipping step 2\n", compType)
+		} else {
+			fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Checking %d parameters in sourceDefaults for component %s\n", len(sourceDefaults), compType)
+		}
+		
 		for paramName, sourceDefaultValue := range sourceDefaults {
 			if processedParams[paramName] {
 				continue // Already processed
+			}
+			
+			// Debug: For specific raftdb parameters, log processing
+			if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
+				fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Processing parameter '%s' for component %s\n", paramName, compType)
 			}
 
 			// Source has, target doesn't: deprecated
