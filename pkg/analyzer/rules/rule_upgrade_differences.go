@@ -505,7 +505,13 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				if sourceDefault == nil {
 					// This is a new parameter, step 3 will handle it
 					// Step 3 will filter it if current == target (no action needed)
-					// Skip here to avoid duplicates
+					// But first, check if current == target - if so, filter it here to avoid step 3 processing
+					if targetDefault != nil && CompareValues(currentValue, targetDefault) {
+						// Current value equals target default, no action needed after upgrade
+						totalFiltered++
+						continue
+					}
+					// Skip here to avoid duplicates, let step 3 handle it
 					continue
 				}
 
