@@ -810,8 +810,10 @@ func deduplicateCheckResults(results []rules.CheckResult) []rules.CheckResult {
 
 		// Merge SourceDefault: prefer from UpgradeDifferencesRule or UserModifiedParamsRule
 		// These rules explicitly compare with source defaults
+		// IMPORTANT: Always try to get SourceDefault from any result, not just from base result
+		// This prevents parameters from being incorrectly marked as "New" when they have a source default
 		for _, check := range checks {
-			if merged.SourceDefault == nil && check.SourceDefault != nil {
+			if check.SourceDefault != nil {
 				// Prefer from upgrade_difference or user_modified category
 				if check.Category == "upgrade_difference" || check.Category == "user_modified" {
 					merged.SourceDefault = check.SourceDefault
