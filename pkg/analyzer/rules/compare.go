@@ -498,6 +498,20 @@ func CompareFileNames(path1, path2 interface{}) bool {
 func IsPathParameter(paramName string) bool {
 	paramNameLower := strings.ToLower(paramName)
 
+	// Exceptions: These parameters contain "log" but are NOT path parameters
+	// They are configuration parameters that should be reported
+	exceptions := []string{
+		"raftdb.info-log-keep-log-file-num",
+		"raftdb.info-log-level",
+		"raftdb.info-log-max-size",
+		"raftdb.info-log-roll-time",
+	}
+	for _, exc := range exceptions {
+		if paramName == exc {
+			return false // These are config parameters, not path parameters
+		}
+	}
+
 	// Host/network-related keywords
 	hostKeywords := []string{
 		"host", "hostname", "addr", "address", "port",
