@@ -757,6 +757,10 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 
 			// Skip ignored parameters (deployment-specific paths, etc.)
 			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] || isPathParameter(displayName) || isPathParameter(paramName) {
+				// Debug: For specific raftdb parameters, log why they are skipped
+				if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
+					fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Parameter '%s' skipped (ignored or path parameter)\n", paramName)
+				}
 				continue
 			}
 
@@ -767,11 +771,20 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			// If parameter is not present in current cluster (empty value), skip
 			// This means the parameter was already deprecated/removed in source version
 			if isEmpty {
+				// Debug: For specific raftdb parameters, log why they are skipped
+				if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
+					fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Parameter '%s' skipped (empty value)\n", paramName)
+				}
 				continue
 			}
 
 			// Build details message
 			details := fmt.Sprintf("Current cluster value: %v, Source default: %v. This parameter will be removed in target version.", currentValue, sourceDefault)
+
+			// Debug: For specific raftdb parameters, log that they are being added as deprecated
+			if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
+				fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Adding parameter '%s' as deprecated for component %s\n", paramName, compType)
+			}
 
 			// Parameter deprecated: low risk (info)
 			results = append(results, CheckResult{
