@@ -500,11 +500,47 @@ func IsPathParameter(paramName string) bool {
 
 	// Exceptions: These parameters contain "log" but are NOT path parameters
 	// They are configuration parameters that should be reported
+	// Path parameters (like *-log-dir, *-log-file) should still be filtered
 	exceptions := []string{
+		// RaftDB info-log configuration parameters
 		"raftdb.info-log-keep-log-file-num",
 		"raftdb.info-log-level",
 		"raftdb.info-log-max-size",
 		"raftdb.info-log-roll-time",
+		// RocksDB info-log configuration parameters
+		"rocksdb.info-log-keep-log-file-num",
+		"rocksdb.info-log-level",
+		"rocksdb.info-log-max-size",
+		"rocksdb.info-log-roll-time",
+		// Raft log GC configuration parameters
+		"raftstore.raft-log-gc-count-limit",
+		"raftstore.raft-log-gc-size-limit",
+		"raftstore.raft-log-gc-threshold",
+		"raftstore.raft-log-gc-tick-interval",
+		"raftstore.raft-log-compact-sync-interval",
+		// General log configuration parameters
+		"log.level",
+		"log.format",
+		"log.enable-timestamp",
+		"log.file.max-backups",
+		"log.file.max-days",
+		"log.file.max-size",
+		// Log backup configuration parameters (not paths)
+		"log-backup.enable",
+		"log-backup.file-size-limit",
+		"log-backup.initial-scan-concurrency",
+		"log-backup.initial-scan-pending-memory-quota",
+		"log-backup.initial-scan-rate-limit",
+		"log-backup.max-flush-interval",
+		"log-backup.min-ts-interval",
+		"log-backup.num-threads",
+		// Other log-related configuration parameters
+		"raftstore.follower-read-max-log-gap",
+		"raft-engine.enable-log-recycle",
+		"server.end-point-slow-log-threshold",
+		"slow-log-threshold",
+		"pd.retry-log-every",
+		"security.redact-info-log",
 	}
 	for _, exc := range exceptions {
 		if paramName == exc {
