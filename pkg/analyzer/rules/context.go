@@ -113,9 +113,19 @@ func (ctx *RuleContext) GetSampledValue(component, paramName string) interface{}
 // paramName: parameter name (for system variables, use "sysvar:variable_name")
 // Returns the default value from source version knowledge base
 func (ctx *RuleContext) GetSourceDefault(component, paramName string) interface{} {
+	// Debug: For specific raftdb parameters, log all calls
+	if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.defaultcf.titan.min-blob-size" || paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
+		fmt.Printf("[DEBUG GetSourceDefault] Called for component='%s', paramName='%s'\n", component, paramName)
+	}
+	
 	if comp, ok := ctx.SourceDefaults[component]; ok {
 		if val, ok := comp[paramName]; ok {
-			return extractValueFromDefault(val)
+			result := extractValueFromDefault(val)
+			// Debug: For specific raftdb parameters, log successful lookup
+			if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.defaultcf.titan.min-blob-size" || paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
+				fmt.Printf("[DEBUG GetSourceDefault] Found parameter '%s' in component '%s', returning: %v\n", paramName, component, result)
+			}
+			return result
 		}
 		// Debug: For specific raftdb parameters that should exist, log detailed info
 		if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.defaultcf.titan.min-blob-size" || paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
