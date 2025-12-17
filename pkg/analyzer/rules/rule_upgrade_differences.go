@@ -233,6 +233,25 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			targetDefault := extractValueFromDefault(targetDefaultValue)
 			sourceDefault := ruleCtx.GetSourceDefault(compType, paramName)
 
+			// If targetDefault is nil/None, it means the parameter exists in target KB but has no value
+			// This typically indicates the parameter is deprecated/removed in target version
+			// Skip here to let step 2 handle it as deprecated
+			if targetDefault == nil {
+				// Parameter exists in targetDefaults map but value is nil/None
+				// This should be handled by step 2 (deprecated), not step 1
+				// Exception: forced changes should still be processed
+				if _, isForced := forcedChanges[paramName]; !isForced {
+					// Check if it's a forced change by display name (without sysvar: prefix)
+					displayNameForCheck := paramName
+					if strings.HasPrefix(paramName, "sysvar:") {
+						displayNameForCheck = strings.TrimPrefix(paramName, "sysvar:")
+					}
+					if _, isForced := forcedChanges[displayNameForCheck]; !isForced {
+						continue // Skip: let step 2 handle deprecated parameters
+					}
+				}
+			}
+
 			// Filter: If source default == target default, skip (no difference)
 			if sourceDefault != nil && targetDefault != nil {
 				sourceDefaultStr := fmt.Sprintf("%v", sourceDefault)
