@@ -305,9 +305,19 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			// Filter: If current == target default but source != target, skip (no action needed after upgrade)
 			// This means the current value already matches the target default, so no change will occur
 			// Exception: forced changes should always be reported
-			if !targetDiffersFromCurrent && sourceDefault != nil && targetDefault != nil {
+			// Also filter if source default is nil (parameter not in source KB) but current == target
+			// This handles cases where parameter exists in source KB but wasn't loaded correctly
+			if !targetDiffersFromCurrent && targetDefault != nil {
 				// Current value equals target default
-				if !CompareValues(sourceDefault, targetDefault) {
+				if sourceDefault == nil {
+					// Source default is nil (parameter not in source KB or not loaded)
+					// If current == target, no action needed after upgrade
+					// Check if it's a forced change - if not, skip
+					if _, isForced := forcedChanges[displayName]; !isForced {
+						totalFiltered++
+						continue // Skip: current already matches target, no action needed
+					}
+				} else if !CompareValues(sourceDefault, targetDefault) {
 					// Source default differs from target default, but current equals target
 					// This means upgrade will not change the value (already at target default)
 					// Check if it's a forced change - if not, skip
