@@ -665,6 +665,38 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 						}
 					}
 
+					// Special handling for tidb_distsql_scan_concurrency: ANALYZE concurrency parameter change in v8.5
+					// In v8.5, a new parameter tidb_analyze_distsql_scan_concurrency was introduced
+					// The old parameter tidb_distsql_scan_concurrency is still available but only for non-ANALYZE scenarios
+					if displayName == "tidb_distsql_scan_concurrency" && compType == "tidb" && paramType == "system_variable" {
+						// Check if target version is v8.5 or later
+						if strings.HasPrefix(ruleCtx.TargetVersion, "v8.5") || strings.HasPrefix(ruleCtx.TargetVersion, "v8.6") || strings.HasPrefix(ruleCtx.TargetVersion, "v9.") {
+							details += "\n\n⚠️ Important: In v8.5+, ANALYZE operations use a separate parameter 'tidb_analyze_distsql_scan_concurrency'."
+							details += "\nThe current parameter 'tidb_distsql_scan_concurrency' now only controls concurrency for non-ANALYZE scenarios."
+							details += "\nIf you have customized this parameter for ANALYZE operations, you may need to set 'tidb_analyze_distsql_scan_concurrency' separately."
+							details += "\nReference: Incompatible analyze variable change"
+						}
+					}
+
+					// Special handling for TiKV gRPC parameters: default value change may cause performance regression in <=16 core environments
+					if (displayName == "grpc-raft-conn-num" || displayName == "grpc-concurrency") && compType == "tikv" && paramType == "config" {
+						details += "\n\n⚠️ Performance Warning: Default value change for this parameter may cause performance regression in environments with 16 cores or less."
+						details += "\nPlease review the new default value and consider adjusting if your TiKV nodes have ≤16 CPU cores."
+						details += "\nReference: By-Design Performance Regression Report For TiKV#18735"
+					}
+
+					// Special handling for region-split-size: default value changed from 96MB to 256MB
+					// But if not explicitly set before upgrade, it will keep the old default (96MB) after upgrade
+					if displayName == "coprocessor.region-split-size" && compType == "tikv" && paramType == "config" {
+						// Check if current value equals source default (96MB) - meaning it was not explicitly set
+						if sourceDefault != nil && CompareValues(currentValue, sourceDefault) {
+							details += "\n\n⚠️ Important: The default value has changed from 96MB to 256MB in the target version."
+							details += "\nHowever, since this parameter was not explicitly set in your current cluster (using default 96MB),"
+							details += "\nit will continue to use 96MB after upgrade, NOT the new default 256MB."
+							details += "\nIf you want to use the new default (256MB), you need to explicitly set it after upgrade."
+						}
+					}
+
 					results = append(results, CheckResult{
 						RuleID:        r.Name(),
 						Category:      r.Category(),
