@@ -59,6 +59,10 @@ var ignoredParamsForUpgradeDifferences = map[string]bool{
 	// Compile-time platform information (not user-configurable)
 	"version_compile_machine": true, // Compilation machine architecture (e.g., amd64, arm64)
 	"version_compile_os":      true, // Compilation OS (e.g., linux, darwin)
+
+	// Timezone-related parameters (deployment-specific, environment-dependent)
+	"system_time_zone": true, // System timezone (deployment-specific, environment-dependent)
+	"time_zone":        true, // Timezone setting (deployment-specific, environment-dependent)
 }
 
 // isPathParameter is a wrapper for the shared IsPathParameter function
