@@ -611,6 +611,24 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 							}
 						}
 
+						// Special handling for TiKV gRPC parameters in map types
+						if (fieldPath == "grpc-raft-conn-num" || fieldPath == "grpc-concurrency") && compType == "tikv" && paramType == "config" {
+							fieldDetails += "\n\n⚠️ Performance Warning: Default value change for this parameter may cause performance regression in environments with 16 cores or less."
+							fieldDetails += "\nPlease review the new default value and consider adjusting if your TiKV nodes have ≤16 CPU cores."
+							fieldDetails += "\nReference: By-Design Performance Regression Report For TiKV#18735"
+						}
+
+						// Special handling for region-split-size in map types
+						if fieldPath == "region-split-size" && compType == "tikv" && paramType == "config" {
+							// Check if current value equals source default (96MB) - meaning it was not explicitly set
+							if CompareValues(diff.Current, diff.Source) {
+								fieldDetails += "\n\n⚠️ Important: The default value has changed from 96MB to 256MB in the target version."
+								fieldDetails += "\nHowever, since this parameter was not explicitly set in your current cluster (using default 96MB),"
+								fieldDetails += "\nit will continue to use 96MB after upgrade, NOT the new default 256MB."
+								fieldDetails += "\nIf you want to use the new default (256MB), you need to explicitly set it after upgrade."
+							}
+						}
+
 						results = append(results, CheckResult{
 							RuleID:        r.Name(),
 							Category:      r.Category(),
