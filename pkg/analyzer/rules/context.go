@@ -117,12 +117,21 @@ func (ctx *RuleContext) GetSourceDefault(component, paramName string) interface{
 	if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.defaultcf.titan.min-blob-size" || paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
 		fmt.Printf("[DEBUG GetSourceDefault] Called for component='%s', paramName='%s'\n", component, paramName)
 	}
-	
+
+	// Debug: For region-compact parameters, log all calls
+	if strings.HasPrefix(paramName, "raftstore.region-compact-") {
+		fmt.Printf("[DEBUG GetSourceDefault] Called for component='%s', paramName='%s'\n", component, paramName)
+	}
+
 	if comp, ok := ctx.SourceDefaults[component]; ok {
 		if val, ok := comp[paramName]; ok {
 			result := extractValueFromDefault(val)
 			// Debug: For specific raftdb parameters, log successful lookup
 			if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.defaultcf.titan.min-blob-size" || paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
+				fmt.Printf("[DEBUG GetSourceDefault] Found parameter '%s' in component '%s', returning: %v\n", paramName, component, result)
+			}
+			// Debug: For region-compact parameters, log successful lookup
+			if strings.HasPrefix(paramName, "raftstore.region-compact-") {
 				fmt.Printf("[DEBUG GetSourceDefault] Found parameter '%s' in component '%s', returning: %v\n", paramName, component, result)
 			}
 			return result
@@ -153,6 +162,34 @@ func (ctx *RuleContext) GetSourceDefault(component, paramName string) interface{
 					}
 				}
 				fmt.Printf("[DEBUG GetSourceDefault] Sample raftdb parameters in component '%s': %v\n", component, raftdbParams)
+			}
+		}
+		// Debug: For region-compact parameters that should exist, log detailed info
+		if strings.HasPrefix(paramName, "raftstore.region-compact-") {
+			fmt.Printf("[DEBUG GetSourceDefault] Parameter '%s' not found in component '%s'\n", paramName, component)
+			fmt.Printf("[DEBUG GetSourceDefault] Component '%s' has %d parameters\n", component, len(comp))
+			// Check if parameter exists with different case or similar name
+			paramLower := strings.ToLower(paramName)
+			similar := []string{}
+			for k := range comp {
+				if strings.ToLower(k) == paramLower {
+					similar = append(similar, k)
+				}
+			}
+			if len(similar) > 0 {
+				fmt.Printf("[DEBUG GetSourceDefault] Found similar parameter names: %v\n", similar)
+			} else {
+				// List first 10 region-compact parameters to see what's actually loaded
+				regionCompactParams := []string{}
+				for k := range comp {
+					if strings.HasPrefix(k, "raftstore.region-compact-") {
+						regionCompactParams = append(regionCompactParams, k)
+						if len(regionCompactParams) >= 10 {
+							break
+						}
+					}
+				}
+				fmt.Printf("[DEBUG GetSourceDefault] Sample region-compact parameters in component '%s': %v\n", component, regionCompactParams)
 			}
 		}
 	} else {

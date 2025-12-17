@@ -724,6 +724,11 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Processing parameter '%s' for component %s\n", paramName, compType)
 			}
 
+			// Debug: For region-compact parameters, log processing
+			if strings.HasPrefix(paramName, "raftstore.region-compact-") {
+				fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Processing parameter '%s' for component %s\n", paramName, compType)
+			}
+
 			// Source has, target doesn't: deprecated
 			sourceDefault := extractValueFromDefault(sourceDefaultValue)
 
@@ -751,10 +756,18 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 					if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
 						fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Parameter '%s' exists in current cluster for component %s, value: %v\n", paramName, compType, currentValue)
 					}
+					// Debug: For region-compact parameters, log that they exist in current cluster
+					if strings.HasPrefix(paramName, "raftstore.region-compact-") {
+						fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Parameter '%s' exists in current cluster for component %s, value: %v\n", paramName, compType, currentValue)
+					}
 				} else {
 					// Parameter not in current cluster - skip (already deprecated/removed)
 					// Debug: For specific raftdb parameters, log that they don't exist in current cluster
 					if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
+						fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Parameter '%s' NOT in current cluster for component %s, skipping\n", paramName, compType)
+					}
+					// Debug: For region-compact parameters, log that they don't exist in current cluster
+					if strings.HasPrefix(paramName, "raftstore.region-compact-") {
 						fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Parameter '%s' NOT in current cluster for component %s, skipping\n", paramName, compType)
 					}
 					continue
@@ -827,10 +840,14 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			sourceDefault := ruleCtx.GetSourceDefault(compType, paramName)
 			if sourceDefault != nil {
 				// Parameter exists in source version, but was not processed in step 1
-				// This means it doesn't exist in current cluster, so it was skipped in step 1
-				// We should still report it if there's a difference between source and target defaults
-				// But for now, skip it to avoid duplicates
-				continue // Exists in source version, already processed or skipped
+				// This means it doesn't exist in target version (step 1 only processes targetDefaults)
+				// OR it exists in target version but not in current cluster
+				// This should be handled by step 2 (deprecated), not step 3 (new)
+				// Debug: Log this case
+				if strings.HasPrefix(paramName, "raftstore.region-compact-") {
+					fmt.Printf("[DEBUG rule_upgrade_differences] Step 3: Parameter '%s' exists in source version (value: %v), skipping (should be handled by step 2)\n", paramName, sourceDefault)
+				}
+				continue // Exists in source version, should be handled by step 2 (deprecated)
 			}
 
 			// Source doesn't have, target has: new parameter
