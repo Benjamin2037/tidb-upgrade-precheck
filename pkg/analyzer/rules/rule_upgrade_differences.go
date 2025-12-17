@@ -322,6 +322,33 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				}
 			}
 
+			// Filter: If source == current == target (all three values are the same), skip (no difference)
+			// This handles cases where all three values are effectively the same
+			// Exception: forced changes should always be reported
+			if sourceDefault != nil && currentValue != nil {
+				sourceEqualsCurrent := CompareValues(sourceDefault, currentValue)
+				if sourceEqualsCurrent {
+					// Source == current, check if target is also the same
+					if targetDefault != nil {
+						if CompareValues(currentValue, targetDefault) {
+							// All three values are the same: source == current == target
+							if _, isForced := forcedChanges[displayName]; !isForced {
+								totalSkipped++
+								continue // Skip: no difference at all
+							}
+						}
+					} else {
+						// targetDefault is nil/None, but source == current
+						// This means the parameter exists in source and current cluster, but not in target
+						// This should be handled by step 2 (deprecated), not step 1
+						// Skip here to let step 2 handle it
+						if _, isForced := forcedChanges[displayName]; !isForced {
+							continue // Skip: let step 2 handle deprecated parameters
+						}
+					}
+				}
+			}
+
 			// Filter: If current == target default but source != target, skip (no action needed after upgrade)
 			// This means the current value already matches the target default, so no change will occur
 			// Exception: forced changes should always be reported
