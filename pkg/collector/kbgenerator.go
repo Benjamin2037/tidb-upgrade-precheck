@@ -40,6 +40,22 @@ func LoadKnowledgeBase(knowledgeBasePath, version string) (map[string]interface{
 			// Extract config_defaults, system_variables, and bootstrap_version
 			if configDefaults, ok := defaults["config_defaults"].(map[string]interface{}); ok {
 				componentKB["config_defaults"] = configDefaults
+				// Debug: Check for specific raftdb parameters
+				if component == "tikv" {
+					criticalParams := []string{
+						"raftdb.defaultcf.titan.min-blob-size",
+						"raftdb.info-log-keep-log-file-num",
+						"raftdb.info-log-level",
+						"raftdb.info-log-max-size",
+					}
+					for _, param := range criticalParams {
+						if _, exists := configDefaults[param]; !exists {
+							fmt.Printf("[DEBUG LoadKnowledgeBase] Parameter '%s' not found in configDefaults for %s (total: %d params)\n", param, component, len(configDefaults))
+						} else {
+							fmt.Printf("[DEBUG LoadKnowledgeBase] Parameter '%s' found in configDefaults for %s\n", param, component)
+						}
+					}
+				}
 			}
 			if systemVars, ok := defaults["system_variables"].(map[string]interface{}); ok {
 				componentKB["system_variables"] = systemVars
