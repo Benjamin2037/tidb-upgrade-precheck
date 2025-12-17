@@ -936,14 +936,30 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			}
 
 			// Filter: True "New" parameter should have no source default AND no current value
-			// If source default is nil but current value exists, it means the parameter already exists in cluster
-			// This is not a true "New" parameter - it might be:
-			// 1. A parameter that exists in source KB but GetSourceDefault returned nil (KB loading issue)
-			// 2. A user-configured parameter that's not in source defaults
-			// In either case, it's not a "New" parameter that needs to be reported
+			// If source default is nil but current value exists:
+			// - If current == target: filter it (no action needed after upgrade)
+			// - If current != target: this might be a parameter that exists in cluster but not in source KB
+			//   In this case, it's not a true "New" parameter, but we should still report it if current != target
+			//   because the user needs to know about the difference
 			if currentValue != nil {
 				// Current value exists, but source default is nil
-				// This is not a true "New" parameter - filter it
+				// Check if current value equals target default
+				if targetDefault != nil && CompareValues(currentValue, targetDefault) {
+					// Current value equals target default, no action needed after upgrade
+					// For PD component, still report new parameters even if current == target
+					// (PD will keep current value, but user should be aware of the new parameter)
+					if compType == "pd" && paramType == "config" {
+						// Don't filter PD new parameters, let them be reported
+					} else {
+						// Current value equals target default, no action needed
+						totalFiltered++
+						continue
+					}
+				}
+				// If current != target, this is not a true "New" parameter (it exists in cluster)
+				// But it might have been skipped in step 1 because sourceDefault == nil
+				// In this case, we should filter it because it's not a true "New" parameter
+				// The parameter already exists in cluster, so it's not "new"
 				totalFiltered++
 				continue
 			}
