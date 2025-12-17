@@ -70,6 +70,16 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 			}
 		}
 
+		// Filter: If source default is nil (N/A) but current value equals target default, skip
+		// This is not a true "New" parameter that needs user action
+		// The parameter already exists in cluster and matches target default, so no action needed
+		if check.SourceDefault == nil && check.CurrentValue != nil && check.TargetDefault != nil {
+			if rules.CompareValues(check.CurrentValue, check.TargetDefault) {
+				// Current value equals target default, no action needed after upgrade
+				continue
+			}
+		}
+
 		// Check if this is a deprecated parameter
 		reportType := formats.GetReportType(check)
 		if reportType == formats.ReportTypeDeprecated {
