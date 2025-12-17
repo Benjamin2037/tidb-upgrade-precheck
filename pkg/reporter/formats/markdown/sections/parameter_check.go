@@ -58,6 +58,13 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 			continue
 		}
 
+		// Filter deployment-specific parameters (pd.endpoints, etc.)
+		// These parameters vary by deployment environment and should not be reported
+		// Check if parameter name matches any ignored parameter pattern
+		if check.ParameterName == "pd.endpoints" || strings.HasSuffix(check.ParameterName, ".pd.endpoints") {
+			continue
+		}
+
 		// Filter: If current value, source default, and target default are all the same, skip
 		// No action is needed after upgrade, so no need to report
 		if check.CurrentValue != nil && check.SourceDefault != nil && check.TargetDefault != nil {
