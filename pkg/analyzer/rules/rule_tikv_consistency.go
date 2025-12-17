@@ -240,7 +240,7 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 			if currentMap != nil && sourceMap != nil {
 				// Both are maps, use deep comparison to show only differing fields
 				opts := CompareOptions{
-					IgnoredParams: nil, // Don't ignore any fields for consistency checks
+					IgnoredParams: ignoredParamsForUpgradeDifferences, // Filter deployment-specific parameters
 					BasePath:      paramName,
 				}
 				diffs := CompareMapsDeep(currentValue, sourceDefault, opts)
