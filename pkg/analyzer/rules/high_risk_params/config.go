@@ -369,57 +369,64 @@ func (m *Manager) AddParameter(component, paramType, paramName string, paramConf
 	return m.SaveConfig(config)
 }
 
-// RemoveParameter removes a parameter from the config
+// RemoveParameter removes a parameter from the user config
+// If the parameter exists in knowledge base, it will be removed from user config
+// (so knowledge base default will be used), otherwise it will be completely removed
 func (m *Manager) RemoveParameter(component, paramType, paramName string) error {
-	config, err := m.LoadConfig()
+	// Load merged config to check if parameter exists
+	mergedConfig, err := m.LoadConfig()
 	if err != nil {
 		return err
+	}
+
+	// Load knowledge base to check if parameter is from KB
+	kbConfig := &rules.HighRiskParamsConfig{}
+	kbPath := GetKnowledgeBaseConfigPath()
+	if _, err := os.Stat(kbPath); err == nil {
+		data, err := os.ReadFile(kbPath)
+		if err == nil && len(data) > 0 {
+			if err := json.Unmarshal(data, kbConfig); err != nil {
+				kbConfig = &rules.HighRiskParamsConfig{}
+			}
+		}
 	}
 
 	component = strings.ToLower(component)
 	paramType = strings.ToLower(paramType)
 
-	var removed bool
+	// Check if parameter exists in merged config
+	var existsInMerged bool
+	var existsInKB bool
 
 	switch component {
 	case "tidb":
 		if paramType == "config" {
-			if _, exists := config.TiDB.Config[paramName]; exists {
-				delete(config.TiDB.Config, paramName)
-				removed = true
-			}
+			_, existsInMerged = mergedConfig.TiDB.Config[paramName]
+			_, existsInKB = kbConfig.TiDB.Config[paramName]
 		} else if paramType == "system_variable" || paramType == "system-variable" || paramType == "sysvar" {
-			if _, exists := config.TiDB.SystemVariables[paramName]; exists {
-				delete(config.TiDB.SystemVariables, paramName)
-				removed = true
-			}
+			_, existsInMerged = mergedConfig.TiDB.SystemVariables[paramName]
+			_, existsInKB = kbConfig.TiDB.SystemVariables[paramName]
 		} else {
 			return fmt.Errorf("invalid type for TiDB: %s", paramType)
 		}
 	case "pd":
 		if paramType == "config" {
-			if _, exists := config.PD.Config[paramName]; exists {
-				delete(config.PD.Config, paramName)
-				removed = true
-			}
+			_, existsInMerged = mergedConfig.PD.Config[paramName]
+			_, existsInKB = kbConfig.PD.Config[paramName]
 		} else {
 			return fmt.Errorf("PD only supports 'config' type")
 		}
 	case "tikv":
 		if paramType == "config" {
-			if _, exists := config.TiKV.Config[paramName]; exists {
-				delete(config.TiKV.Config, paramName)
-				removed = true
-			}
+			_, existsInMerged = mergedConfig.TiKV.Config[paramName]
+			_, existsInKB = kbConfig.TiKV.Config[paramName]
 		} else {
 			return fmt.Errorf("TiKV only supports 'config' type")
 		}
 	case "tiflash":
 		if paramType == "config" {
-			if _, exists := config.TiFlash.Config[paramName]; exists {
-				delete(config.TiFlash.Config, paramName)
-				removed = true
-			}
+			_, existsInMerged = mergedConfig.TiFlash.Config[paramName]
+			_, existsInKB = kbConfig.TiFlash.Config[paramName]
 		} else {
 			return fmt.Errorf("TiFlash only supports 'config' type")
 		}
@@ -427,11 +434,108 @@ func (m *Manager) RemoveParameter(component, paramType, paramName string) error 
 		return fmt.Errorf("invalid component: %s", component)
 	}
 
-	if !removed {
+	if !existsInMerged {
 		return fmt.Errorf("parameter %s/%s/%s not found", component, paramType, paramName)
 	}
 
-	return m.SaveConfig(config)
+	// Load user config to remove the parameter
+	userConfig := &rules.HighRiskParamsConfig{}
+	if _, err := os.Stat(m.configPath); err == nil {
+		data, err := os.ReadFile(m.configPath)
+		if err == nil && len(data) > 0 {
+			if err := json.Unmarshal(data, userConfig); err != nil {
+				userConfig = &rules.HighRiskParamsConfig{}
+			}
+		}
+	}
+
+	// Initialize maps if needed
+	if userConfig.TiDB.Config == nil {
+		userConfig.TiDB.Config = make(map[string]rules.HighRiskParamConfig)
+	}
+	if userConfig.TiDB.SystemVariables == nil {
+		userConfig.TiDB.SystemVariables = make(map[string]rules.HighRiskParamConfig)
+	}
+	if userConfig.PD.Config == nil {
+		userConfig.PD.Config = make(map[string]rules.HighRiskParamConfig)
+	}
+	if userConfig.TiKV.Config == nil {
+		userConfig.TiKV.Config = make(map[string]rules.HighRiskParamConfig)
+	}
+	if userConfig.TiFlash.Config == nil {
+		userConfig.TiFlash.Config = make(map[string]rules.HighRiskParamConfig)
+	}
+
+	// Remove from user config (if it exists there)
+	var removed bool
+	switch component {
+	case "tidb":
+		if paramType == "config" {
+			if _, exists := userConfig.TiDB.Config[paramName]; exists {
+				delete(userConfig.TiDB.Config, paramName)
+				removed = true
+			}
+		} else if paramType == "system_variable" || paramType == "system-variable" || paramType == "sysvar" {
+			if _, exists := userConfig.TiDB.SystemVariables[paramName]; exists {
+				delete(userConfig.TiDB.SystemVariables, paramName)
+				removed = true
+			}
+		}
+	case "pd":
+		if paramType == "config" {
+			if _, exists := userConfig.PD.Config[paramName]; exists {
+				delete(userConfig.PD.Config, paramName)
+				removed = true
+			}
+		}
+	case "tikv":
+		if paramType == "config" {
+			if _, exists := userConfig.TiKV.Config[paramName]; exists {
+				delete(userConfig.TiKV.Config, paramName)
+				removed = true
+			}
+		}
+	case "tiflash":
+		if paramType == "config" {
+			if _, exists := userConfig.TiFlash.Config[paramName]; exists {
+				delete(userConfig.TiFlash.Config, paramName)
+				removed = true
+			}
+		}
+	}
+
+	// If parameter exists in KB but not in user config, it means user is trying to remove a KB parameter
+	// In this case, we can't remove it (it will still be in merged config from KB)
+	// But we can save the user config (which doesn't have it)
+	if existsInKB && !removed {
+		// Parameter is from KB and user hasn't overridden it
+		// Just save user config (which doesn't include it)
+		// This effectively means the parameter will still be active from KB
+		// But we'll save anyway to ensure user config is clean
+	}
+
+	// Save user config
+	return m.saveUserConfig(userConfig)
+}
+
+// saveUserConfig saves the user config directly (internal method)
+func (m *Manager) saveUserConfig(userConfig *rules.HighRiskParamsConfig) error {
+	// Create directory if it doesn't exist
+	dir := filepath.Dir(m.configPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	data, err := json.MarshalIndent(userConfig, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	if err := os.WriteFile(m.configPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	return nil
 }
 
 // CollectAllParameters collects all parameters from config for listing
