@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer/rules/high_risk_params"
 )
@@ -13,28 +14,9 @@ func main() {
 	flag.Parse()
 
 	// Get knowledge base path from output path
-	kbPath := ""
-	if *outputPath != "" {
-		// Extract knowledge base path (parent of high_risk_params)
-		// If output is ./knowledge/high_risk_params/default.json, kbPath should be ./knowledge
-		kbPath = *outputPath
-		// Remove /high_risk_params/default.json to get knowledge base path
-		for i := len(kbPath) - 1; i >= 0; i-- {
-			if kbPath[i] == '/' {
-				kbPath = kbPath[:i]
-				break
-			}
-		}
-		// Remove /high_risk_params
-		for i := len(kbPath) - 1; i >= 0; i-- {
-			if kbPath[i] == '/' {
-				kbPath = kbPath[:i]
-				break
-			}
-		}
-	}
-
-	if kbPath == "" {
+	// If output is ./knowledge/high_risk_params/default.json, kbPath should be ./knowledge
+	kbPath := filepath.Dir(filepath.Dir(*outputPath))
+	if kbPath == "" || kbPath == "." {
 		kbPath = "./knowledge"
 	}
 
