@@ -19,15 +19,15 @@ type Manager struct {
 // NewManager creates a new configuration manager
 func NewManager(configPath string) *Manager {
 	if configPath == "" {
-		configPath = GetDefaultConfigPath()
+		configPath = GetUserConfigPath()
 	}
 	return &Manager{
 		configPath: configPath,
 	}
 }
 
-// GetDefaultConfigPath returns the default path for high-risk params config (user config)
-func GetDefaultConfigPath() string {
+// GetUserConfigPath returns the default path for high-risk params user config
+func GetUserConfigPath() string {
 	// Try to get from environment variable
 	if path := os.Getenv("HIGH_RISK_PARAMS_CONFIG"); path != "" {
 		return path
