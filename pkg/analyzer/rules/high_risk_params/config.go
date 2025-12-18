@@ -26,7 +26,7 @@ func NewManager(configPath string) *Manager {
 	}
 }
 
-// GetDefaultConfigPath returns the default path for high-risk params config
+// GetDefaultConfigPath returns the default path for high-risk params config (user config)
 func GetDefaultConfigPath() string {
 	// Try to get from environment variable
 	if path := os.Getenv("HIGH_RISK_PARAMS_CONFIG"); path != "" {
@@ -56,42 +56,151 @@ func GetDefaultConfigPath() string {
 	return "./high_risk_params.json"
 }
 
-// LoadConfig loads the high-risk parameters configuration from file
-func (m *Manager) LoadConfig() (*rules.HighRiskParamsConfig, error) {
-	config := &rules.HighRiskParamsConfig{}
-
-	// Check if file exists
-	if _, err := os.Stat(m.configPath); os.IsNotExist(err) {
-		// File doesn't exist, return empty config
-		return config, nil
+// GetKnowledgeBaseConfigPath returns the path to the knowledge base default config
+func GetKnowledgeBaseConfigPath() string {
+	// Try to get from environment variable for knowledge base path
+	if kbPath := os.Getenv("KNOWLEDGE_BASE_PATH"); kbPath != "" {
+		return filepath.Join(kbPath, "high_risk_params", "default.json")
 	}
 
-	data, err := os.ReadFile(m.configPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %w", err)
+	// Default: use knowledge directory relative to executable or current directory
+	// Try to find knowledge directory in common locations
+	possiblePaths := []string{
+		"./knowledge/high_risk_params/default.json",
+		"../knowledge/high_risk_params/default.json",
+		"../../knowledge/high_risk_params/default.json",
 	}
 
-	if len(data) == 0 {
-		// Empty file, return empty config
-		return config, nil
+	for _, path := range possiblePaths {
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
 	}
 
-	if err := json.Unmarshal(data, config); err != nil {
-		return nil, fmt.Errorf("failed to parse config file: %w", err)
-	}
-
-	return config, nil
+	// If not found, return the default relative path
+	return "./knowledge/high_risk_params/default.json"
 }
 
-// SaveConfig saves the high-risk parameters configuration to file
+// LoadConfig loads the high-risk parameters configuration, merging knowledge base defaults with user config
+func (m *Manager) LoadConfig() (*rules.HighRiskParamsConfig, error) {
+	// Start with knowledge base defaults
+	kbConfig := &rules.HighRiskParamsConfig{}
+	kbPath := GetKnowledgeBaseConfigPath()
+	if _, err := os.Stat(kbPath); err == nil {
+		data, err := os.ReadFile(kbPath)
+		if err == nil && len(data) > 0 {
+			if err := json.Unmarshal(data, kbConfig); err != nil {
+				// If knowledge base file is invalid, log but continue with empty config
+				fmt.Fprintf(os.Stderr, "Warning: failed to parse knowledge base config at %s: %v\n", kbPath, err)
+			}
+		}
+	}
+
+	// Load user config (if exists)
+	userConfig := &rules.HighRiskParamsConfig{}
+	if _, err := os.Stat(m.configPath); err == nil {
+		data, err := os.ReadFile(m.configPath)
+		if err == nil && len(data) > 0 {
+			if err := json.Unmarshal(data, userConfig); err != nil {
+				return nil, fmt.Errorf("failed to parse user config file: %w", err)
+			}
+		}
+	}
+
+	// Merge: user config overrides knowledge base defaults
+	return mergeConfigs(kbConfig, userConfig), nil
+}
+
+// mergeConfigs merges two configs, with userConfig taking precedence
+func mergeConfigs(kbConfig, userConfig *rules.HighRiskParamsConfig) *rules.HighRiskParamsConfig {
+	merged := &rules.HighRiskParamsConfig{}
+
+	// Initialize maps if needed
+	if merged.TiDB.Config == nil {
+		merged.TiDB.Config = make(map[string]rules.HighRiskParamConfig)
+	}
+	if merged.TiDB.SystemVariables == nil {
+		merged.TiDB.SystemVariables = make(map[string]rules.HighRiskParamConfig)
+	}
+	if merged.PD.Config == nil {
+		merged.PD.Config = make(map[string]rules.HighRiskParamConfig)
+	}
+	if merged.TiKV.Config == nil {
+		merged.TiKV.Config = make(map[string]rules.HighRiskParamConfig)
+	}
+	if merged.TiFlash.Config == nil {
+		merged.TiFlash.Config = make(map[string]rules.HighRiskParamConfig)
+	}
+
+	// Merge TiDB config
+	for k, v := range kbConfig.TiDB.Config {
+		merged.TiDB.Config[k] = v
+	}
+	for k, v := range userConfig.TiDB.Config {
+		merged.TiDB.Config[k] = v
+	}
+
+	// Merge TiDB system variables
+	for k, v := range kbConfig.TiDB.SystemVariables {
+		merged.TiDB.SystemVariables[k] = v
+	}
+	for k, v := range userConfig.TiDB.SystemVariables {
+		merged.TiDB.SystemVariables[k] = v
+	}
+
+	// Merge PD config
+	for k, v := range kbConfig.PD.Config {
+		merged.PD.Config[k] = v
+	}
+	for k, v := range userConfig.PD.Config {
+		merged.PD.Config[k] = v
+	}
+
+	// Merge TiKV config
+	for k, v := range kbConfig.TiKV.Config {
+		merged.TiKV.Config[k] = v
+	}
+	for k, v := range userConfig.TiKV.Config {
+		merged.TiKV.Config[k] = v
+	}
+
+	// Merge TiFlash config
+	for k, v := range kbConfig.TiFlash.Config {
+		merged.TiFlash.Config[k] = v
+	}
+	for k, v := range userConfig.TiFlash.Config {
+		merged.TiFlash.Config[k] = v
+	}
+
+	return merged
+}
+
+// SaveConfig saves only user-defined parameters to the user config file
+// (excludes knowledge base defaults)
 func (m *Manager) SaveConfig(config *rules.HighRiskParamsConfig) error {
+	// Load knowledge base defaults
+	kbConfig := &rules.HighRiskParamsConfig{}
+	kbPath := GetKnowledgeBaseConfigPath()
+	if _, err := os.Stat(kbPath); err == nil {
+		data, err := os.ReadFile(kbPath)
+		if err == nil && len(data) > 0 {
+			if err := json.Unmarshal(data, kbConfig); err != nil {
+				// If knowledge base file is invalid, treat as empty
+				kbConfig = &rules.HighRiskParamsConfig{}
+			}
+		}
+	}
+
+	// Extract only user-defined parameters (those not in knowledge base)
+	userConfig := extractUserConfig(config, kbConfig)
+
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(m.configPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 
-	data, err := json.MarshalIndent(config, "", "  ")
+	data, err := json.MarshalIndent(userConfig, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
@@ -101,6 +210,55 @@ func (m *Manager) SaveConfig(config *rules.HighRiskParamsConfig) error {
 	}
 
 	return nil
+}
+
+// extractUserConfig extracts only parameters that are not in knowledge base
+func extractUserConfig(mergedConfig, kbConfig *rules.HighRiskParamsConfig) *rules.HighRiskParamsConfig {
+	userConfig := &rules.HighRiskParamsConfig{}
+
+	// Initialize maps
+	userConfig.TiDB.Config = make(map[string]rules.HighRiskParamConfig)
+	userConfig.TiDB.SystemVariables = make(map[string]rules.HighRiskParamConfig)
+	userConfig.PD.Config = make(map[string]rules.HighRiskParamConfig)
+	userConfig.TiKV.Config = make(map[string]rules.HighRiskParamConfig)
+	userConfig.TiFlash.Config = make(map[string]rules.HighRiskParamConfig)
+
+	// Extract TiDB config (only user-defined)
+	for k, v := range mergedConfig.TiDB.Config {
+		if _, exists := kbConfig.TiDB.Config[k]; !exists {
+			userConfig.TiDB.Config[k] = v
+		}
+	}
+
+	// Extract TiDB system variables (only user-defined)
+	for k, v := range mergedConfig.TiDB.SystemVariables {
+		if _, exists := kbConfig.TiDB.SystemVariables[k]; !exists {
+			userConfig.TiDB.SystemVariables[k] = v
+		}
+	}
+
+	// Extract PD config (only user-defined)
+	for k, v := range mergedConfig.PD.Config {
+		if _, exists := kbConfig.PD.Config[k]; !exists {
+			userConfig.PD.Config[k] = v
+		}
+	}
+
+	// Extract TiKV config (only user-defined)
+	for k, v := range mergedConfig.TiKV.Config {
+		if _, exists := kbConfig.TiKV.Config[k]; !exists {
+			userConfig.TiKV.Config[k] = v
+		}
+	}
+
+	// Extract TiFlash config (only user-defined)
+	for k, v := range mergedConfig.TiFlash.Config {
+		if _, exists := kbConfig.TiFlash.Config[k]; !exists {
+			userConfig.TiFlash.Config[k] = v
+		}
+	}
+
+	return userConfig
 }
 
 // FindParameter finds a parameter in the config

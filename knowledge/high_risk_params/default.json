@@ -1,0 +1,16 @@
+{
+  "tidb": {
+    "config": {},
+    "system_variables": {}
+  },
+  "pd": {
+    "config": {}
+  },
+  "tikv": {
+    "config": {}
+  },
+  "tiflash": {
+    "config": {}
+  }
+}
+
