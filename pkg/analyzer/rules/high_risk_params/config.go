@@ -81,6 +81,35 @@ func GetKnowledgeBaseConfigPath() string {
 	return "./knowledge/high_risk_params/default.json"
 }
 
+// GenerateKnowledgeBaseConfig generates the knowledge base default config file
+// from the default rules defined in defaults.go
+func GenerateKnowledgeBaseConfig(knowledgeBasePath string) error {
+	// Get default config from rules
+	defaultConfig := GetDefaultHighRiskParams()
+
+	// Convert to JSON
+	configPath := filepath.Join(knowledgeBasePath, "high_risk_params", "default.json")
+
+	// Create directory if it doesn't exist
+	dir := filepath.Dir(configPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create knowledge base directory: %w", err)
+	}
+
+	// Marshal to JSON
+	data, err := json.MarshalIndent(defaultConfig, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal default config: %w", err)
+	}
+
+	// Write to file
+	if err := os.WriteFile(configPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write knowledge base config: %w", err)
+	}
+
+	return nil
+}
+
 // LoadConfig loads the high-risk parameters configuration, merging knowledge base defaults with user config
 func (m *Manager) LoadConfig() (*rules.HighRiskParamsConfig, error) {
 	// Start with knowledge base defaults

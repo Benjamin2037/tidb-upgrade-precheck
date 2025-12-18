@@ -808,4 +808,20 @@ if [ ${#FAILED_VERSIONS[@]} -gt 0 ]; then
 fi
 
 echo "All knowledge bases generated successfully!"
+
+# Generate high-risk parameters default config
+echo ""
+echo "Generating high-risk parameters default config..."
+if command -v go >/dev/null 2>&1; then
+    # Use Go to generate the config
+    (cd "$PROJECT_ROOT" && GOWORK=off go run ./cmd/generate_high_risk_params/main.go --output="${PROJECT_ROOT}/knowledge/high_risk_params/default.json" 2>&1 | tee -a "${LOGS_DIR}/high_risk_params_generation.log")
+    if [ ${PIPESTATUS[0]} -eq 0 ]; then
+        echo "✓ High-risk parameters default config generated successfully"
+    else
+        echo "⚠ Warning: Failed to generate high-risk parameters default config (check ${LOGS_DIR}/high_risk_params_generation.log)"
+    fi
+else
+    echo "⚠ Warning: Go not found, skipping high-risk parameters default config generation"
+fi
+
 exit 0
