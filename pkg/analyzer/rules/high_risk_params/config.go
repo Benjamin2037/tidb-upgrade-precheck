@@ -56,6 +56,31 @@ func GetDefaultConfigPath() string {
 	return "./high_risk_params.json"
 }
 
+// GetDefaultConfigPath returns the path to the default config file in pkg directory
+func GetDefaultConfigPath() string {
+	// Try to get from environment variable
+	if path := os.Getenv("HIGH_RISK_PARAMS_DEFAULT_CONFIG"); path != "" {
+		return path
+	}
+
+	// Default: use pkg/analyzer/rules/high_risk_params/default.json
+	// Try to find in common locations relative to current working directory
+	possiblePaths := []string{
+		"./pkg/analyzer/rules/high_risk_params/default.json",
+		"../pkg/analyzer/rules/high_risk_params/default.json",
+		"../../pkg/analyzer/rules/high_risk_params/default.json",
+	}
+
+	for _, path := range possiblePaths {
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
+	}
+
+	// If not found, return the default relative path
+	return "./pkg/analyzer/rules/high_risk_params/default.json"
+}
+
 // GetKnowledgeBaseConfigPath returns the path to the knowledge base default config
 func GetKnowledgeBaseConfigPath() string {
 	// Try to get from environment variable for knowledge base path
@@ -81,46 +106,30 @@ func GetKnowledgeBaseConfigPath() string {
 	return "./knowledge/high_risk_params/default.json"
 }
 
-// GenerateKnowledgeBaseConfig generates the knowledge base default config file
-// from the default rules defined in defaults.go
-func GenerateKnowledgeBaseConfig(knowledgeBasePath string) error {
-	// Get default config from rules
-	defaultConfig := GetDefaultHighRiskParams()
-
-	// Convert to JSON
-	configPath := filepath.Join(knowledgeBasePath, "high_risk_params", "default.json")
-
-	// Create directory if it doesn't exist
-	dir := filepath.Dir(configPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("failed to create knowledge base directory: %w", err)
-	}
-
-	// Marshal to JSON
-	data, err := json.MarshalIndent(defaultConfig, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal default config: %w", err)
-	}
-
-	// Write to file
-	if err := os.WriteFile(configPath, data, 0644); err != nil {
-		return fmt.Errorf("failed to write knowledge base config: %w", err)
-	}
-
-	return nil
-}
-
-// LoadConfig loads the high-risk parameters configuration, merging knowledge base defaults with user config
+// LoadConfig loads the high-risk parameters configuration, merging default config with user config
 func (m *Manager) LoadConfig() (*rules.HighRiskParamsConfig, error) {
-	// Start with knowledge base defaults
-	kbConfig := &rules.HighRiskParamsConfig{}
+	// Start with default config from pkg directory
+	defaultConfig := &rules.HighRiskParamsConfig{}
+	defaultPath := GetDefaultConfigPath()
+	if _, err := os.Stat(defaultPath); err == nil {
+		data, err := os.ReadFile(defaultPath)
+		if err == nil && len(data) > 0 {
+			if err := json.Unmarshal(data, defaultConfig); err != nil {
+				// If default file is invalid, log but continue with empty config
+				fmt.Fprintf(os.Stderr, "Warning: failed to parse default config at %s: %v\n", defaultPath, err)
+			}
+		}
+	}
+
+	// Also try to load from knowledge base (for backward compatibility)
 	kbPath := GetKnowledgeBaseConfigPath()
 	if _, err := os.Stat(kbPath); err == nil {
 		data, err := os.ReadFile(kbPath)
 		if err == nil && len(data) > 0 {
-			if err := json.Unmarshal(data, kbConfig); err != nil {
-				// If knowledge base file is invalid, log but continue with empty config
-				fmt.Fprintf(os.Stderr, "Warning: failed to parse knowledge base config at %s: %v\n", kbPath, err)
+			kbConfig := &rules.HighRiskParamsConfig{}
+			if err := json.Unmarshal(data, kbConfig); err == nil {
+				// Merge knowledge base config into default config (KB takes precedence if both exist)
+				defaultConfig = mergeConfigs(defaultConfig, kbConfig)
 			}
 		}
 	}
@@ -136,8 +145,8 @@ func (m *Manager) LoadConfig() (*rules.HighRiskParamsConfig, error) {
 		}
 	}
 
-	// Merge: user config overrides knowledge base defaults
-	return mergeConfigs(kbConfig, userConfig), nil
+	// Merge: user config overrides default config
+	return mergeConfigs(defaultConfig, userConfig), nil
 }
 
 // mergeConfigs merges two configs, with userConfig taking precedence
@@ -399,8 +408,8 @@ func (m *Manager) AddParameter(component, paramType, paramName string, paramConf
 }
 
 // RemoveParameter removes a parameter from the user config
-// If the parameter exists in knowledge base, it will be removed from user config
-// (so knowledge base default will be used), otherwise it will be completely removed
+// If the parameter exists in default config, it will be removed from user config
+// (so default config will be used), otherwise it will be completely removed
 func (m *Manager) RemoveParameter(component, paramType, paramName string) error {
 	// Load merged config to check if parameter exists
 	mergedConfig, err := m.LoadConfig()
@@ -408,14 +417,27 @@ func (m *Manager) RemoveParameter(component, paramType, paramName string) error 
 		return err
 	}
 
-	// Load knowledge base to check if parameter is from KB
-	kbConfig := &rules.HighRiskParamsConfig{}
+	// Load default config to check if parameter is from default
+	defaultConfig := &rules.HighRiskParamsConfig{}
+	defaultPath := GetDefaultConfigPath()
+	if _, err := os.Stat(defaultPath); err == nil {
+		data, err := os.ReadFile(defaultPath)
+		if err == nil && len(data) > 0 {
+			if err := json.Unmarshal(data, defaultConfig); err != nil {
+				defaultConfig = &rules.HighRiskParamsConfig{}
+			}
+		}
+	}
+
+	// Also check knowledge base (for backward compatibility)
 	kbPath := GetKnowledgeBaseConfigPath()
 	if _, err := os.Stat(kbPath); err == nil {
 		data, err := os.ReadFile(kbPath)
 		if err == nil && len(data) > 0 {
-			if err := json.Unmarshal(data, kbConfig); err != nil {
-				kbConfig = &rules.HighRiskParamsConfig{}
+			kbConfig := &rules.HighRiskParamsConfig{}
+			if err := json.Unmarshal(data, kbConfig); err == nil {
+				// Merge KB config into default config
+				defaultConfig = mergeConfigs(defaultConfig, kbConfig)
 			}
 		}
 	}
@@ -425,37 +447,37 @@ func (m *Manager) RemoveParameter(component, paramType, paramName string) error 
 
 	// Check if parameter exists in merged config
 	var existsInMerged bool
-	var existsInKB bool
+	var existsInDefault bool
 
 	switch component {
 	case "tidb":
 		if paramType == "config" {
 			_, existsInMerged = mergedConfig.TiDB.Config[paramName]
-			_, existsInKB = kbConfig.TiDB.Config[paramName]
+			_, existsInDefault = defaultConfig.TiDB.Config[paramName]
 		} else if paramType == "system_variable" || paramType == "system-variable" || paramType == "sysvar" {
 			_, existsInMerged = mergedConfig.TiDB.SystemVariables[paramName]
-			_, existsInKB = kbConfig.TiDB.SystemVariables[paramName]
+			_, existsInDefault = defaultConfig.TiDB.SystemVariables[paramName]
 		} else {
 			return fmt.Errorf("invalid type for TiDB: %s", paramType)
 		}
 	case "pd":
 		if paramType == "config" {
 			_, existsInMerged = mergedConfig.PD.Config[paramName]
-			_, existsInKB = kbConfig.PD.Config[paramName]
+			_, existsInDefault = defaultConfig.PD.Config[paramName]
 		} else {
 			return fmt.Errorf("PD only supports 'config' type")
 		}
 	case "tikv":
 		if paramType == "config" {
 			_, existsInMerged = mergedConfig.TiKV.Config[paramName]
-			_, existsInKB = kbConfig.TiKV.Config[paramName]
+			_, existsInDefault = defaultConfig.TiKV.Config[paramName]
 		} else {
 			return fmt.Errorf("TiKV only supports 'config' type")
 		}
 	case "tiflash":
 		if paramType == "config" {
 			_, existsInMerged = mergedConfig.TiFlash.Config[paramName]
-			_, existsInKB = kbConfig.TiFlash.Config[paramName]
+			_, existsInDefault = defaultConfig.TiFlash.Config[paramName]
 		} else {
 			return fmt.Errorf("TiFlash only supports 'config' type")
 		}
@@ -533,13 +555,13 @@ func (m *Manager) RemoveParameter(component, paramType, paramName string) error 
 		}
 	}
 
-	// If parameter exists in KB but not in user config, it means user is trying to remove a KB parameter
-	// In this case, we can't remove it (it will still be in merged config from KB)
+	// If parameter exists in default config but not in user config, it means user is trying to remove a default parameter
+	// In this case, we can't remove it (it will still be in merged config from default)
 	// But we can save the user config (which doesn't have it)
-	if existsInKB && !removed {
-		// Parameter is from KB and user hasn't overridden it
+	if existsInDefault && !removed {
+		// Parameter is from default config and user hasn't overridden it
 		// Just save user config (which doesn't include it)
-		// This effectively means the parameter will still be active from KB
+		// This effectively means the parameter will still be active from default config
 		// But we'll save anyway to ensure user config is clean
 	}
 
