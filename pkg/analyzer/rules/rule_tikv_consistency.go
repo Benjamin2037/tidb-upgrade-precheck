@@ -9,14 +9,16 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector"
 	tidbCollector "github.com/pingcap/tidb-upgrade-precheck/pkg/collector/tidb"
 	defaultsTypes "github.com/pingcap/tidb-upgrade-precheck/pkg/types"
 )
 
-// TikvConsistencyRule compares TiKV node parameters with source version knowledge base
-// Rule 2.3: Compare all TiKV node parameters with source version defaults
+// TikvConsistencyRule compares all TiKV node parameters for consistency
+// Rule: Compare all TiKV node parameters with the first TiKV node (baseline)
 // Reports differences as medium risk (warning)
+// This rule is used for TiKV scale out precheck to ensure all TiKV nodes have consistent parameters
 type TikvConsistencyRule struct {
 	*BaseRule
 }
@@ -26,7 +28,7 @@ func NewTikvConsistencyRule() Rule {
 	return &TikvConsistencyRule{
 		BaseRule: NewBaseRule(
 			"TIKV_CONSISTENCY",
-			"Compare TiKV node parameters with source version knowledge base defaults",
+			"Compare all TiKV node parameters for consistency (all nodes vs first node)",
 			"consistency",
 		),
 	}
@@ -52,8 +54,8 @@ func (r *TikvConsistencyRule) DataRequirements() DataSourceRequirement {
 			NeedSystemVariables bool     `json:"need_system_variables"`
 			NeedUpgradeLogic    bool     `json:"need_upgrade_logic"`
 		}{
-			Components:          []string{"tikv"},
-			NeedConfigDefaults:  false, // This rule doesn't need knowledge base data
+			Components:          []string{}, // This rule doesn't need knowledge base data
+			NeedConfigDefaults:  false,
 			NeedSystemVariables: false,
 			NeedUpgradeLogic:    false,
 		},
@@ -63,7 +65,7 @@ func (r *TikvConsistencyRule) DataRequirements() DataSourceRequirement {
 			NeedSystemVariables bool     `json:"need_system_variables"`
 			NeedUpgradeLogic    bool     `json:"need_upgrade_logic"`
 		}{
-			Components:          []string{},
+			Components:          []string{}, // This rule doesn't need knowledge base data
 			NeedConfigDefaults:  false,
 			NeedSystemVariables: false,
 			NeedUpgradeLogic:    false,
@@ -73,26 +75,17 @@ func (r *TikvConsistencyRule) DataRequirements() DataSourceRequirement {
 
 // Evaluate performs the rule check
 // Logic:
-// 1. For each TiKV node, collect parameters (last_tikv.toml + SHOW CONFIG, merged with runtime priority)
-// 2. Compare with source version knowledge base defaults
-// 3. Report differences as medium risk (warning)
-// 4. Each node-parameter combination is one entry
+// 1. Collect all TiKV node parameters (last_tikv.toml + SHOW CONFIG, merged with runtime priority)
+// 2. Use the first TiKV node as baseline
+// 3. Compare all other TiKV nodes with the baseline node
+// 4. Report differences as medium risk (warning)
+// 5. Each node-parameter combination is one entry
 func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext) ([]CheckResult, error) {
 	var results []CheckResult
 
 	if ruleCtx.SourceClusterSnapshot == nil {
 		return results, nil
 	}
-
-	// Get source version defaults for TiKV
-	sourceDefaults := ruleCtx.SourceDefaults["tikv"]
-	if sourceDefaults == nil {
-		// No source defaults available, skip
-		return results, nil
-	}
-
-	// Get target version defaults for TiKV (optional, for reference)
-	targetDefaults := ruleCtx.TargetDefaults["tikv"]
 
 	// Find TiDB component to get connection info
 	var tidbAddr string
@@ -119,16 +112,30 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 		}
 	}
 
-	// Collect all TiKV nodes with their instance addresses (IP:port)
+	// Collect all TiKV nodes with their instance addresses (IP:port) and merged configs
 	type tikvNodeInfo struct {
-		name          string
-		address       string                       // HTTP address (from status)
-		instance      string                       // Instance format: IP:port (for SHOW CONFIG)
-		userSetConfig defaultsTypes.ConfigDefaults // From last_tikv.toml
+		name         string
+		address      string                       // HTTP address (from status)
+		instance     string                       // Instance format: IP:port (for SHOW CONFIG)
+		mergedConfig defaultsTypes.ConfigDefaults // Merged config (last_tikv.toml + SHOW CONFIG)
 	}
 
 	var tikvNodes []tikvNodeInfo
 
+	// Connect to TiDB to get runtime configs via SHOW CONFIG (if available)
+	var db *sql.DB
+	var collector tidbCollector.TiDBCollector
+	if tidbAddr != "" {
+		var err error
+		db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/", tidbUser, tidbPassword, tidbAddr))
+		if err == nil {
+			defer db.Close()
+			db.SetConnMaxLifetime(10 * time.Second)
+			collector = tidbCollector.NewTiDBCollector()
+		}
+	}
+
+	// Collect all TiKV nodes
 	for compName, component := range ruleCtx.SourceClusterSnapshot.Components {
 		if component.Type == collector.TiKVComponent || strings.HasPrefix(compName, "tikv") {
 			// Get HTTP address from status or use component name
@@ -140,14 +147,31 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 			// Extract instance (IP:port) from address
 			instance := address
 
-			// User-set config from last_tikv.toml (already in component.Config)
-			userSetConfig := component.Config
+			// Step 1: Start with user-set values from last_tikv.toml
+			mergedConfig := make(defaultsTypes.ConfigDefaults)
+			for k, v := range component.Config {
+				mergedConfig[k] = v
+			}
+
+			// Step 2: Get runtime values via SHOW CONFIG WHERE type='tikv' AND instance='...' (if available)
+			if db != nil && collector != nil {
+				runtimeConfig, err := collector.GetConfigByTypeAndInstance(db, "tikv", instance)
+				if err == nil {
+					// Step 3: Merge with priority: runtime values > user-set values
+					for k, v := range runtimeConfig {
+						mergedConfig[k] = defaultsTypes.ParameterValue{
+							Value: v,
+							Type:  determineValueType(v),
+						}
+					}
+				}
+			}
 
 			tikvNodes = append(tikvNodes, tikvNodeInfo{
-				name:          compName,
-				address:       address,
-				instance:      instance,
-				userSetConfig: userSetConfig,
+				name:         compName,
+				address:      address,
+				instance:     instance,
+				mergedConfig: mergedConfig,
 			})
 		}
 	}
@@ -156,147 +180,75 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 		return results, nil
 	}
 
-	// If there's only one TiKV node, skip consistency check
-	// (upgrade differences rule already handles single-node comparisons with defaults)
-	// Consistency rule should focus on multi-node consistency
+	// If there's only one TiKV node, skip consistency check (no other nodes to compare with)
 	if len(tikvNodes) == 1 {
 		return results, nil
 	}
 
-	// Connect to TiDB to get runtime configs via SHOW CONFIG (if available)
-	var db *sql.DB
-	var collector tidbCollector.TiDBCollector // TiDBCollector is an interface, not a pointer
-	if tidbAddr != "" {
-		var err error
-		db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/", tidbUser, tidbPassword, tidbAddr))
-		if err == nil {
-			defer db.Close()
-			db.SetConnMaxLifetime(10 * time.Second)
-			collector = tidbCollector.NewTiDBCollector() // Returns TiDBCollector interface
-		}
-	}
+	// Use the first TiKV node as baseline
+	baselineNode := tikvNodes[0]
+	baselineConfig := baselineNode.mergedConfig
 
-	// Process each TiKV node
-	for _, node := range tikvNodes {
-		// Step 1: Start with user-set values from last_tikv.toml
-		mergedConfig := make(defaultsTypes.ConfigDefaults)
-		for k, v := range node.userSetConfig {
-			mergedConfig[k] = v
-		}
+	// Compare all other TiKV nodes with the baseline node
+	// Note: Deployment-specific parameters have already been filtered in preprocessor
+	// This rule only processes parameters that passed the preprocessor filter
+	for i := 1; i < len(tikvNodes); i++ {
+		node := tikvNodes[i]
+		nodeConfig := node.mergedConfig
 
-		// Step 2: Get runtime values via SHOW CONFIG WHERE type='tikv' AND instance='...' (if available)
-		if db != nil && collector != nil {
-			runtimeConfig, err := collector.GetConfigByTypeAndInstance(db, "tikv", node.instance)
-			if err == nil {
-				// Step 3: Merge with priority: runtime values > user-set values
-				for k, v := range runtimeConfig {
-					// Convert to ParameterValue format
-					mergedConfig[k] = defaultsTypes.ParameterValue{
-						Value: v,
-						Type:  determineValueType(v),
-					}
-				}
-			}
-		}
+		// Compare each parameter in the node with the baseline
+		for paramName, paramValue := range nodeConfig {
+			nodeValue := paramValue.Value
 
-		// Step 4: Compare merged config with source version defaults
-		for paramName, paramValue := range mergedConfig {
-			currentValue := paramValue.Value
-
-			// Filter deployment-specific parameters (pd.endpoints, etc.)
-			// These parameters vary by deployment environment and should not be reported
-			if ignoredParamsForUpgradeDifferences[paramName] {
+			// Get baseline value
+			baselineParamValue, existsInBaseline := baselineConfig[paramName]
+			if !existsInBaseline {
+				// Parameter exists in this node but not in baseline - report as difference
+				results = append(results, CheckResult{
+					RuleID:        r.Name(),
+					Category:      r.Category(),
+					Component:     "tikv",
+					ParameterName: paramName,
+					ParamType:     "config",
+					Severity:      "warning",
+					RiskLevel:     RiskLevelMedium,
+					Message:       fmt.Sprintf("Parameter %s exists in TiKV node %s but not in baseline node %s", paramName, node.name, baselineNode.name),
+					Details:       fmt.Sprintf("Node: %s (instance: %s)\nBaseline Node: %s (instance: %s)\n\nThis parameter is present in node %s but missing in the baseline node.\nCurrent Value: %v", node.name, node.instance, baselineNode.name, baselineNode.instance, node.name, FormatValue(nodeValue)),
+					CurrentValue:  nodeValue,
+					Suggestions: []string{
+						"This parameter exists in this node but not in the baseline node",
+						"Review if this parameter should be added to the baseline node or removed from this node",
+						"Ensure all TiKV nodes have consistent parameters for scale out",
+					},
+					Metadata: map[string]interface{}{
+						"node_name":         node.name,
+						"node_instance":     node.instance,
+						"baseline_name":     baselineNode.name,
+						"baseline_instance": baselineNode.instance,
+						"config_sources":    []string{"last_tikv.toml", "SHOW CONFIG WHERE type='tikv' AND instance='...'"},
+					},
+				})
 				continue
 			}
 
-			// Get source default
-			sourceDefaultValue, existsInSource := sourceDefaults[paramName]
-			if !existsInSource {
-				// Parameter not in source version KB, skip (handled by other rules)
-				continue
-			}
-
-			sourceDefault := extractValueFromDefault(sourceDefaultValue)
-			if sourceDefault == nil {
-				continue
-			}
-
-			// Note: IsPathParameter filtering is done at report generation time, not here
-			// This ensures all parameters are properly categorized before filtering
-
-			// Get target default (if available)
-			var targetDefault interface{}
-			if targetDefaults != nil {
-				if targetDefaultValue, existsInTarget := targetDefaults[paramName]; existsInTarget {
-					targetDefault = extractValueFromDefault(targetDefaultValue)
-				}
-			}
+			baselineValue := baselineParamValue.Value
 
 			// For map types, use deep comparison to show only differing fields
-			// Try to convert to map even if IsMapType returns false (might be map[interface{}]interface{})
-			currentMap := ConvertToMapStringInterface(currentValue)
-			sourceMap := ConvertToMapStringInterface(sourceDefault)
+			nodeMap := ConvertToMapStringInterface(nodeValue)
+			baselineMap := ConvertToMapStringInterface(baselineValue)
 
-			if currentMap != nil && sourceMap != nil {
+			if nodeMap != nil && baselineMap != nil {
 				// Both are maps, use deep comparison to show only differing fields
 				opts := CompareOptions{
-					IgnoredParams: ignoredParamsForUpgradeDifferences, // Filter deployment-specific parameters
-					BasePath:      paramName,
+					BasePath: paramName,
 				}
-				diffs := CompareMapsDeep(currentValue, sourceDefault, opts)
+				diffs := CompareMapsDeep(nodeValue, baselineValue, opts)
 
 				// Only report if there are differences
 				if len(diffs) > 0 {
 					// Create a separate CheckResult for each differing field
 					for fieldPath, diff := range diffs {
-						// Check if current == target but != source, and this is a resource-dependent parameter
-						// If so, skip reporting as the current value is already correct for target version
-						if targetDefault != nil {
-							targetMap := ConvertToMapStringInterface(targetDefault)
-							if targetMap != nil {
-								fieldKeys := strings.Split(fieldPath, ".")
-								targetFieldValue := getNestedMapValue(targetMap, fieldKeys)
-								if targetFieldValue != nil {
-									currentEqualsTarget := CompareValues(diff.Current, targetFieldValue)
-									currentEqualsSource := CompareValues(diff.Current, diff.Source)
-									sourceEqualsTarget := CompareValues(diff.Source, targetFieldValue)
-
-									if currentEqualsTarget && !currentEqualsSource {
-										fullParamName := fmt.Sprintf("%s.%s", paramName, fieldPath)
-										if IsResourceDependentParameter(fieldPath) || IsResourceDependentParameter(fullParamName) {
-											// Current value matches target default, but differs from source default
-											// This is likely due to deployment environment differences (e.g., different hardware)
-											// Skip reporting as the current value is already correct for target version
-											continue
-										}
-									}
-
-									// Filter: If source default == target default, but current != source, and this is a resource-dependent parameter
-									// The difference is due to deployment environment, not version change
-									if sourceEqualsTarget && !currentEqualsSource {
-										fullParamName := fmt.Sprintf("%s.%s", paramName, fieldPath)
-										if IsResourceDependentParameter(fieldPath) || IsResourceDependentParameter(fullParamName) {
-											// Source default equals target default, but current differs
-											// This is likely due to deployment environment differences (e.g., different CPU cores)
-											// Skip reporting as the difference is not due to version change
-											continue
-										}
-									}
-								}
-							}
-						}
-
-						fieldDetails := FormatValueDiff(diff.Current, diff.Source) // Current vs Source
-						if targetDefault != nil {
-							targetMap := ConvertToMapStringInterface(targetDefault)
-							if targetMap != nil {
-								fieldKeys := strings.Split(fieldPath, ".")
-								targetFieldValue := getNestedMapValue(targetMap, fieldKeys)
-								if targetFieldValue != nil {
-									fieldDetails += fmt.Sprintf("\nTarget Default: %v", FormatValue(targetFieldValue))
-								}
-							}
-						}
+						fieldDetails := FormatValueDiff(diff.Current, diff.Source) // Current (node) vs Source (baseline)
 
 						results = append(results, CheckResult{
 							RuleID:        r.Name(),
@@ -306,20 +258,21 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 							ParamType:     "config",
 							Severity:      "warning",
 							RiskLevel:     RiskLevelMedium,
-							Message:       fmt.Sprintf("Parameter %s.%s in TiKV node %s differs from source version default", paramName, fieldPath, node.name),
-							Details:       fmt.Sprintf("Node: %s (instance: %s)\n%s", node.name, node.instance, fieldDetails),
+							Message:       fmt.Sprintf("Parameter %s.%s in TiKV node %s differs from baseline node %s", paramName, fieldPath, node.name, baselineNode.name),
+							Details:       fmt.Sprintf("Node: %s (instance: %s)\nBaseline Node: %s (instance: %s)\n%s", node.name, node.instance, baselineNode.name, baselineNode.instance, fieldDetails),
 							CurrentValue:  diff.Current,
-							SourceDefault: diff.Source,
-							TargetDefault: getNestedMapValue(ConvertToMapStringInterface(targetDefault), strings.Split(fieldPath, ".")),
+							SourceDefault: diff.Source, // Baseline value
 							Suggestions: []string{
-								"This parameter differs from the source version default",
+								"This parameter differs between TiKV nodes",
 								"Review if this difference is intentional",
-								"Ensure the value is compatible with target version",
+								"Ensure all TiKV nodes have consistent parameters for scale out",
 							},
 							Metadata: map[string]interface{}{
-								"node_name":      node.name,
-								"node_instance":  node.instance,
-								"config_sources": []string{"last_tikv.toml", "SHOW CONFIG WHERE type='tikv' AND instance='...'"},
+								"node_name":         node.name,
+								"node_instance":     node.instance,
+								"baseline_name":     baselineNode.name,
+								"baseline_instance": baselineNode.instance,
+								"config_sources":    []string{"last_tikv.toml", "SHOW CONFIG WHERE type='tikv' AND instance='...'"},
 							},
 						})
 					}
@@ -330,66 +283,16 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 				// For non-map types, use simple comparison
 				// For filename-only parameters, compare by filename only (ignore path)
 				var differs bool
-				if filenameOnlyParams[paramName] {
-					differs = !CompareFileNames(currentValue, sourceDefault)
+				if analyzer.IsFilenameOnlyParameter(paramName) {
+					differs = !CompareFileNames(nodeValue, baselineValue)
 				} else {
 					// Use proper value comparison to avoid scientific notation issues
-					differs = !CompareValues(currentValue, sourceDefault)
+					differs = !CompareValues(nodeValue, baselineValue)
 				}
 
 				if differs {
-					// Check if current == target but != source, and this is a resource-dependent parameter
-					// If so, skip reporting as the current value is already correct for target version
-					if targetDefault != nil {
-						currentEqualsTarget := CompareValues(currentValue, targetDefault)
-						currentEqualsSource := CompareValues(currentValue, sourceDefault)
-						sourceEqualsTarget := CompareValues(sourceDefault, targetDefault)
-
-						if currentEqualsTarget && !currentEqualsSource {
-							if IsResourceDependentParameter(paramName) {
-								// Current value matches target default, but differs from source default
-								// This is likely due to deployment environment differences (e.g., different hardware)
-								// Skip reporting as the current value is already correct for target version
-								continue
-							}
-						}
-
-						// Filter: If source default == target default, but current != source, and this is a resource-dependent parameter
-						// The difference is due to deployment environment, not version change
-						if sourceEqualsTarget && !currentEqualsSource {
-							if IsResourceDependentParameter(paramName) {
-								// Source default equals target default, but current differs
-								// This is likely due to deployment environment differences (e.g., different CPU cores)
-								// Skip reporting as the difference is not due to version change
-								continue
-							}
-						}
-					}
-
 					// Difference found: medium risk (warning)
-					details := FormatValueDiff(currentValue, sourceDefault)
-					if targetDefault != nil {
-						// For filename-only parameters, show filename only
-						var targetDefaultStr string
-						if filenameOnlyParams[paramName] {
-							targetDefaultStr = ExtractFileName(targetDefault)
-							details += fmt.Sprintf("\nTarget Default: %s (filename only)", targetDefaultStr)
-						} else {
-							details += fmt.Sprintf("\nTarget Default: %v", FormatValue(targetDefault))
-							targetDefaultStr = fmt.Sprintf("%v", targetDefault)
-						}
-
-						// If source default == target default but current differs, add note about auto-tuning
-						var sourceDefaultStr string
-						if filenameOnlyParams[paramName] {
-							sourceDefaultStr = ExtractFileName(sourceDefault)
-						} else {
-							sourceDefaultStr = fmt.Sprintf("%v", sourceDefault)
-						}
-						if sourceDefaultStr == targetDefaultStr {
-							details += "\n\nNote: Source and target defaults are the same. The current value may be auto-tuned by TiKV based on system resources (e.g., CPU cores)."
-						}
-					}
+					details := FormatValueDiff(nodeValue, baselineValue)
 
 					results = append(results, CheckResult{
 						RuleID:        r.Name(),
@@ -399,23 +302,57 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 						ParamType:     "config",
 						Severity:      "warning",
 						RiskLevel:     RiskLevelMedium,
-						Message:       fmt.Sprintf("Parameter %s in TiKV node %s differs from source version default", paramName, node.name),
-						Details:       fmt.Sprintf("Node: %s (instance: %s)\n%s", node.name, node.instance, details),
-						CurrentValue:  currentValue,
-						SourceDefault: sourceDefault,
-						TargetDefault: targetDefault,
+						Message:       fmt.Sprintf("Parameter %s in TiKV node %s differs from baseline node %s", paramName, node.name, baselineNode.name),
+						Details:       fmt.Sprintf("Node: %s (instance: %s)\nBaseline Node: %s (instance: %s)\n%s", node.name, node.instance, baselineNode.name, baselineNode.instance, details),
+						CurrentValue:  nodeValue,
+						SourceDefault: baselineValue, // Baseline value
 						Suggestions: []string{
-							"This parameter differs from the source version default",
+							"This parameter differs between TiKV nodes",
 							"Review if this difference is intentional",
-							"Ensure the value is compatible with target version",
+							"Ensure all TiKV nodes have consistent parameters for scale out",
 						},
 						Metadata: map[string]interface{}{
-							"node_name":      node.name,
-							"node_instance":  node.instance,
-							"config_sources": []string{"last_tikv.toml", "SHOW CONFIG WHERE type='tikv' AND instance='...'"},
+							"node_name":         node.name,
+							"node_instance":     node.instance,
+							"baseline_name":     baselineNode.name,
+							"baseline_instance": baselineNode.instance,
+							"config_sources":    []string{"last_tikv.toml", "SHOW CONFIG WHERE type='tikv' AND instance='...'"},
 						},
 					})
 				}
+			}
+		}
+
+		// Also check for parameters that exist in baseline but not in this node
+		for paramName, baselineParamValue := range baselineConfig {
+			if _, existsInNode := nodeConfig[paramName]; !existsInNode {
+				// Parameter exists in baseline but not in this node - report as difference
+				baselineValue := baselineParamValue.Value
+				results = append(results, CheckResult{
+					RuleID:        r.Name(),
+					Category:      r.Category(),
+					Component:     "tikv",
+					ParameterName: paramName,
+					ParamType:     "config",
+					Severity:      "warning",
+					RiskLevel:     RiskLevelMedium,
+					Message:       fmt.Sprintf("Parameter %s exists in baseline node %s but not in TiKV node %s", paramName, baselineNode.name, node.name),
+					Details:       fmt.Sprintf("Node: %s (instance: %s)\nBaseline Node: %s (instance: %s)\n\nThis parameter is present in the baseline node but missing in node %s.\nBaseline Value: %v", node.name, node.instance, baselineNode.name, baselineNode.instance, node.name, FormatValue(baselineValue)),
+					CurrentValue:  nil,
+					SourceDefault: baselineValue,
+					Suggestions: []string{
+						"This parameter exists in the baseline node but not in this node",
+						"Review if this parameter should be added to this node or removed from the baseline node",
+						"Ensure all TiKV nodes have consistent parameters for scale out",
+					},
+					Metadata: map[string]interface{}{
+						"node_name":         node.name,
+						"node_instance":     node.instance,
+						"baseline_name":     baselineNode.name,
+						"baseline_instance": baselineNode.instance,
+						"config_sources":    []string{"last_tikv.toml", "SHOW CONFIG WHERE type='tikv' AND instance='...'"},
+					},
+				})
 			}
 		}
 	}

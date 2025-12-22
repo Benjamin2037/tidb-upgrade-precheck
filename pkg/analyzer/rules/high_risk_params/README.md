@@ -16,6 +16,26 @@
 5. **Version range support**: Parameters can be configured to apply only to specific version ranges (from_version to to_version)
 6. **Upgrade path checking**: The rule checks if the upgrade path (sourceVersion -> targetVersion) overlaps with the configured version range
 
+## Managing High-Risk Parameters
+
+High-risk parameters are managed by directly editing JSON configuration files in the knowledge base directory. This approach is simpler and more straightforward than using command-line tools.
+
+### Configuration Files
+
+1. **`knowledge/high_risk_params/high_risk_params.json`** (Editable)
+   - Configuration file for high-risk parameters
+   - Generated from `pkg/analyzer/rules/high_risk_params/default.json` during knowledge base generation
+   - Contains default high-risk parameters for common upgrade scenarios
+   - Technical support staff should edit this file directly to add custom high-risk parameters
+
+### How to Add a Parameter
+
+1. Open `knowledge/high_risk_params/high_risk_params.json` in a text editor
+2. Add your parameter to the appropriate component section (tidb, pd, tikv, or tiflash)
+3. Save the file
+
+See [MANUAL_EDIT_GUIDE.md](./MANUAL_EDIT_GUIDE.md) for detailed instructions and examples.
+
 ## Configuration File Format
 
 The configuration file is in JSON format with the following structure:
@@ -265,13 +285,12 @@ options := &analyzer.AnalysisOptions{
 analyzer := analyzer.NewAnalyzer(options)
 ```
 
-## Configuration File Location Recommendations
+## Configuration File Location
 
-It is recommended to place the configuration file in one of the following locations:
+The configuration file is located at:
+- `knowledge/high_risk_params/high_risk_params.json`
 
-1. `~/.tiup/high_risk_params.json` (for TiUP integration)
-2. `~/.tidb-upgrade-precheck/high_risk_params.json`
-3. Environment variable: Specify path via environment variable `HIGH_RISK_PARAMS_CONFIG`
+This file is automatically loaded by the tool from the knowledge base.
 
 ## Best Practices
 

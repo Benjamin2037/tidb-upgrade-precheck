@@ -10,6 +10,7 @@ import (
 	"time"
 
 	kbgenerator "github.com/pingcap/tidb-upgrade-precheck/pkg/collector"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector/common"
 	pdkb "github.com/pingcap/tidb-upgrade-precheck/pkg/collector/pd"
 	tidbkb "github.com/pingcap/tidb-upgrade-precheck/pkg/collector/tidb"
 	tiflashkb "github.com/pingcap/tidb-upgrade-precheck/pkg/collector/tiflash"
@@ -84,6 +85,16 @@ func main() {
 		}
 	}
 
+	// Generate upgrade_logic.json if TiDB component is included
+	// This is done once before processing versions, as upgrade_logic.json is version-agnostic
+	if componentMap["tidb"] && *tidbRepoRoot != "" {
+		upgradeLogicPath := filepath.Join("knowledge", "tidb", "upgrade_logic.json")
+		if err := generateUpgradeLogic(*tidbRepoRoot, upgradeLogicPath); err != nil {
+			log.Printf("Warning: failed to generate upgrade_logic.json: %v\n", err)
+			log.Printf("Continuing with knowledge base generation...\n")
+		}
+	}
+
 	// Process each version
 	for i, version := range versionsToProcess {
 		if i > 0 {
@@ -100,13 +111,13 @@ func main() {
 		// Start playground cluster first (before any component collection)
 		// This ensures all components can access the cluster data
 		fmt.Printf("Starting tiup playground cluster for version %s (tag: %s)...\n", version, tag)
-		if err := tidbkb.StartPlayground(version, tag); err != nil {
+		if err := common.StartPlayground(version, tag); err != nil {
 			log.Fatalf("Failed to start playground cluster: %v", err)
 		}
 
 		// Wait for cluster to be ready
 		fmt.Printf("Waiting for cluster to be ready...\n")
-		if err := tidbkb.WaitForClusterReady(tag, defaultTiDBPort); err != nil {
+		if err := common.WaitForClusterReady(tag, defaultTiDBPort); err != nil {
 			log.Fatalf("Cluster failed to become ready: %v", err)
 		}
 
@@ -157,7 +168,7 @@ func main() {
 		fmt.Printf("========================================\n")
 		fmt.Printf("Forcefully cleaning up playground cluster (tag: %s)...\n", tag)
 		fmt.Printf("========================================\n")
-		if err := tidbkb.StopPlayground(tag); err != nil {
+		if err := common.StopPlayground(tag); err != nil {
 			log.Printf("Warning: failed to stop playground cluster: %v\n", err)
 		}
 		// Wait longer to ensure all processes are terminated and resources are released
@@ -250,6 +261,47 @@ func generateSingleVersionTiFlash(version string, tag string) error {
 	}
 
 	fmt.Printf("Saved TiFlash knowledge for version %s to %s\n", version, outputPath)
+
+	return nil
+}
+
+// generateUpgradeLogic generates upgrade_logic.json from TiDB source code
+// This should be called once before processing versions, as upgrade_logic.json is version-agnostic
+// and contains all historical upgradeToVerXX functions from master branch
+func generateUpgradeLogic(tidbRepoRoot, outputPath string) error {
+	fmt.Printf("========================================\n")
+	fmt.Printf("Generating upgrade_logic.json (TiDB)\n")
+	fmt.Printf("========================================\n")
+	fmt.Printf("This file contains all historical upgrade logic and is generated once for all versions.\n")
+	fmt.Printf("IMPORTANT: Should be extracted from master branch to get all historical upgradeToVerXX functions.\n")
+	fmt.Printf("Repository: %s\n", tidbRepoRoot)
+	fmt.Printf("Output: %s\n", outputPath)
+	fmt.Printf("\n")
+
+	// Ensure output directory exists
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	// Collect upgrade logic from source code
+	upgradeLogic, err := tidbkb.CollectUpgradeLogicFromSource(tidbRepoRoot)
+	if err != nil {
+		return fmt.Errorf("failed to collect TiDB upgrade logic: %w", err)
+	}
+
+	// Save upgrade logic
+	if err := kbgenerator.SaveUpgradeLogic(upgradeLogic, outputPath); err != nil {
+		return fmt.Errorf("failed to save TiDB upgrade logic: %w", err)
+	}
+
+	totalChanges := 0
+	if upgradeLogic != nil && upgradeLogic.Changes != nil {
+		totalChanges = len(upgradeLogic.Changes)
+	}
+
+	fmt.Printf("✓ Successfully generated upgrade_logic.json with %d total forced changes\n", totalChanges)
+	fmt.Printf("  Saved to: %s\n", outputPath)
+	fmt.Printf("========================================\n\n")
 
 	return nil
 }

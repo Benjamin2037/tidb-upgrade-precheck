@@ -14,7 +14,7 @@ import (
 )
 
 func TestNewHighRiskParamsRule(t *testing.T) {
-	rule, err := NewHighRiskParamsRule("")
+	rule, err := NewHighRiskParamsRule(nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, rule)
 	assert.Equal(t, "HIGH_RISK_PARAMS", rule.Name())
@@ -28,7 +28,7 @@ func TestNewHighRiskParamsRule_WithConfig(t *testing.T) {
 
 	config := HighRiskParamsConfig{
 		TiDB: struct {
-			Config         map[string]HighRiskParamConfig `json:"config,omitempty"`
+			Config          map[string]HighRiskParamConfig `json:"config,omitempty"`
 			SystemVariables map[string]HighRiskParamConfig `json:"system_variables,omitempty"`
 		}{
 			Config: map[string]HighRiskParamConfig{
@@ -45,7 +45,11 @@ func TestNewHighRiskParamsRule_WithConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(configPath, data, 0644))
 
-	rule, err := NewHighRiskParamsRule(configPath)
+	// Read and unmarshal config directly (avoiding import cycle)
+	var loadedConfig HighRiskParamsConfig
+	require.NoError(t, json.Unmarshal(data, &loadedConfig))
+
+	rule, err := NewHighRiskParamsRule(&loadedConfig)
 	assert.NoError(t, err)
 	assert.NotNil(t, rule)
 
@@ -55,15 +59,16 @@ func TestNewHighRiskParamsRule_WithConfig(t *testing.T) {
 }
 
 func TestNewHighRiskParamsRule_InvalidConfig(t *testing.T) {
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "invalid.json")
+	// Test with nil config (should work, creates empty config)
+	rule, err := NewHighRiskParamsRule(nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, rule)
 
-	// Write invalid JSON
-	require.NoError(t, os.WriteFile(configPath, []byte("invalid json"), 0644))
-
-	rule, err := NewHighRiskParamsRule(configPath)
-	assert.Error(t, err)
-	assert.Nil(t, rule)
+	// Test with empty config struct
+	emptyConfig := &HighRiskParamsConfig{}
+	rule, err = NewHighRiskParamsRule(emptyConfig)
+	assert.NoError(t, err)
+	assert.NotNil(t, rule)
 }
 
 func TestHighRiskParamsRule_DataRequirements(t *testing.T) {
@@ -77,7 +82,7 @@ func TestHighRiskParamsRule_DataRequirements(t *testing.T) {
 			name: "TiDB config only",
 			config: &HighRiskParamsConfig{
 				TiDB: struct {
-					Config         map[string]HighRiskParamConfig `json:"config,omitempty"`
+					Config          map[string]HighRiskParamConfig `json:"config,omitempty"`
 					SystemVariables map[string]HighRiskParamConfig `json:"system_variables,omitempty"`
 				}{
 					Config: map[string]HighRiskParamConfig{
@@ -92,7 +97,7 @@ func TestHighRiskParamsRule_DataRequirements(t *testing.T) {
 			name: "TiDB system variables",
 			config: &HighRiskParamsConfig{
 				TiDB: struct {
-					Config         map[string]HighRiskParamConfig `json:"config,omitempty"`
+					Config          map[string]HighRiskParamConfig `json:"config,omitempty"`
 					SystemVariables map[string]HighRiskParamConfig `json:"system_variables,omitempty"`
 				}{
 					SystemVariables: map[string]HighRiskParamConfig{
@@ -107,7 +112,7 @@ func TestHighRiskParamsRule_DataRequirements(t *testing.T) {
 			name: "multiple components",
 			config: &HighRiskParamsConfig{
 				TiDB: struct {
-					Config         map[string]HighRiskParamConfig `json:"config,omitempty"`
+					Config          map[string]HighRiskParamConfig `json:"config,omitempty"`
 					SystemVariables map[string]HighRiskParamConfig `json:"system_variables,omitempty"`
 				}{
 					Config: map[string]HighRiskParamConfig{
@@ -157,7 +162,7 @@ func TestHighRiskParamsRule_Evaluate_ModifiedConfig(t *testing.T) {
 		BaseRule: NewBaseRule("HIGH_RISK_PARAMS", "Test", "high_risk"),
 		config: &HighRiskParamsConfig{
 			TiDB: struct {
-				Config         map[string]HighRiskParamConfig `json:"config,omitempty"`
+				Config          map[string]HighRiskParamConfig `json:"config,omitempty"`
 				SystemVariables map[string]HighRiskParamConfig `json:"system_variables,omitempty"`
 			}{
 				Config: map[string]HighRiskParamConfig{
@@ -215,7 +220,7 @@ func TestHighRiskParamsRule_Evaluate_UnmodifiedConfig(t *testing.T) {
 		BaseRule: NewBaseRule("HIGH_RISK_PARAMS", "Test", "high_risk"),
 		config: &HighRiskParamsConfig{
 			TiDB: struct {
-				Config         map[string]HighRiskParamConfig `json:"config,omitempty"`
+				Config          map[string]HighRiskParamConfig `json:"config,omitempty"`
 				SystemVariables map[string]HighRiskParamConfig `json:"system_variables,omitempty"`
 			}{
 				Config: map[string]HighRiskParamConfig{
@@ -261,7 +266,7 @@ func TestHighRiskParamsRule_Evaluate_AllowedValues(t *testing.T) {
 		BaseRule: NewBaseRule("HIGH_RISK_PARAMS", "Test", "high_risk"),
 		config: &HighRiskParamsConfig{
 			TiDB: struct {
-				Config         map[string]HighRiskParamConfig `json:"config,omitempty"`
+				Config          map[string]HighRiskParamConfig `json:"config,omitempty"`
 				SystemVariables map[string]HighRiskParamConfig `json:"system_variables,omitempty"`
 			}{
 				Config: map[string]HighRiskParamConfig{
@@ -308,7 +313,7 @@ func TestHighRiskParamsRule_Evaluate_NotAllowedValue(t *testing.T) {
 		BaseRule: NewBaseRule("HIGH_RISK_PARAMS", "Test", "high_risk"),
 		config: &HighRiskParamsConfig{
 			TiDB: struct {
-				Config         map[string]HighRiskParamConfig `json:"config,omitempty"`
+				Config          map[string]HighRiskParamConfig `json:"config,omitempty"`
 				SystemVariables map[string]HighRiskParamConfig `json:"system_variables,omitempty"`
 			}{
 				Config: map[string]HighRiskParamConfig{
@@ -366,7 +371,7 @@ func TestHighRiskParamsRule_Evaluate_VersionRange(t *testing.T) {
 		BaseRule: NewBaseRule("HIGH_RISK_PARAMS", "Test", "high_risk"),
 		config: &HighRiskParamsConfig{
 			TiDB: struct {
-				Config         map[string]HighRiskParamConfig `json:"config,omitempty"`
+				Config          map[string]HighRiskParamConfig `json:"config,omitempty"`
 				SystemVariables map[string]HighRiskParamConfig `json:"system_variables,omitempty"`
 			}{
 				Config: map[string]HighRiskParamConfig{
@@ -444,7 +449,7 @@ func TestHighRiskParamsRule_Evaluate_SystemVariable(t *testing.T) {
 		BaseRule: NewBaseRule("HIGH_RISK_PARAMS", "Test", "high_risk"),
 		config: &HighRiskParamsConfig{
 			TiDB: struct {
-				Config         map[string]HighRiskParamConfig `json:"config,omitempty"`
+				Config          map[string]HighRiskParamConfig `json:"config,omitempty"`
 				SystemVariables map[string]HighRiskParamConfig `json:"system_variables,omitempty"`
 			}{
 				SystemVariables: map[string]HighRiskParamConfig{
@@ -502,7 +507,7 @@ func TestHighRiskParamsRule_Evaluate_EmptySnapshot(t *testing.T) {
 		BaseRule: NewBaseRule("HIGH_RISK_PARAMS", "Test", "high_risk"),
 		config: &HighRiskParamsConfig{
 			TiDB: struct {
-				Config         map[string]HighRiskParamConfig `json:"config,omitempty"`
+				Config          map[string]HighRiskParamConfig `json:"config,omitempty"`
 				SystemVariables map[string]HighRiskParamConfig `json:"system_variables,omitempty"`
 			}{
 				Config: map[string]HighRiskParamConfig{
@@ -586,7 +591,7 @@ func TestHighRiskParamsRule_VersionRange(t *testing.T) {
 				BaseRule: NewBaseRule("HIGH_RISK_PARAMS", "Test", "high_risk"),
 				config: &HighRiskParamsConfig{
 					TiDB: struct {
-						Config         map[string]HighRiskParamConfig `json:"config,omitempty"`
+						Config          map[string]HighRiskParamConfig `json:"config,omitempty"`
 						SystemVariables map[string]HighRiskParamConfig `json:"system_variables,omitempty"`
 					}{
 						Config: map[string]HighRiskParamConfig{
@@ -631,4 +636,3 @@ func TestHighRiskParamsRule_VersionRange(t *testing.T) {
 		})
 	}
 }
-

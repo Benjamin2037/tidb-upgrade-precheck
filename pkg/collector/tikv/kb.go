@@ -7,15 +7,12 @@
 package tikv
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector/tidb"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector/common"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/types"
 )
 
@@ -50,9 +47,10 @@ func Collect(tikvRoot, version string, tidbPort int, tag string) (*types.KBSnaps
 		fmt.Printf("Warning: TiKV data directory not found: %v\n", err)
 	}
 
-	// Step 2: Collect runtime values via SHOW CONFIG WHERE type='tikv'
+	// Step 2: Collect runtime values via SHOW CONFIG WHERE type='tikv' AND instance='ip:port'
+	// Use runtime collector's method for consistency
 	fmt.Printf("Collecting TiKV runtime configuration via SHOW CONFIG...\n")
-	runtimeConfig, err := collectTiKVConfigViaSHOWCONFIG(tidbPort)
+	runtimeConfig, err := collectTiKVConfigViaSHOWCONFIG(tidbPort, tag)
 	if err != nil {
 		fmt.Printf("Warning: failed to collect via SHOW CONFIG: %v\n", err)
 		runtimeConfig = make(types.ConfigDefaults)
@@ -116,7 +114,8 @@ func findTiKVDataDir(tag string) (string, error) {
 // Uses runtime collector for consistency with real cluster collection
 func collectTiKVConfigFromFile(dataDir string) (types.ConfigDefaults, error) {
 	collector := NewTiKVCollector()
-	states, err := collector.Collect([]string{"dummy"}, map[string]string{"dummy": dataDir})
+	// Use CollectWithTiDB with empty TiDB connection to only collect from last_tikv.toml
+	states, err := collector.CollectWithTiDB([]string{"dummy"}, map[string]string{"dummy": dataDir}, "", "", "")
 	if err != nil || len(states) == 0 {
 		return nil, fmt.Errorf("failed to collect TiKV config from last_tikv.toml: %w", err)
 	}
@@ -124,27 +123,36 @@ func collectTiKVConfigFromFile(dataDir string) (types.ConfigDefaults, error) {
 	return states[0].Config, nil
 }
 
-// collectTiKVConfigViaSHOWCONFIG collects TiKV config via SHOW CONFIG WHERE type='tikv'
-// Uses runtime collector's GetConfigByType method for consistency
-func collectTiKVConfigViaSHOWCONFIG(tidbPort int) (types.ConfigDefaults, error) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/", defaultTiDBUser, defaultTiDBPass, defaultTiDBHost, tidbPort)
-	db, err := sql.Open("mysql", dsn)
+// collectTiKVConfigViaSHOWCONFIG collects TiKV config via SHOW CONFIG WHERE type='tikv' AND instance='ip:port'
+// Uses runtime collector's method for consistency
+func collectTiKVConfigViaSHOWCONFIG(tidbPort int, tag string) (types.ConfigDefaults, error) {
+	// Find TiKV instance address from playground directory
+	tikvAddr, err := common.FindPlaygroundInstanceAddr("tikv", tag)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database connection: %w", err)
+		return nil, fmt.Errorf("failed to find TiKV instance address: %w", err)
 	}
-	defer db.Close()
-	db.SetConnMaxLifetime(10 * time.Second)
 
-	collector := tidb.NewTiDBCollector()
-	config, err := collector.GetConfigByType(db, "tikv")
+	// Use runtime collector's method for consistency
+	tikvCollector := NewTiKVCollector()
+	tidbAddr := fmt.Sprintf("%s:%d", defaultTiDBHost, tidbPort)
+
+	// Use the runtime collector's method to get config for specific instance
+	// This matches the approach used in runtime collection
+	states, err := tikvCollector.CollectWithTiDB(
+		[]string{tikvAddr},
+		map[string]string{}, // dataDirs not needed for SHOW CONFIG
+		tidbAddr, defaultTiDBUser, defaultTiDBPass)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get TiKV config via SHOW CONFIG: %w", err)
+		return nil, fmt.Errorf("failed to collect TiKV config via SHOW CONFIG: %w", err)
 	}
-	// Convert map[string]interface{} to types.ConfigDefaults
-	return types.ConvertConfigToDefaults(config), nil
+	if len(states) == 0 {
+		return nil, fmt.Errorf("no TiKV state collected")
+	}
+
+	// Return the config from the collected state
+	return states[0].Config, nil
 }
 
-// Note: Code extraction functions have been removed.
 // TiKV configuration is now collected from:
 // 1. last_tikv.toml (user-set values)
 // 2. SHOW CONFIG WHERE type='tikv' (runtime values)
@@ -167,4 +175,3 @@ func mergeConfigsWithPriority(userConfig, runtimeConfig types.ConfigDefaults) ty
 
 	return merged
 }
-

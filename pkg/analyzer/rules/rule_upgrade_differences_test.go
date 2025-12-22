@@ -9,6 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Note: These tests use cleaned defaults (filtered parameters already removed).
+// In real usage, the preprocessor filters deployment-specific parameters,
+// resource-dependent parameters, and identical parameters before rules are evaluated.
+// Rules receive only parameters that need actual comparison.
+
 func TestNewUpgradeDifferencesRule(t *testing.T) {
 	rule := NewUpgradeDifferencesRule()
 	assert.NotNil(t, rule)

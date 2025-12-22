@@ -129,7 +129,24 @@ func (a *Analyzer) Analyze(
 	}
 	fmt.Printf("[DEBUG Analyzer] Loaded upgrade_logic for components: %v\n", upgradeLogicKeys)
 
-	// Step 3: Create shared rule context with loaded data
+	// Load parameter notes (global, version-agnostic)
+	parameterNotes := a.loadParameterNotes(sourceKB, targetKB)
+
+	// Step 2.5: Preprocess parameters - filter deployment-specific parameters and extract special handling
+	// This reduces the number of parameters that rules need to process
+	preprocessedResults, cleanedSourceDefaults, cleanedTargetDefaults := a.preprocessParameters(
+		snapshot,
+		sourceVersion,
+		targetVersion,
+		sourceDefaults,
+		targetDefaults,
+		upgradeLogic,
+		parameterNotes,
+		sourceBootstrapVersions["tidb"],
+		targetBootstrapVersions["tidb"],
+	)
+
+	// Step 3: Create shared rule context with cleaned data
 	// All rules share the same context, but each rule only accesses data it needs
 	// Extract bootstrap versions for TiDB (most important for upgrade logic filtering)
 	sourceBootstrapVersion := sourceBootstrapVersions["tidb"]
@@ -140,11 +157,12 @@ func (a *Analyzer) Analyze(
 		snapshot,
 		sourceVersion,
 		targetVersion,
-		sourceDefaults,
-		targetDefaults,
+		cleanedSourceDefaults, // Use cleaned defaults (filtered parameters removed)
+		cleanedTargetDefaults, // Use cleaned defaults (filtered parameters removed)
 		upgradeLogic,
 		sourceBootstrapVersion,
 		targetBootstrapVersion,
+		parameterNotes,
 	)
 
 	// Step 4: Execute all rules with the shared context
@@ -154,8 +172,9 @@ func (a *Analyzer) Analyze(
 		return nil, fmt.Errorf("failed to run rules: %w", err)
 	}
 
-	// Step 5: Merge mismatch results with rule results
-	allCheckResults := append(checkResults, mismatchResults...)
+	// Step 5: Merge all results (preprocessed + mismatch + rule results)
+	allCheckResults := append(preprocessedResults, mismatchResults...)
+	allCheckResults = append(allCheckResults, checkResults...)
 
 	// Step 6: Organize results by category
 	result := a.organizeResults(allCheckResults, sourceVersion, targetVersion)
@@ -567,6 +586,25 @@ func (a *Analyzer) loadUpgradeLogic(sourceKB, targetKB map[string]interface{}, r
 	return upgradeLogic
 }
 
+// loadParameterNotes loads parameter notes from knowledge base
+// Parameter notes are global and version-agnostic
+func (a *Analyzer) loadParameterNotes(sourceKB, targetKB map[string]interface{}) map[string]interface{} {
+	parameterNotes := make(map[string]interface{})
+
+	// Try to load from target KB first, fallback to source KB
+	if notes, ok := targetKB["parameter_notes"].(map[string]interface{}); ok {
+		parameterNotes = notes
+		fmt.Printf("[DEBUG loadParameterNotes] ✅ Loaded parameter_notes from target KB\n")
+	} else if notes, ok := sourceKB["parameter_notes"].(map[string]interface{}); ok {
+		parameterNotes = notes
+		fmt.Printf("[DEBUG loadParameterNotes] ✅ Loaded parameter_notes from source KB\n")
+	} else {
+		fmt.Printf("[DEBUG loadParameterNotes] No parameter_notes found in KB\n")
+	}
+
+	return parameterNotes
+}
+
 // organizeResults organizes check results by category for reporter
 func (a *Analyzer) organizeResults(checkResults []rules.CheckResult, sourceVersion, targetVersion string) *AnalysisResult {
 	result := &AnalysisResult{
@@ -773,7 +811,7 @@ func deduplicateCheckResults(results []rules.CheckResult) []rules.CheckResult {
 				// Same priority, check if one is Deprecated and the other is Default Changed
 				baseIsDeprecated := strings.Contains(baseResult.Message, "deprecated") || strings.Contains(baseResult.Message, "removed")
 				currentIsDeprecated := strings.Contains(check.Message, "deprecated") || strings.Contains(check.Message, "removed")
-				
+
 				if currentIsDeprecated && !baseIsDeprecated {
 					// Current is Deprecated, base is not - prefer Deprecated
 					baseResult = check

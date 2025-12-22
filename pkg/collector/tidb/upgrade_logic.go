@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector/common"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/types"
 )
 
@@ -58,57 +57,8 @@ func CollectUpgradeLogicFromSource(repoRoot string) (*types.UpgradeLogicSnapshot
 		return nil, fmt.Errorf("failed to find upgrade logic file: %w", err)
 	}
 
-	// Load vardef constants to map variable.XXX to user-visible names
-	// Use master branch (current checkout) to find vardef directory
-	// Try to find vardef directory (try modern structure first)
-	vardefDir := ""
-	possiblePaths := []string{
-		filepath.Join(repoRoot, "pkg", "sessionctx", "vardef"),
-		filepath.Join(repoRoot, "sessionctx", "vardef"),
-	}
-	for _, path := range possiblePaths {
-		if _, err := os.Stat(path); err == nil {
-			vardefDir = path
-			break
-		}
-	}
-
-	// Load vardef constants to map variable.XXX to user-visible names
-	// Use SysVarExtractor to parse constants (reuse existing logic instead of duplicating)
-	var vardefConsts map[string]string
-	if vardefDir != "" {
-		sysVarExtractor := common.NewSysVarExtractor(vardefDir)
-		// Parse sysvar.go and tidb_vars.go to get constants
-		// SysVarExtractor already parses vardef directory in NewSysVarExtractor
-		sysVarFiles := []string{
-			filepath.Join(repoRoot, "pkg", "sessionctx", "variable", "sysvar.go"),
-			filepath.Join(repoRoot, "pkg", "sessionctx", "variable", "tidb_vars.go"),
-			filepath.Join(repoRoot, "sessionctx", "variable", "sysvar.go"),
-			filepath.Join(repoRoot, "sessionctx", "variable", "tidb_vars.go"),
-		}
-		for _, sysVarFile := range sysVarFiles {
-			if _, err := os.Stat(sysVarFile); err == nil {
-				sysVarExtractor.ExtractFromFile(sysVarFile)
-			}
-		}
-		// Reuse the parsed constants from SysVarExtractor instead of re-parsing
-		vardefConsts = sysVarExtractor.GetVardefConsts()
-	} else {
-		// If vardefDir is not found, still use SysVarExtractor to parse tidb_vars.go
-		// Create extractor with empty vardefDir (it will still parse files passed to ExtractFromFile)
-		sysVarExtractor := common.NewSysVarExtractor("")
-		tidbVarsFiles := []string{
-			filepath.Join(repoRoot, "pkg", "sessionctx", "variable", "tidb_vars.go"),
-			filepath.Join(repoRoot, "sessionctx", "variable", "tidb_vars.go"),
-		}
-		for _, tidbVarsFile := range tidbVarsFiles {
-			if _, err := os.Stat(tidbVarsFile); err == nil {
-				sysVarExtractor.ExtractFromFile(tidbVarsFile)
-				break
-			}
-		}
-		vardefConsts = sysVarExtractor.GetVardefConsts()
-	}
+	// System variable names are extracted directly as user-visible names from source code
+	// No conversion needed - source code already uses user-visible names (e.g., "tidb_xxx")
 
 	f, err := os.Open(upgradeFilePath)
 	if err != nil {
@@ -132,8 +82,9 @@ func CollectUpgradeLogicFromSource(repoRoot string) (*types.UpgradeLogicSnapshot
 	funcRe := regexp.MustCompile(`^func (upgradeToVer(\d+))\b`)
 
 	// Match setGlobalSysVar/variable writing calls
-	// Pattern: setGlobalSysVar(variableName, value) or writeGlobalSysVar(variableName, value)
-	// For initGlobalVariableIfNotExists: initGlobalVariableIfNotExists(s, variable.XXX, value)
+	// Pattern: setGlobalSysVar(varName, value) or writeGlobalSysVar(varName, value)
+	// For initGlobalVariableIfNotExists: initGlobalVariableIfNotExists(s, varName, value)
+	// Variable names are extracted directly as user-visible names from source code
 	setVarRe := regexp.MustCompile(`(setGlobalSysVar|writeGlobalSysVar)\s*\(\s*([^,]+)\s*,\s*([^,\)]+)`)
 	// Separate regex for initGlobalVariableIfNotExists (has 3 parameters: session, varName, value)
 	initGlobalVarRe := regexp.MustCompile(`initGlobalVariableIfNotExists\s*\(\s*[^,]+,\s*([^,]+)\s*,\s*([^,\)]+)`)
@@ -141,9 +92,9 @@ func CollectUpgradeLogicFromSource(repoRoot string) (*types.UpgradeLogicSnapshot
 	// Note: mustExecute SQL statements are now handled inline to only match system variable changes
 
 	// Match SetGlobalSysVar calls
-	// Pattern: SetGlobalSysVar(variableName, value) or GlobalVarsAccessor.SetGlobalSysVar(...)
-	// Also match: variable.TiDBEnableAsyncMergeGlobalStats (constant name)
-	setGlobalWithVarRe := regexp.MustCompile(`SetGlobalSysVar\([^,]*,\s*(variable\.\w+|[a-zA-Z0-9_"']+)`)
+	// Pattern: SetGlobalSysVar(varName, value) or GlobalVarsAccessor.SetGlobalSysVar(...)
+	// Variable names are extracted directly as user-visible names from source code
+	setGlobalWithVarRe := regexp.MustCompile(`SetGlobalSysVar\([^,]*,\s*([a-zA-Z0-9_"']+)`)
 
 	// Match function comments for documentation
 	commentRe := regexp.MustCompile(`^//\s*(.*)`)
@@ -183,15 +134,14 @@ func CollectUpgradeLogicFromSource(repoRoot string) (*types.UpgradeLogicSnapshot
 
 			// Extract system variable changes from various patterns
 
-			// Pattern 1a: initGlobalVariableIfNotExists(s, variable.XXX, value)
+			// Pattern 1a: initGlobalVariableIfNotExists(s, varName, value)
+			// Variable names are extracted directly as user-visible names from source code
 			if m := initGlobalVarRe.FindStringSubmatch(line); m != nil {
 				varNameRaw := strings.TrimSpace(m[1])
 				valueRaw := strings.TrimSpace(m[2])
-				// Convert variable.XXX to user-visible name
-				varName := convertVarNameToUserVisible(varNameRaw, vardefConsts)
-				// Convert value (e.g., variable.Off -> "OFF")
-				value := convertVarNameToUserVisible(valueRaw, vardefConsts)
-				value = strings.Trim(value, "\" '`")
+				// Extract user-visible variable name directly from source code
+				varName := strings.Trim(varNameRaw, "\" '`")
+				value := strings.Trim(valueRaw, "\" '`")
 				// Normalize boolean values
 				if strings.ToLower(value) == "off" {
 					value = "OFF"
@@ -215,12 +165,12 @@ func CollectUpgradeLogicFromSource(repoRoot string) (*types.UpgradeLogicSnapshot
 			}
 
 			// Pattern 1b: setGlobalSysVar, writeGlobalSysVar
+			// Variable names are extracted directly as user-visible names from source code
 			if m := setVarRe.FindStringSubmatch(line); m != nil {
 				method := m[1]
-				varNameRaw := strings.Trim(m[2], "\" '`")
+				// Extract user-visible variable name directly from source code
+				varName := strings.Trim(m[2], "\" '`")
 				value := strings.Trim(m[3], "\" '`")
-				// Convert variable.XXX to user-visible name
-				varName := convertVarNameToUserVisible(varNameRaw, vardefConsts)
 				results = append(results, types.UpgradeParamChange{
 					Version:     curVersion,
 					FuncName:    curFunc,
@@ -241,7 +191,8 @@ func CollectUpgradeLogicFromSource(repoRoot string) (*types.UpgradeLogicSnapshot
 			// Only match:
 			// 1. SET @@GLOBAL var_name = value
 			// 2. SQL statements that operate on mysql.global_variables table (UPDATE, DELETE, INSERT, REPLACE)
-			// 3. SQL statements that use mysql.GlobalVariablesTable constant (via %n.%n or %s.%s formatting)
+			// 3. SQL statements that use mysql.GlobalVariablesTable (via %n.%n or %s.%s formatting)
+			// Variable names are extracted directly as user-visible names from source code
 			if strings.Contains(line, "mustExecute") {
 				// Pattern 2a: SET @@GLOBAL var_name = value
 				// Example: mustExecute(s, "SET @@GLOBAL tidb_track_aggregate_memory_usage = 1")
@@ -365,7 +316,7 @@ func CollectUpgradeLogicFromSource(repoRoot string) (*types.UpgradeLogicSnapshot
 					}
 				}
 
-				// Pattern 2c: Operations on mysql.GlobalVariablesTable (constant reference)
+				// Pattern 2c: Operations on mysql.GlobalVariablesTable
 				// Match mustExecute calls that use mysql.GlobalVariablesTable as a parameter
 				// Examples:
 				//   mustExecute(s, "UPDATE HIGH_PRIORITY %n.%n SET ...", mysql.SystemDB, mysql.GlobalVariablesTable, ...)
@@ -377,6 +328,7 @@ func CollectUpgradeLogicFromSource(repoRoot string) (*types.UpgradeLogicSnapshot
 				// Semantic differences:
 				// - INSERT IGNORE: If variable exists, ignore insert and keep existing value (user's setting or previous default)
 				// - REPLACE: Force update the variable value even if it exists
+				// Variable names are extracted directly as user-visible names from source code
 				if strings.Contains(line, "GlobalVariablesTable") {
 					// Match INSERT/REPLACE statements with VALUES clause
 					// Pattern: INSERT/REPLACE ... INTO %n.%n VALUES (%?, %?) or fmt.Sprintf("INSERT ... INTO %s.%s VALUES ...", ..., mysql.GlobalVariablesTable, ...)
@@ -386,8 +338,8 @@ func CollectUpgradeLogicFromSource(repoRoot string) (*types.UpgradeLogicSnapshot
 					fmtSprintfInsertRe := regexp.MustCompile(`fmt\.Sprintf.*?INSERT.*?IGNORE.*?INTO.*?%[ns]\.%[ns]`)
 					if insertReplaceRe.MatchString(line) || fmtSprintfInsertRe.MatchString(line) {
 						// Extract variable name and value from parameters
-						// Pattern: mustExecute(s, "...", mysql.SystemDB, mysql.GlobalVariablesTable, variable.VarName, value)
-						// Or: mustExecute(s, "...", mysql.SystemDB, mysql.GlobalVariablesTable, "var_name", "value")
+						// Pattern: mustExecute(s, "...", mysql.SystemDB, mysql.GlobalVariablesTable, "var_name", "value")
+						// Variable names are extracted directly as user-visible names from source code
 						varNameRe := regexp.MustCompile(`mysql\.GlobalVariablesTable\s*,\s*([^,)]+)`)
 						valueRe := regexp.MustCompile(`mysql\.GlobalVariablesTable\s*,\s*[^,]+,\s*([^,)]+)`)
 
@@ -401,12 +353,11 @@ func CollectUpgradeLogicFromSource(repoRoot string) (*types.UpgradeLogicSnapshot
 						}
 
 						if varNameRaw != "" {
-							// Convert variable.XXX to user-visible name
-							varName := convertVarNameToUserVisible(varNameRaw, vardefConsts)
+							// Extract user-visible variable name directly from source code
+							varName := strings.Trim(varNameRaw, "\" '`")
 							value := ""
 							if valueRaw != "" {
-								value = convertVarNameToUserVisible(valueRaw, vardefConsts)
-								value = strings.Trim(value, "\" '`")
+								value = strings.Trim(valueRaw, "\" '`")
 								// Normalize boolean values
 								if strings.ToLower(value) == "off" {
 									value = "OFF"
@@ -477,7 +428,8 @@ func CollectUpgradeLogicFromSource(repoRoot string) (*types.UpgradeLogicSnapshot
 								varNameRaw = m[1]
 							} else {
 								// Parameter, try to extract from function call
-								// Look for pattern: mysql.GlobalVariablesTable, ..., variable.VarName or "var_name"
+								// Look for pattern: mysql.GlobalVariablesTable, ..., "var_name"
+								// Variable names are extracted directly as user-visible names from source code
 								paramRe := regexp.MustCompile(`mysql\.GlobalVariablesTable\s*,\s*([^,)]+)`)
 								if pm := paramRe.FindStringSubmatch(line); pm != nil {
 									varNameRaw = strings.TrimSpace(pm[1])
@@ -523,11 +475,11 @@ func CollectUpgradeLogicFromSource(repoRoot string) (*types.UpgradeLogicSnapshot
 						}
 
 						if varNameRaw != "" {
-							varName := convertVarNameToUserVisible(varNameRaw, vardefConsts)
+							// Extract user-visible variable name directly from source code
+							varName := strings.Trim(varNameRaw, "\" '`")
 							value := ""
 							if valueRaw != "" {
-								value = convertVarNameToUserVisible(valueRaw, vardefConsts)
-								value = strings.Trim(value, "\" '`")
+								value = strings.Trim(valueRaw, "\" '`")
 								// Normalize boolean values
 								if strings.ToLower(value) == "off" {
 									value = "OFF"
@@ -578,7 +530,8 @@ func CollectUpgradeLogicFromSource(repoRoot string) (*types.UpgradeLogicSnapshot
 						}
 
 						if varNameRaw != "" {
-							varName := convertVarNameToUserVisible(varNameRaw, vardefConsts)
+							// Extract user-visible variable name directly from source code
+							varName := strings.Trim(varNameRaw, "\" '`")
 							results = append(results, types.UpgradeParamChange{
 								Version:     curVersion,
 								FuncName:    curFunc,
@@ -599,10 +552,11 @@ func CollectUpgradeLogicFromSource(repoRoot string) (*types.UpgradeLogicSnapshot
 			}
 
 			// Pattern 3: SetGlobalSysVar calls (including GlobalVarsAccessor.SetGlobalSysVar)
-			// Match: SetGlobalSysVar(context.Background(), variable.TiDBEnableAsyncMergeGlobalStats, variable.Off)
+			// Match: SetGlobalSysVar(context.Background(), "tidb_xxx", "value")
+			// Variable names are extracted directly as user-visible names from source code
 			if strings.Contains(line, "SetGlobalSysVar") {
 				// Try to extract variable name and value
-				// Pattern 1: SetGlobalSysVar(..., variable.VarName, value)
+				// Pattern: SetGlobalSysVar(..., "var_name", value)
 				if m := setGlobalWithVarRe.FindStringSubmatch(line); m != nil {
 					varNameRaw := strings.TrimSpace(m[1])
 					// Extract value (could be after the variable name)
@@ -617,11 +571,9 @@ func CollectUpgradeLogicFromSource(repoRoot string) (*types.UpgradeLogicSnapshot
 						valueRaw = "unknown"
 					}
 
-					// Convert variable.XXX to user-visible name
-					varName := convertVarNameToUserVisible(varNameRaw, vardefConsts)
-					// Convert value (e.g., variable.Off -> "OFF")
-					value := convertVarNameToUserVisible(valueRaw, vardefConsts)
-					value = strings.Trim(value, "\" '`")
+					// Extract user-visible variable name directly from source code
+					varName := strings.Trim(varNameRaw, "\" '`")
+					value := strings.Trim(valueRaw, "\" '`")
 					// Normalize boolean values
 					if strings.ToLower(value) == "off" {
 						value = "OFF"
@@ -660,104 +612,4 @@ func CollectUpgradeLogicFromSource(repoRoot string) (*types.UpgradeLogicSnapshot
 		Component: types.ComponentTiDB,
 		Changes:   results,
 	}, nil
-}
-
-// convertVarNameToUserVisible converts variable constant names to user-visible names
-// Examples:
-//   - variable.TiDBOptRangeMaxSize -> tidb_opt_range_max_size (from vardefConsts)
-//   - variable.Off -> "OFF" (from vardefConsts or known constants)
-//   - "tidb_opt_range_max_size" -> "tidb_opt_range_max_size" (already user-visible)
-func convertVarNameToUserVisible(varNameRaw string, vardefConsts map[string]string) string {
-	varNameRaw = strings.TrimSpace(varNameRaw)
-
-	// If it's already a user-visible name (starts with lowercase or contains underscore), return as-is
-	if strings.HasPrefix(varNameRaw, "\"") && strings.HasSuffix(varNameRaw, "\"") {
-		// It's a string literal, return without quotes
-		return strings.Trim(varNameRaw, "\"")
-	}
-
-	// Handle variable.XXX pattern
-	if strings.HasPrefix(varNameRaw, "variable.") {
-		constName := strings.TrimPrefix(varNameRaw, "variable.")
-		if userVisible, ok := vardefConsts[constName]; ok {
-			return userVisible
-		}
-		// If not found, try to convert camelCase to snake_case as fallback
-		return camelToSnake(constName)
-	}
-
-	// Handle vardef.XXX pattern
-	if strings.HasPrefix(varNameRaw, "vardef.") {
-		constName := strings.TrimPrefix(varNameRaw, "vardef.")
-		if userVisible, ok := vardefConsts[constName]; ok {
-			return userVisible
-		}
-		return camelToSnake(constName)
-	}
-
-	// If it's a constant name (starts with uppercase), look it up
-	if len(varNameRaw) > 0 && varNameRaw[0] >= 'A' && varNameRaw[0] <= 'Z' {
-		// First try direct lookup
-		if userVisible, ok := vardefConsts[varNameRaw]; ok {
-			return userVisible
-		}
-		// Known constants
-		if varNameRaw == "Off" || varNameRaw == "variable.Off" || strings.ToLower(varNameRaw) == "off" {
-			return "OFF"
-		}
-		if varNameRaw == "On" || varNameRaw == "variable.On" || strings.ToLower(varNameRaw) == "on" {
-			return "ON"
-		}
-		// If not found and it looks like a TiDB variable name, try to find it
-		// This shouldn't happen if vardefConsts is properly populated
-		// Fallback: convert camelCase to snake_case (but this is not ideal)
-		return camelToSnake(varNameRaw)
-	}
-
-	// Return as-is if it looks like a user-visible name or value
-	return varNameRaw
-}
-
-// camelToSnake converts CamelCase to snake_case
-// Example: TiDBOptRangeMaxSize -> tidb_opt_range_max_size
-// This is a fallback function - should prefer looking up in vardefConsts first
-func camelToSnake(s string) string {
-	if len(s) == 0 {
-		return s
-	}
-
-	var result strings.Builder
-	runes := []rune(s)
-
-	for i := 0; i < len(runes); i++ {
-		r := runes[i]
-		isUpper := r >= 'A' && r <= 'Z'
-
-		if i > 0 {
-			prevR := runes[i-1]
-			prevIsUpper := prevR >= 'A' && prevR <= 'Z'
-			prevIsLower := prevR >= 'a' && prevR <= 'z'
-
-			// Add underscore before uppercase if:
-			// 1. Previous was lowercase (e.g., Opt -> _opt)
-			// 2. Previous was uppercase and current is uppercase but next is lowercase (e.g., DB in TiDBCost -> d_b)
-			if isUpper && prevIsLower {
-				result.WriteByte('_')
-			} else if isUpper && prevIsUpper && i < len(runes)-1 {
-				// Check if next is lowercase (e.g., TiDBCost -> TiDB_Cost)
-				nextR := runes[i+1]
-				if nextR >= 'a' && nextR <= 'z' {
-					result.WriteByte('_')
-				}
-			}
-		}
-
-		if isUpper {
-			result.WriteRune(r + 32) // Convert to lowercase
-		} else {
-			result.WriteRune(r)
-		}
-	}
-
-	return result.String()
 }

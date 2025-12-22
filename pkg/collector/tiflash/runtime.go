@@ -14,10 +14,10 @@ import (
 
 // TiFlashCollector handles collection of TiFlash configuration
 type TiFlashCollector interface {
-	Collect(addrs []string) ([]types.ComponentState, error)
 	// CollectWithTiDB collects TiFlash configuration with optional TiDB connection
-	// This allows supplementing HTTP API config with SHOW CONFIG data for consistency
-	// with knowledge base generation approach
+	// In upgrade precheck scenario, TiDB connection is always available
+	// This collects from both HTTP API and SHOW CONFIG, then merges them for the most complete configuration
+	// If tidbAddr is empty, only collects from HTTP API (for knowledge base generation)
 	CollectWithTiDB(addrs []string, tidbAddr, tidbUser, tidbPassword string) ([]types.ComponentState, error)
 }
 
@@ -34,37 +34,16 @@ func NewTiFlashCollector() TiFlashCollector {
 	}
 }
 
-// Collect gathers configuration from TiFlash instances
-// This method only collects from HTTP API (for backward compatibility)
-func (c *tiflashCollector) Collect(addrs []string) ([]types.ComponentState, error) {
-	return c.CollectWithTiDB(addrs, "", "", "")
-}
-
 // CollectWithTiDB gathers configuration from TiFlash instances with optional TiDB connection
 // This matches the knowledge base generation approach:
 // 1. Collects configuration from HTTP API /config endpoint
-// 2. Collects runtime configuration via SHOW CONFIG WHERE type='tiflash' (if TiDB connection available)
+// 2. Collects runtime configuration via SHOW CONFIG WHERE type='tiflash' AND instance='ip:port' for each instance (if TiDB connection available)
 // 3. Merges them with priority: runtime values > HTTP API values
 func (c *tiflashCollector) CollectWithTiDB(addrs []string, tidbAddr, tidbUser, tidbPassword string) ([]types.ComponentState, error) {
 	var states []types.ComponentState
 
-	// Collect TiFlash config via SHOW CONFIG if TiDB connection is available
-	// This ensures we get all parameters (including optional ones)
-	var tiflashConfigFromSHOW types.ConfigDefaults
-	if tidbAddr != "" {
-		var err error
-		tiflashConfigFromSHOW, err = c.collectTiFlashConfigViaSHOWCONFIG(tidbAddr, tidbUser, tidbPassword)
-		if err != nil {
-			fmt.Printf("Warning: failed to collect TiFlash config via SHOW CONFIG: %v\n", err)
-			// Continue without SHOW CONFIG data
-			tiflashConfigFromSHOW = make(types.ConfigDefaults)
-		} else {
-			fmt.Printf("Collected %d runtime parameters via SHOW CONFIG\n", len(tiflashConfigFromSHOW))
-		}
-	}
-
 	for _, addr := range addrs {
-		state, err := c.collectFromInstance(addr, tiflashConfigFromSHOW)
+		state, err := c.collectFromInstance(addr, tidbAddr, tidbUser, tidbPassword)
 		if err != nil {
 			// Log error but continue with other instances
 			fmt.Printf("Warning: failed to collect from TiFlash instance %s: %v\n", addr, err)
@@ -76,7 +55,7 @@ func (c *tiflashCollector) CollectWithTiDB(addrs []string, tidbAddr, tidbUser, t
 	return states, nil
 }
 
-func (c *tiflashCollector) collectFromInstance(addr string, tiflashConfigFromSHOW types.ConfigDefaults) (*types.ComponentState, error) {
+func (c *tiflashCollector) collectFromInstance(addr string, tidbAddr, tidbUser, tidbPassword string) (*types.ComponentState, error) {
 	state := &types.ComponentState{
 		Type:      types.ComponentTiFlash,
 		Config:    make(types.ConfigDefaults),
@@ -106,7 +85,22 @@ func (c *tiflashCollector) collectFromInstance(addr string, tiflashConfigFromSHO
 		fmt.Printf("Collected %d parameters from HTTP API for %s\n", len(httpConfig), addr)
 	}
 
-	// Step 2: Merge with SHOW CONFIG data (if available)
+	// Step 2: Collect runtime configuration via SHOW CONFIG WHERE type='tiflash' AND instance='ip:port' for this specific instance
+	// This ensures we get all parameters (including optional ones) for each instance
+	var tiflashConfigFromSHOW types.ConfigDefaults
+	if tidbAddr != "" {
+		var err error
+		tiflashConfigFromSHOW, err = c.collectTiFlashConfigViaSHOWCONFIGForInstance(tidbAddr, tidbUser, tidbPassword, addr)
+		if err != nil {
+			fmt.Printf("Warning: failed to collect TiFlash config via SHOW CONFIG for instance %s: %v\n", addr, err)
+			// Continue without SHOW CONFIG data for this instance
+			tiflashConfigFromSHOW = make(types.ConfigDefaults)
+		} else {
+			fmt.Printf("Collected %d runtime parameters via SHOW CONFIG for instance %s\n", len(tiflashConfigFromSHOW), addr)
+		}
+	}
+
+	// Step 3: Merge with SHOW CONFIG data (if available)
 	// Priority: SHOW CONFIG values > HTTP API values
 	// This matches the knowledge base generation approach
 	state.Config = c.mergeConfigsWithPriority(httpConfig, tiflashConfigFromSHOW)
@@ -186,9 +180,10 @@ func (c *tiflashCollector) getStatus(addr string) (map[string]interface{}, error
 	return status, nil
 }
 
-// collectTiFlashConfigViaSHOWCONFIG collects TiFlash config via SHOW CONFIG WHERE type='tiflash'
-// This matches the knowledge base generation approach for consistency
-func (c *tiflashCollector) collectTiFlashConfigViaSHOWCONFIG(tidbAddr, tidbUser, tidbPassword string) (types.ConfigDefaults, error) {
+// collectTiFlashConfigViaSHOWCONFIGForInstance collects TiFlash config via SHOW CONFIG WHERE type='tiflash' AND instance='ip:port'
+// This gets the full parameter set for a specific TiFlash instance
+// instance should be in format "IP:port" (e.g., "192.168.1.101:9000")
+func (c *tiflashCollector) collectTiFlashConfigViaSHOWCONFIGForInstance(tidbAddr, tidbUser, tidbPassword, instance string) (types.ConfigDefaults, error) {
 	// Build DSN for TiDB connection
 	dsn := fmt.Sprintf("%s:%s@tcp(%s)/", tidbUser, tidbPassword, tidbAddr)
 	if tidbUser == "" {
@@ -202,11 +197,11 @@ func (c *tiflashCollector) collectTiFlashConfigViaSHOWCONFIG(tidbAddr, tidbUser,
 	defer db.Close()
 	db.SetConnMaxLifetime(10 * time.Second)
 
-	// Use TiDB collector's GetConfigByType method to get TiFlash config
+	// Use TiDB collector's GetConfigByTypeAndInstance method to get TiFlash config for specific instance
 	collector := tidb.NewTiDBCollector()
-	config, err := collector.GetConfigByType(db, "tiflash")
+	config, err := collector.GetConfigByTypeAndInstance(db, "tiflash", instance)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get TiFlash config via SHOW CONFIG: %w", err)
+		return nil, fmt.Errorf("failed to get TiFlash config via SHOW CONFIG for instance %s: %w", instance, err)
 	}
 
 	// Convert map[string]interface{} to types.ConfigDefaults

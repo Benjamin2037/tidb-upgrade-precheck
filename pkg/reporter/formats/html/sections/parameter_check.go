@@ -7,6 +7,7 @@ import (
 
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer/rules"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/reporter"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/reporter/formats"
 )
 
@@ -56,7 +57,7 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 
 		// Filter path-related parameters at report generation time
 		// This ensures all parameters are properly categorized before filtering
-		if rules.IsPathParameter(check.ParameterName) {
+		if reporter.IsPathParameter(check.ParameterName) {
 			continue
 		}
 
@@ -65,6 +66,22 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 		// Check if parameter name matches any ignored parameter pattern
 		if check.ParameterName == "pd.endpoints" || strings.HasSuffix(check.ParameterName, ".pd.endpoints") {
 			continue
+		}
+
+		// Filter resource-dependent parameters at report generation time
+		// These parameters are automatically adjusted by TiKV/TiFlash based on system resources
+		// (CPU cores, memory, etc.) and should not be reported if source default == target default
+		// but current differs (difference is due to deployment environment, not user modification)
+		if reporter.IsResourceDependentParameter(check.ParameterName) {
+			if check.SourceDefault != nil && check.TargetDefault != nil {
+				sourceEqualsTarget := rules.CompareValues(check.SourceDefault, check.TargetDefault)
+				if sourceEqualsTarget {
+					// Source default == target default, but current differs
+					// This is likely auto-tuned by TiKV/TiFlash based on system resources
+					// Skip reporting as the difference is due to deployment environment
+					continue
+				}
+			}
 		}
 
 		// Filter: If current value, source default, and target default are all the same, skip

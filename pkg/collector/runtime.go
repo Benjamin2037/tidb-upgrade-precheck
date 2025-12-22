@@ -22,7 +22,6 @@ import (
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector/tidb"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector/tiflash"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector/tikv"
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/types"
 )
 
 // CollectDataRequirements defines what data needs to be collected from the cluster
@@ -122,50 +121,42 @@ func (c *Collector) collectWithRequirements(endpoints ClusterEndpoints, req Coll
 			if dataDirs == nil {
 				dataDirs = make(map[string]string)
 			}
-			// Use CollectWithTiDB to match knowledge base generation approach
-			// This collects from both last_tikv.toml and SHOW CONFIG, then merges them
-			tikvCollectorWithTiDB, ok := c.tikvCollector.(interface {
-				CollectWithTiDB(addrs []string, dataDirs map[string]string, tidbAddr, tidbUser, tidbPassword string) ([]types.ComponentState, error)
-			})
-			var tikvStates []types.ComponentState
-			var err error
-			if ok && endpoints.TiDBAddr != "" {
-				// Use CollectWithTiDB if TiDB connection is available
-				tikvStates, err = tikvCollectorWithTiDB.CollectWithTiDB(
-					endpoints.TiKVAddrs, dataDirs,
-					endpoints.TiDBAddr, endpoints.TiDBUser, endpoints.TiDBPassword)
-			} else {
-				// Fallback to Collect if no TiDB connection or interface not supported
-				tikvStates, err = c.tikvCollector.Collect(endpoints.TiKVAddrs, dataDirs)
+			// In upgrade precheck scenario, we always have an existing cluster and topology file
+			// Use CollectWithTiDB to collect each instance's full parameters via SHOW CONFIG
+			// and merge with last_tikv.toml for the most complete configuration
+			if endpoints.TiDBAddr == "" {
+				return nil, fmt.Errorf("TiDB connection is required for TiKV collection in upgrade precheck scenario")
 			}
+			tikvStates, err := c.tikvCollector.CollectWithTiDB(
+				endpoints.TiKVAddrs, dataDirs,
+				endpoints.TiDBAddr, endpoints.TiDBUser, endpoints.TiDBPassword)
 			if err != nil {
-				fmt.Printf("Warning: failed to collect from TiKV: %v\n", err)
-			} else {
-				// Store TiKV instances
-				// If NeedAllTikvNodes is false, only store the first one
-				// If true, store all nodes
-				for i, state := range tikvStates {
-					if !req.NeedAllTikvNodes && i > 0 {
-						break // Only need first instance
-					}
+				return nil, fmt.Errorf("failed to collect from TiKV: %w", err)
+			}
+			// Store TiKV instances
+			// If NeedAllTikvNodes is false, only store the first one
+			// If true, store all nodes
+			for i, state := range tikvStates {
+				if !req.NeedAllTikvNodes && i > 0 {
+					break // Only need first instance
+				}
 
-					addr := endpoints.TiKVAddrs[i]
-					if addrFromStatus, ok := state.Status["address"].(string); ok && addrFromStatus != "" {
-						addr = addrFromStatus
-					}
+				addr := endpoints.TiKVAddrs[i]
+				if addrFromStatus, ok := state.Status["address"].(string); ok && addrFromStatus != "" {
+					addr = addrFromStatus
+				}
 
-					key := fmt.Sprintf("tikv-%s", addr)
-					key = strings.ReplaceAll(key, ":", "-")
-					key = strings.ReplaceAll(key, ".", "-")
+				key := fmt.Sprintf("tikv-%s", addr)
+				key = strings.ReplaceAll(key, ":", "-")
+				key = strings.ReplaceAll(key, ".", "-")
 
-					if i == 0 {
-						snapshot.Components["tikv"] = state
-					}
-					snapshot.Components[key] = state
+				if i == 0 {
+					snapshot.Components["tikv"] = state
+				}
+				snapshot.Components[key] = state
 
-					if snapshot.SourceVersion == "" && state.Version != "" {
-						snapshot.SourceVersion = state.Version
-					}
+				if snapshot.SourceVersion == "" && state.Version != "" {
+					snapshot.SourceVersion = state.Version
 				}
 			}
 		}
@@ -174,43 +165,35 @@ func (c *Collector) collectWithRequirements(endpoints ClusterEndpoints, req Coll
 	// Collect from TiFlash if needed
 	if contains(req.Components, "tiflash") && len(endpoints.TiFlashAddrs) > 0 {
 		if req.NeedConfig {
-			// Use CollectWithTiDB to match knowledge base generation approach
-			// This collects from both HTTP API and SHOW CONFIG, then merges them
-			tiflashCollectorWithTiDB, ok := c.tiflashCollector.(interface {
-				CollectWithTiDB(addrs []string, tidbAddr, tidbUser, tidbPassword string) ([]types.ComponentState, error)
-			})
-			var tiflashStates []types.ComponentState
-			var err error
-			if ok && endpoints.TiDBAddr != "" {
-				// Use CollectWithTiDB if TiDB connection is available
-				tiflashStates, err = tiflashCollectorWithTiDB.CollectWithTiDB(
-					endpoints.TiFlashAddrs,
-					endpoints.TiDBAddr, endpoints.TiDBUser, endpoints.TiDBPassword)
-			} else {
-				// Fallback to Collect if no TiDB connection or interface not supported
-				tiflashStates, err = c.tiflashCollector.Collect(endpoints.TiFlashAddrs)
+			// In upgrade precheck scenario, we always have an existing cluster and topology file
+			// Use CollectWithTiDB to collect each instance's full parameters via SHOW CONFIG
+			// and merge with HTTP API config for the most complete configuration
+			if endpoints.TiDBAddr == "" {
+				return nil, fmt.Errorf("TiDB connection is required for TiFlash collection in upgrade precheck scenario")
 			}
+			tiflashStates, err := c.tiflashCollector.CollectWithTiDB(
+				endpoints.TiFlashAddrs,
+				endpoints.TiDBAddr, endpoints.TiDBUser, endpoints.TiDBPassword)
 			if err != nil {
-				fmt.Printf("Warning: failed to collect from TiFlash: %v\n", err)
-			} else {
-				for i, state := range tiflashStates {
-					addr := endpoints.TiFlashAddrs[i]
-					if addrFromStatus, ok := state.Status["address"].(string); ok && addrFromStatus != "" {
-						addr = addrFromStatus
-					}
+				return nil, fmt.Errorf("failed to collect from TiFlash: %w", err)
+			}
+			for i, state := range tiflashStates {
+				addr := endpoints.TiFlashAddrs[i]
+				if addrFromStatus, ok := state.Status["address"].(string); ok && addrFromStatus != "" {
+					addr = addrFromStatus
+				}
 
-					key := fmt.Sprintf("tiflash-%s", addr)
-					key = strings.ReplaceAll(key, ":", "-")
-					key = strings.ReplaceAll(key, ".", "-")
+				key := fmt.Sprintf("tiflash-%s", addr)
+				key = strings.ReplaceAll(key, ":", "-")
+				key = strings.ReplaceAll(key, ".", "-")
 
-					if i == 0 {
-						snapshot.Components["tiflash"] = state
-					}
-					snapshot.Components[key] = state
+				if i == 0 {
+					snapshot.Components["tiflash"] = state
+				}
+				snapshot.Components[key] = state
 
-					if snapshot.SourceVersion == "" && state.Version != "" {
-						snapshot.SourceVersion = state.Version
-					}
+				if snapshot.SourceVersion == "" && state.Version != "" {
+					snapshot.SourceVersion = state.Version
 				}
 			}
 		}
