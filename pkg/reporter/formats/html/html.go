@@ -6,7 +6,7 @@ import (
 
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/reporter/formats"
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/reporter/formats/html/sections"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/reporter/sections"
 )
 
 // HTMLFormatter handles HTML format rendering

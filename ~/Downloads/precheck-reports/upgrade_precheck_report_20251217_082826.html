@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>TiDB Upgrade Precheck Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1, h2 { color: #333; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        code { background-color: #f8f8f8; padding: 2px 4px; }
+        .warning { color: #f57c00; }
+        .error { color: #d32f2f; }
+        .info { color: #1976d2; }
+    </style>
+</head>
+<body>
+    <h1>TiDB Upgrade Precheck Report</h1>
+    
+    <p><strong>Source Version:</strong> v7.5.1</p>
+    <p><strong>Target Version:</strong> v8.5.4</p>
+    <p><strong>Generated At:</strong> 2025-12-17 08:28:26</p>
+    
+    <h2>Summary</h2>
+    <table>
+        <tr><th>Category</th><th>Count</th></tr>
+        <tr><td>Modified Parameters</td><td>63</td></tr>
+        <tr><td>TiKV Inconsistencies</td><td>0</td></tr>
+        <tr><td>Upgrade Differences</td><td>133</td></tr>
+        <tr><td>Forced Changes</td><td>2</td></tr>
+        <tr><td>Focus Parameters</td><td>0</td></tr>
+        <tr><td>Check Results</td><td>201</td></tr>
+        
+        <tr><td>Parameters Compared</td><td>4031</td></tr>
+        <tr><td>Parameters with Differences</td><td>686</td></tr>
+        <tr><td>Parameters Skipped (source == target)</td><td>3214</td></tr>
+        <tr><td>Parameters Filtered (deployment-specific)</td><td>131</td></tr>
+        
+    </table>
+<script>
+function toggleSection(sectionId, buttonId) {
+    var section = document.getElementById(sectionId);
+    var button = document.getElementById(buttonId);
+    if (section.style.display === 'none') {
+        section.style.display = 'block';
+        button.textContent = button.textContent.replace('▶', '▼').replace('Show', 'Hide');
+    } else {
+        section.style.display = 'none';
+        button.textContent = button.textContent.replace('▼', '▶').replace('Hide', 'Show');
+    }
+}
+</script>
+<h2>1. Medium Risk</h2>
+<p>⚠️ <strong>Warnings that should be reviewed before upgrade.</strong></p>
+
+<button id="risk-toggle-medium" onclick="toggleSection('risk-section-medium', 'risk-toggle-medium')" style="padding: 8px 16px; margin: 10px 0; cursor: pointer; background-color: #f0f0f0; border: 1px solid #ccc; border-radius: 4px;">
+▶ Show Medium Risk (34 items)
+</button>
+<div id="risk-section-medium" style="display: none;">
+<h3>TIDB Component</h3>
+<table>
+<tr><th>Parameter</th><th>Type</th><th>Current Value</th><th>Source Default</th><th>Target Default</th><th>Forced To</th><th>Severity</th><th>Message</th><th>Details</th></tr>
+<tr class="warning"><td><code>performance.projection-push-down</code><br/><small>📝 Default Changed</small></td><td>config</td><td>false</td><td><span style="background-color: #f8d7da;">false</span></td><td><span style="background-color: #d4edda;">true</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter performance.projection-push-down in tidb: default value changed (target default differs from current)</td><td>Source Default: false → Target Default: true
+Current: false</td></tr>
+<tr class="warning"><td><code>performance.stats-load-concurrency</code><br/><small>📝 Default Changed</small></td><td>config</td><td>5</td><td><span style="background-color: #f8d7da;">5</span></td><td><span style="background-color: #d4edda;">0</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter performance.stats-load-concurrency in tidb: default value changed (target default differs from current)</td><td>Source Default: 5 → Target Default: 0
+Current: 5
+
+Note: Target default value 0 means 'auto mode'. The concurrency will be automatically calculated based on CPU cores (range: 2-16).</td></tr>
+<tr class="warning"><td><code>tidb_scatter_region</code><br/><small>🔴 Forced</small></td><td>system_variable</td><td>"OFF"</td><td><span style="background-color: #f8d7da;">&quot;OFF&quot;</span></td><td><span style="background-color: #d4edda;">&quot;&quot;</span></td><td>""</td><td class="warning">warning</td><td>Parameter tidb_scatter_region in tidb will be forcibly changed during upgrade (forced value differs from current)</td><td>Will be forced to: ""
+
+Source Default: "OFF" → Target Default: ""
+Current: "OFF"
+
+Note: This parameter supports values 'table' (recommended) or 'global'. For detailed parameter description, please refer to the TiDB documentation center.</td></tr>
+</table>
+<h3>TIKV Component</h3>
+<table>
+<tr><th>Parameter</th><th>Type</th><th>Current Value</th><th>Source Default</th><th>Target Default</th><th>Forced To</th><th>Severity</th><th>Message</th><th>Details</th></tr>
+<tr class="warning"><td><code>backup.sst-max-size</code><br/><small>📝 Default Changed</small></td><td>config</td><td>"144MiB"</td><td><span style="background-color: #f8d7da;">&quot;144MiB&quot;</span></td><td><span style="background-color: #d4edda;">&quot;384MiB&quot;</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter backup.sst-max-size in tikv: default value changed (target default differs from current)</td><td>Source Default: "144MiB" → Target Default: "384MiB"
+Current: "144MiB"</td></tr>
+<tr class="warning"><td><code>coprocessor.region-max-size</code><br/><small>📝 Default Changed</small></td><td>config</td><td>"144MiB"</td><td><span style="background-color: #f8d7da;">&quot;144MiB&quot;</span></td><td><span style="background-color: #d4edda;">&quot;384MiB&quot;</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter coprocessor.region-max-size in tikv: default value changed (target default differs from current)</td><td>Source Default: "144MiB" → Target Default: "384MiB"
+Current: "144MiB"</td></tr>
+<tr class="warning"><td><code>coprocessor.region-split-keys</code><br/><small>📝 Default Changed</small></td><td>config</td><td>960000</td><td><span style="background-color: #f8d7da;">960000</span></td><td><span style="background-color: #d4edda;">2560000</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter coprocessor.region-split-keys in tikv: default value changed (target default differs from current)</td><td>Source Default: 960000 → Target Default: 2560000
+Current: 960000</td></tr>
+<tr class="warning"><td><code>coprocessor.region-split-size</code><br/><small>📝 Default Changed</small></td><td>config</td><td>"96MiB"</td><td><span style="background-color: #f8d7da;">&quot;96MiB&quot;</span></td><td><span style="background-color: #d4edda;">&quot;256MiB&quot;</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter coprocessor.region-split-size in tikv: default value changed (target default differs from current)</td><td>Source Default: "96MiB" → Target Default: "256MiB"
+Current: "96MiB"</td></tr>
+<tr class="warning"><td><code>raft-engine.batch-compression-threshold</code><br/><small>📝 Default Changed</small></td><td>config</td><td>"8KiB"</td><td><span style="background-color: #f8d7da;">&quot;8KiB&quot;</span></td><td><span style="background-color: #d4edda;">&quot;4KiB&quot;</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raft-engine.batch-compression-threshold in tikv: default value changed (target default differs from current)</td><td>Source Default: "8KiB" → Target Default: "4KiB"
+Current: "8KiB"</td></tr>
+<tr class="warning"><td><code>raftdb.defaultcf.titan.min-blob-size</code><br/><small>✨ New</small></td><td>config</td><td>"1KiB"</td><td><em>N/A</em></td><td><span style="background-color: #d4edda;">&quot;1KiB&quot;</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raftdb.defaultcf.titan.min-blob-size in tikv: default value changed (target default differs from current)</td><td>Current: "1KiB" | Source Default: <not set> → "1KiB"</td></tr>
+<tr class="warning"><td><code>raftdb.titan.max-background-gc</code><br/><small>📝 Default Changed</small></td><td>config</td><td>4</td><td><span style="background-color: #f8d7da;">1</span></td><td><span style="background-color: #d4edda;">4</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raftdb.titan.max-background-gc in tikv: default value changed (target default differs from current)</td><td>Source Default: 4 → Target Default: 1
+Current: 4</td></tr>
+<tr class="warning"><td><code>raftstore.raft-log-gc-count-limit</code><br/><small>📝 Default Changed</small></td><td>config</td><td>73728</td><td><span style="background-color: #f8d7da;">196608</span></td><td><span style="background-color: #d4edda;">73728</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raftstore.raft-log-gc-count-limit in tikv: default value changed (target default differs from current)</td><td>Source Default: 73728 → Target Default: 196608
+Current: 73728</td></tr>
+<tr class="warning"><td><code>raftstore.raft-log-gc-size-limit</code><br/><small>📝 Default Changed</small></td><td>config</td><td>"72MiB"</td><td><span style="background-color: #f8d7da;">&quot;72MiB&quot;</span></td><td><span style="background-color: #d4edda;">&quot;192MiB&quot;</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raftstore.raft-log-gc-size-limit in tikv: default value changed (target default differs from current)</td><td>Source Default: "72MiB" → Target Default: "192MiB"
+Current: "72MiB"</td></tr>
+<tr class="warning"><td><code>raftstore.region-split-check-diff</code><br/><small>📝 Default Changed</small></td><td>config</td><td>"6MiB"</td><td><span style="background-color: #f8d7da;">&quot;16MiB&quot;</span></td><td><span style="background-color: #d4edda;">&quot;6MiB&quot;</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raftstore.region-split-check-diff in tikv: default value changed (target default differs from current)</td><td>Source Default: "6MiB" → Target Default: "16MiB"
+Current: "6MiB"</td></tr>
+<tr class="warning"><td><code>raftstore.store-io-pool-size</code><br/><small>📝 Default Changed</small></td><td>config</td><td>0</td><td><span style="background-color: #f8d7da;">1</span></td><td><span style="background-color: #d4edda;">0</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raftstore.store-io-pool-size in tikv: default value changed (target default differs from current)</td><td>Source Default: 0 → Target Default: 1
+Current: 0</td></tr>
+<tr class="warning"><td><code>rocksdb.defaultcf.titan.min-blob-size</code><br/><small>📝 Default Changed</small></td><td>config</td><td>"1KiB"</td><td><span style="background-color: #f8d7da;">&quot;1KiB&quot;</span></td><td><span style="background-color: #d4edda;">&quot;32KiB&quot;</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter rocksdb.defaultcf.titan.min-blob-size in tikv: default value changed (target default differs from current)</td><td>Source Default: "1KiB" → Target Default: "32KiB"
+Current: "1KiB"</td></tr>
+<tr class="warning"><td><code>rocksdb.lockcf.titan.min-blob-size</code><br/><small>✨ New</small></td><td>config</td><td>"1KiB"</td><td><em>N/A</em></td><td><span style="background-color: #d4edda;">&quot;1KiB&quot;</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter rocksdb.lockcf.titan.min-blob-size in tikv: default value changed (target default differs from current)</td><td>Current: "1KiB" | Source Default: <not set> → "1KiB"</td></tr>
+<tr class="warning"><td><code>rocksdb.raftcf.titan.min-blob-size</code><br/><small>✨ New</small></td><td>config</td><td>"1KiB"</td><td><em>N/A</em></td><td><span style="background-color: #d4edda;">&quot;1KiB&quot;</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter rocksdb.raftcf.titan.min-blob-size in tikv: default value changed (target default differs from current)</td><td>Current: "1KiB" | Source Default: <not set> → "1KiB"</td></tr>
+<tr class="warning"><td><code>rocksdb.titan.enabled</code><br/><small>📝 Default Changed</small></td><td>config</td><td>false</td><td><span style="background-color: #f8d7da;">false</span></td><td><span style="background-color: #d4edda;">true</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter rocksdb.titan.enabled in tikv: default value changed (target default differs from current)</td><td>Source Default: false → Target Default: true
+Current: false</td></tr>
+<tr class="warning"><td><code>rocksdb.titan.max-background-gc</code><br/><small>📝 Default Changed</small></td><td>config</td><td>4</td><td><span style="background-color: #f8d7da;">1</span></td><td><span style="background-color: #d4edda;">4</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter rocksdb.titan.max-background-gc in tikv: default value changed (target default differs from current)</td><td>Source Default: 4 → Target Default: 1
+Current: 4</td></tr>
+<tr class="warning"><td><code>rocksdb.writecf.titan.min-blob-size</code><br/><small>✨ New</small></td><td>config</td><td>"1KiB"</td><td><em>N/A</em></td><td><span style="background-color: #d4edda;">&quot;1KiB&quot;</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter rocksdb.writecf.titan.min-blob-size in tikv: default value changed (target default differs from current)</td><td>Current: "1KiB" | Source Default: <not set> → "1KiB"</td></tr>
+<tr class="warning"><td><code>server.raft-client-queue-size</code><br/><small>📝 Default Changed</small></td><td>config</td><td>8192</td><td><span style="background-color: #f8d7da;">16384</span></td><td><span style="background-color: #d4edda;">8192</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter server.raft-client-queue-size in tikv: default value changed (target default differs from current)</td><td>Source Default: 8192 → Target Default: 16384
+Current: 8192</td></tr>
+<tr class="warning"><td><code>server.raft-msg-max-batch-size</code><br/><small>📝 Default Changed</small></td><td>config</td><td>128</td><td><span style="background-color: #f8d7da;">128</span></td><td><span style="background-color: #d4edda;">256</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter server.raft-msg-max-batch-size in tikv: default value changed (target default differs from current)</td><td>Source Default: 128 → Target Default: 256
+Current: 128</td></tr>
+</table>
+<h3>TIFLASH Component</h3>
+<table>
+<tr><th>Parameter</th><th>Type</th><th>Current Value</th><th>Source Default</th><th>Target Default</th><th>Forced To</th><th>Severity</th><th>Message</th><th>Details</th></tr>
+<tr class="warning"><td><code>raftstore-proxy.backup.sst-max-size</code><br/><small>📝 Default Changed</small></td><td>config</td><td>"144MiB"</td><td><span style="background-color: #f8d7da;">&quot;144MiB&quot;</span></td><td><span style="background-color: #d4edda;">&quot;384MiB&quot;</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raftstore-proxy.backup.sst-max-size in tiflash: default value changed (target default differs from current)</td><td>Source Default: "144MiB" → Target Default: "384MiB"
+Current: "144MiB"</td></tr>
+<tr class="warning"><td><code>raftstore-proxy.coprocessor.region-max-keys</code><br/><small>📝 Default Changed</small></td><td>config</td><td>1440000</td><td><span style="background-color: #f8d7da;">1440000</span></td><td><span style="background-color: #d4edda;">3840000</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raftstore-proxy.coprocessor.region-max-keys in tiflash: default value changed (target default differs from current)</td><td>Source Default: 1440000 → Target Default: 3840000
+Current: 1440000</td></tr>
+<tr class="warning"><td><code>raftstore-proxy.coprocessor.region-max-size</code><br/><small>📝 Default Changed</small></td><td>config</td><td>"144MiB"</td><td><span style="background-color: #f8d7da;">&quot;144MiB&quot;</span></td><td><span style="background-color: #d4edda;">&quot;384MiB&quot;</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raftstore-proxy.coprocessor.region-max-size in tiflash: default value changed (target default differs from current)</td><td>Source Default: "144MiB" → Target Default: "384MiB"
+Current: "144MiB"</td></tr>
+<tr class="warning"><td><code>raftstore-proxy.coprocessor.region-split-keys</code><br/><small>📝 Default Changed</small></td><td>config</td><td>960000</td><td><span style="background-color: #f8d7da;">960000</span></td><td><span style="background-color: #d4edda;">2560000</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raftstore-proxy.coprocessor.region-split-keys in tiflash: default value changed (target default differs from current)</td><td>Source Default: 960000 → Target Default: 2560000
+Current: 960000</td></tr>
+<tr class="warning"><td><code>raftstore-proxy.coprocessor.region-split-size</code><br/><small>📝 Default Changed</small></td><td>config</td><td>"96MiB"</td><td><span style="background-color: #f8d7da;">&quot;96MiB&quot;</span></td><td><span style="background-color: #d4edda;">&quot;256MiB&quot;</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raftstore-proxy.coprocessor.region-split-size in tiflash: default value changed (target default differs from current)</td><td>Source Default: "96MiB" → Target Default: "256MiB"
+Current: "96MiB"</td></tr>
+<tr class="warning"><td><code>raftstore-proxy.memory-usage-high-water</code><br/><small>📝 Default Changed</small></td><td>config</td><td>0.100000000</td><td><span style="background-color: #f8d7da;">0.100000000</span></td><td><span style="background-color: #d4edda;">0.900000000</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raftstore-proxy.memory-usage-high-water in tiflash: default value changed (target default differs from current)</td><td>Source Default: 0.100000000 → Target Default: 0.900000000
+Current: 0.100000000</td></tr>
+<tr class="warning"><td><code>raftstore-proxy.raft-engine.batch-compression-threshold</code><br/><small>📝 Default Changed</small></td><td>config</td><td>"8KiB"</td><td><span style="background-color: #f8d7da;">&quot;8KiB&quot;</span></td><td><span style="background-color: #d4edda;">&quot;4KiB&quot;</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raftstore-proxy.raft-engine.batch-compression-threshold in tiflash: default value changed (target default differs from current)</td><td>Source Default: "8KiB" → Target Default: "4KiB"
+Current: "8KiB"</td></tr>
+<tr class="warning"><td><code>raftstore-proxy.raftdb.titan.max-background-gc</code><br/><small>📝 Default Changed</small></td><td>config</td><td>4</td><td><span style="background-color: #f8d7da;">4</span></td><td><span style="background-color: #d4edda;">1</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raftstore-proxy.raftdb.titan.max-background-gc in tiflash: default value changed (target default differs from current)</td><td>Source Default: 4 → Target Default: 1
+Current: 4</td></tr>
+<tr class="warning"><td><code>raftstore-proxy.raftstore.inspect-interval</code><br/><small>📝 Default Changed</small></td><td>config</td><td>"500ms"</td><td><span style="background-color: #f8d7da;">&quot;500ms&quot;</span></td><td><span style="background-color: #d4edda;">&quot;100ms&quot;</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raftstore-proxy.raftstore.inspect-interval in tiflash: default value changed (target default differs from current)</td><td>Source Default: "500ms" → Target Default: "100ms"
+Current: "500ms"</td></tr>
+<tr class="warning"><td><code>raftstore-proxy.raftstore.region-split-check-diff</code><br/><small>📝 Default Changed</small></td><td>config</td><td>"6MiB"</td><td><span style="background-color: #f8d7da;">&quot;6MiB&quot;</span></td><td><span style="background-color: #d4edda;">&quot;16MiB&quot;</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raftstore-proxy.raftstore.region-split-check-diff in tiflash: default value changed (target default differs from current)</td><td>Source Default: "6MiB" → Target Default: "16MiB"
+Current: "6MiB"</td></tr>
+<tr class="warning"><td><code>raftstore-proxy.raftstore.store-io-pool-size</code><br/><small>📝 Default Changed</small></td><td>config</td><td>0</td><td><span style="background-color: #f8d7da;">0</span></td><td><span style="background-color: #d4edda;">1</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raftstore-proxy.raftstore.store-io-pool-size in tiflash: default value changed (target default differs from current)</td><td>Source Default: 0 → Target Default: 1
+Current: 0</td></tr>
+<tr class="warning"><td><code>raftstore-proxy.rocksdb.titan.max-background-gc</code><br/><small>📝 Default Changed</small></td><td>config</td><td>4</td><td><span style="background-color: #f8d7da;">4</span></td><td><span style="background-color: #d4edda;">1</span></td><td><em>N/A</em></td><td class="warning">warning</td><td>Parameter raftstore-proxy.rocksdb.titan.max-background-gc in tiflash: default value changed (target default differs from current)</td><td>Source Default: 4 → Target Default: 1
+Current: 4</td></tr>
+</table>
+</div>
+<h2>2. Low Risk</h2>
+<p>ℹ️ <strong>Informational items for awareness.</strong></p>
+
+<button id="risk-toggle-low" onclick="toggleSection('risk-section-low', 'risk-toggle-low')" style="padding: 8px 16px; margin: 10px 0; cursor: pointer; background-color: #f0f0f0; border: 1px solid #ccc; border-radius: 4px;">
+▶ Show Low Risk (35 items)
+</button>
+<div id="risk-section-low" style="display: none;">
+<h3>TIDB Component</h3>
+<table>
+<tr><th>Parameter</th><th>Type</th><th>Current Value</th><th>Source Default</th><th>Target Default</th><th>Forced To</th><th>Severity</th><th>Message</th><th>Details</th></tr>
+<tr class="info"><td><code>have_openssl</code><br/><small>✏️ Modified</small></td><td>system_variable</td><td>"DISABLED"</td><td>"YES"</td><td>"YES"</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter have_openssl in tidb has been modified by user (differs from source version default)</td><td>Current: "DISABLED" | Source Default: "YES" | Target Default: "YES"
+
+Current value will be kept.
+
+TiDB system variables keep old values</td></tr>
+<tr class="info"><td><code>have_ssl</code><br/><small>✏️ Modified</small></td><td>system_variable</td><td>"DISABLED"</td><td>"YES"</td><td>"YES"</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter have_ssl in tidb has been modified by user (differs from source version default)</td><td>Current: "DISABLED" | Source Default: "YES" | Target Default: "YES"
+
+Current value will be kept.
+
+TiDB system variables keep old values</td></tr>
+<tr class="info"><td><code>security.auto-tls</code><br/><small>✏️ Modified</small></td><td>config</td><td>false</td><td>true</td><td>true</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter security.auto-tls in tidb has been modified by user (differs from source version default)</td><td>Current: false | Source Default: true | Target Default: true</td></tr>
+<tr class="info"><td><code>tidb_allow_function_for_expression_index</code><br/><small>📝 Default Changed</small></td><td>system_variable</td><td>&quot;json_array, json_array_append, json_array_insert, json_contains, json_contains_path, json_depth, json_extract, json_insert, json_keys, json_length, json_merge_patch, json_merge_preserve, json_object, json_pretty, json_quote, json_remove, json_replace, json_search, json_set, json_storage_size, json_type, json_unquote, json_valid, lower, md5, reverse, tidb_shard, upper, vitess_hash&quot;</td><td>&quot;json_array, json_array_append, json_array_insert, json_contains, json_contains_path, json_depth, json_extract, json_insert, json_keys, json_length, json_merge_patch, json_merge_preserve, json_object, json_pretty, json_quote, json_remove, json_replace, json_search, json_set, json_storage_size, json_type, json_unquote, json_valid, lower, md5, reverse, tidb_shard, upper, vitess_hash&quot;</td><td>&quot;json_array, json_array_append, json_array_insert, json_contains, json_contains_path, json_depth, json_extract, json_insert, json_keys, json_length, json_merge_patch, json_merge_preserve, json_object, json_pretty, json_quote, json_remove, json_replace, <span style="background-color: #d4edda; font-weight: bold;">json_schema_valid</span>, json_search, json_set, json_storage_size, json_type, json_unquote, json_valid, lower, md5, reverse, tidb_shard, upper, vitess_hash&quot;</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter tidb_allow_function_for_expression_index in tidb: default value changed (current value will be kept)</td><td>Source Default: "json_array, json_array_append, json_array_insert, json_contains, json_contains_path, json_depth, json_extract, json_insert, json_keys, json_length, json_merge_patch, json_merge_preserve, json_object, json_pretty, json_quote, json_remove, json_replace, json_search, json_set, json_storage_size, json_type, json_unquote, json_valid, lower, md5, reverse, tidb_shard, upper, vitess_hash" → Target Default: "json_array, json_array_append, json_array_insert, json_contains, json_contains_path, json_depth, json_extract, json_insert, json_keys, json_length, json_merge_patch, json_merge_preserve, json_object, json_pretty, json_quote, json_remove, json_replace, json_schema_valid, json_search, json_set, json_storage_size, json_type, json_unquote, json_valid, lower, md5, reverse, tidb_shard, upper, vitess_hash"
+Current: "json_array, json_array_append, json_array_insert, json_contains, json_contains_path, json_depth, json_extract, json_insert, json_keys, json_length, json_merge_patch, json_merge_preserve, json_object, json_pretty, json_quote, json_remove, json_replace, json_search, json_set, json_storage_size, json_type, json_unquote, json_valid, lower, md5, reverse, tidb_shard, upper, vitess_hash"
+
+Current value will be kept.
+
+TiDB system variables keep old values</td></tr>
+<tr class="info"><td><code>tidb_analyze_skip_column_types</code><br/><small>📝 Default Changed</small></td><td>system_variable</td><td>&quot;json, blob, mediumblob, <span style="background-color: #f8d7da; text-decoration: line-through;">longblob&quot;</span></td><td>&quot;json, blob, mediumblob, <span style="background-color: #f8d7da; text-decoration: line-through;">longblob&quot;</span></td><td>&quot;json, blob, mediumblob, <span style="background-color: #d4edda; font-weight: bold;">longblob</span>, <span style="background-color: #d4edda; font-weight: bold;">mediumtext</span>, <span style="background-color: #d4edda; font-weight: bold;">longtext&quot;</span></td><td><em>N/A</em></td><td class="info">info</td><td>Parameter tidb_analyze_skip_column_types in tidb: default value changed (current value will be kept)</td><td>Source Default: "json,blob,mediumblob,longblob" → Target Default: "json,blob,mediumblob,longblob,mediumtext,longtext"
+Current: "json,blob,mediumblob,longblob"
+
+Current value will be kept.
+
+TiDB system variables keep old values</td></tr>
+<tr class="info"><td><code>tidb_auto_analyze_partition_batch_size</code><br/><small>📝 Default Changed</small></td><td>system_variable</td><td>1</td><td><span style="background-color: #f8d7da;">1</span></td><td><span style="background-color: #d4edda;">8192</span></td><td><em>N/A</em></td><td class="info">info</td><td>Parameter tidb_auto_analyze_partition_batch_size in tidb: default value changed (current value will be kept)</td><td>Source Default: 1 → Target Default: 8192
+Current: 1
+
+Current value will be kept.
+
+TiDB system variables keep old values</td></tr>
+<tr class="info"><td><code>tidb_enable_column_tracking</code><br/><small>📝 Default Changed</small></td><td>system_variable</td><td>"OFF"</td><td><span style="background-color: #f8d7da;">&quot;OFF&quot;</span></td><td><span style="background-color: #d4edda;">&quot;ON&quot;</span></td><td><em>N/A</em></td><td class="info">info</td><td>Parameter tidb_enable_column_tracking in tidb: default value changed (current value will be kept)</td><td>Source Default: "OFF" → Target Default: "ON"
+Current: "OFF"
+
+Current value will be kept.
+
+TiDB system variables keep old values</td></tr>
+<tr class="info"><td><code>tidb_enable_dist_task</code><br/><small>📝 Default Changed</small></td><td>system_variable</td><td>"OFF"</td><td><span style="background-color: #f8d7da;">&quot;OFF&quot;</span></td><td><span style="background-color: #d4edda;">&quot;ON&quot;</span></td><td><em>N/A</em></td><td class="info">info</td><td>Parameter tidb_enable_dist_task in tidb: default value changed (current value will be kept)</td><td>Source Default: "OFF" → Target Default: "ON"
+Current: "OFF"
+
+Current value will be kept.
+
+TiDB system variables keep old values</td></tr>
+<tr class="info"><td><code>tidb_enable_historical_stats</code><br/><small>📝 Default Changed</small></td><td>system_variable</td><td>"ON"</td><td><span style="background-color: #f8d7da;">&quot;ON&quot;</span></td><td><span style="background-color: #d4edda;">&quot;OFF&quot;</span></td><td><em>N/A</em></td><td class="info">info</td><td>Parameter tidb_enable_historical_stats in tidb: default value changed (current value will be kept)</td><td>Source Default: "ON" → Target Default: "OFF"
+Current: "ON"
+
+Current value will be kept.
+
+TiDB system variables keep old values</td></tr>
+<tr class="info"><td><code>tidb_enable_inl_join_inner_multi_pattern</code><br/><small>🔴 Forced</small></td><td>system_variable</td><td>"OFF"</td><td><span style="background-color: #f8d7da;">&quot;OFF&quot;</span></td><td><span style="background-color: #d4edda;">&quot;ON&quot;</span></td><td>"OFF"</td><td class="info">info</td><td>Parameter tidb_enable_inl_join_inner_multi_pattern in tidb: default value changed (forced change matches current value)</td><td>Current value matches forced value.
+
+Source Default: "OFF" → Target Default: "ON"
+Current: "OFF"</td></tr>
+<tr class="info"><td><code>tidb_enable_telemetry</code><br/><small>📝 Default Changed</small></td><td>system_variable</td><td>"OFF"</td><td><span style="background-color: #f8d7da;">&quot;OFF&quot;</span></td><td><span style="background-color: #d4edda;">&quot;ON&quot;</span></td><td><em>N/A</em></td><td class="info">info</td><td>Parameter tidb_enable_telemetry in tidb: default value changed (current value will be kept)</td><td>Source Default: "OFF" → Target Default: "ON"
+Current: "OFF"
+
+Current value will be kept.
+
+TiDB system variables keep old values</td></tr>
+<tr class="info"><td><code>tidb_mpp_store_fail_ttl</code><br/><small>📝 Default Changed</small></td><td>system_variable</td><td>"60s"</td><td><span style="background-color: #f8d7da;">&quot;60s&quot;</span></td><td><span style="background-color: #d4edda;">&quot;0s&quot;</span></td><td><em>N/A</em></td><td class="info">info</td><td>Parameter tidb_mpp_store_fail_ttl in tidb: default value changed (current value will be kept)</td><td>Source Default: "60s" → Target Default: "0s"
+Current: "60s"
+
+Current value will be kept.
+
+TiDB system variables keep old values</td></tr>
+<tr class="info"><td><code>tidb_opt_prefer_range_scan</code><br/><small>📝 Default Changed</small></td><td>system_variable</td><td>"OFF"</td><td><span style="background-color: #f8d7da;">&quot;OFF&quot;</span></td><td><span style="background-color: #d4edda;">&quot;ON&quot;</span></td><td><em>N/A</em></td><td class="info">info</td><td>Parameter tidb_opt_prefer_range_scan in tidb: default value changed (current value will be kept)</td><td>Source Default: "OFF" → Target Default: "ON"
+Current: "OFF"
+
+Current value will be kept.
+
+TiDB system variables keep old values</td></tr>
+<tr class="info"><td><code>version</code><br/><small>📝 Default Changed</small></td><td>system_variable</td><td>"8.0.11-TiDB-v7.5.1"</td><td><span style="background-color: #f8d7da;">&quot;8.0.11-TiDB-v7.5.1&quot;</span></td><td><span style="background-color: #d4edda;">&quot;8.0.11-TiDB-v8.5.4&quot;</span></td><td><em>N/A</em></td><td class="info">info</td><td>Parameter version in tidb: default value changed (current value will be kept)</td><td>Source Default: "8.0.11-TiDB-v7.5.1" → Target Default: "8.0.11-TiDB-v8.5.4"
+Current: "8.0.11-TiDB-v7.5.1"
+
+Current value will be kept.
+
+TiDB system variables keep old values</td></tr>
+</table>
+<h3>TIKV Component</h3>
+<table>
+<tr><th>Parameter</th><th>Type</th><th>Current Value</th><th>Source Default</th><th>Target Default</th><th>Forced To</th><th>Severity</th><th>Message</th><th>Details</th></tr>
+<tr class="info"><td><code>coprocessor.region-max-keys</code><br/><small>✏️ Modified</small></td><td>config</td><td>1440000</td><td><span style="background-color: #f8d7da;">1440000</span></td><td><span style="background-color: #d4edda;">3840000</span></td><td><em>N/A</em></td><td class="info">info</td><td>Parameter coprocessor.region-max-keys in tikv has been modified by user (differs from source version default)</td><td>Node: tikv-127-0-0-1-20180 (instance: 127.0.0.1:20180)
+Current: 1440000 | Source Default: 1440000
+Target Default: 3840000</td></tr>
+<tr class="info"><td><code>memory-usage-limit</code><br/><small>✏️ Modified</small></td><td>config</td><td>"12289725KiB"</td><td>"38654705663B"</td><td>"38654705663B"</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter memory-usage-limit in tikv has been modified by user (differs from source version default)</td><td>Node: tikv-127-0-0-1-20180 (instance: 127.0.0.1:20180)
+Current: "12289725KiB" | Source Default: "38654705663B"
+Target Default: "38654705663B"
+
+Note: Source and target defaults are the same. The current value may be auto-tuned by TiKV based on system resources (e.g., CPU cores).</td></tr>
+<tr class="info"><td><code>pd.endpoints</code><br/><small>✏️ Modified</small></td><td>config</td><td>[
+  "127.0.0.1:2379"
+]</td><td>[
+  "http://127.0.0.1:2379"
+]</td><td>[
+  "http://127.0.0.1:2379"
+]</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter pd.endpoints in tikv has been modified by user (differs from source version default)</td><td>Node: tikv-127-0-0-1-20180 (instance: 127.0.0.1:20180)
+Current Value:
+[
+  "127.0.0.1:2379"
+]
+
+Source Default:
+[
+  "http://127.0.0.1:2379"
+]
+Target Default: [
+  "http://127.0.0.1:2379"
+]
+
+Note: Source and target defaults are the same. The current value may be auto-tuned by TiKV based on system resources (e.g., CPU cores).</td></tr>
+<tr class="info"><td><code>raft-engine.memory-limit</code><br/><small>✏️ Modified</small></td><td>config</td><td>"2457945KiB"</td><td>"7730941132B"</td><td>"7730941132B"</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter raft-engine.memory-limit in tikv has been modified by user (differs from source version default)</td><td>Node: tikv-127-0-0-1-20180 (instance: 127.0.0.1:20180)
+Current: "2457945KiB" | Source Default: "7730941132B"
+Target Default: "7730941132B"
+
+Note: Source and target defaults are the same. The current value may be auto-tuned by TiKV based on system resources (e.g., CPU cores).</td></tr>
+<tr class="info"><td><code>raftdb.max-background-jobs</code><br/><small>✏️ Modified</small></td><td>config</td><td>3</td><td>4</td><td>4</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter raftdb.max-background-jobs in tikv has been modified by user (differs from source version default)</td><td>Node: tikv-127-0-0-1-20180 (instance: 127.0.0.1:20180)
+Current: 3 | Source Default: 4
+Target Default: 4
+
+Note: Source and target defaults are the same. The current value may be auto-tuned by TiKV based on system resources (e.g., CPU cores).</td></tr>
+<tr class="info"><td><code>raftdb.max-sub-compactions</code><br/><small>✏️ Modified</small></td><td>config</td><td>1</td><td>2</td><td>2</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter raftdb.max-sub-compactions in tikv has been modified by user (differs from source version default)</td><td>Node: tikv-127-0-0-1-20180 (instance: 127.0.0.1:20180)
+Current: 1 | Source Default: 2
+Target Default: 2
+
+Note: Source and target defaults are the same. The current value may be auto-tuned by TiKV based on system resources (e.g., CPU cores).</td></tr>
+<tr class="info"><td><code>rocksdb.max-background-flushes</code><br/><small>✏️ Modified</small></td><td>config</td><td>1</td><td>3</td><td>3</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter rocksdb.max-background-flushes in tikv has been modified by user (differs from source version default)</td><td>Node: tikv-127-0-0-1-20180 (instance: 127.0.0.1:20180)
+Current: 1 | Source Default: 3
+Target Default: 3
+
+Note: Source and target defaults are the same. The current value may be auto-tuned by TiKV based on system resources (e.g., CPU cores).</td></tr>
+<tr class="info"><td><code>rocksdb.max-background-jobs</code><br/><small>✏️ Modified</small></td><td>config</td><td>3</td><td>9</td><td>9</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter rocksdb.max-background-jobs in tikv has been modified by user (differs from source version default)</td><td>Node: tikv-127-0-0-1-20180 (instance: 127.0.0.1:20180)
+Current: 3 | Source Default: 9
+Target Default: 9
+
+Note: Source and target defaults are the same. The current value may be auto-tuned by TiKV based on system resources (e.g., CPU cores).</td></tr>
+<tr class="info"><td><code>rocksdb.max-sub-compactions</code><br/><small>✏️ Modified</small></td><td>config</td><td>1</td><td>3</td><td>3</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter rocksdb.max-sub-compactions in tikv has been modified by user (differs from source version default)</td><td>Node: tikv-127-0-0-1-20180 (instance: 127.0.0.1:20180)
+Current: 1 | Source Default: 3
+Target Default: 3
+
+Note: Source and target defaults are the same. The current value may be auto-tuned by TiKV based on system resources (e.g., CPU cores).</td></tr>
+<tr class="info"><td><code>server.status-addr</code><br/><small>✏️ Modified</small></td><td>config</td><td>"0.0.0.0:20180"</td><td>"127.0.0.1:20180"</td><td>"127.0.0.1:20180"</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter server.status-addr in tikv has been modified by user (differs from source version default)</td><td>Node: tikv-127-0-0-1-20180 (instance: 127.0.0.1:20180)
+Current: "0.0.0.0:20180" | Source Default: "127.0.0.1:20180"
+Target Default: "127.0.0.1:20180"
+
+Note: Source and target defaults are the same. The current value may be auto-tuned by TiKV based on system resources (e.g., CPU cores).</td></tr>
+</table>
+<h3>TIFLASH Component</h3>
+<table>
+<tr><th>Parameter</th><th>Type</th><th>Current Value</th><th>Source Default</th><th>Target Default</th><th>Forced To</th><th>Severity</th><th>Message</th><th>Details</th></tr>
+<tr class="info"><td><code>raftstore-proxy.memory-usage-limit</code><br/><small>✏️ Modified</small></td><td>config</td><td><span style="background-color: #fff3cd;">&quot;2069189973B&quot;</span></td><td><span style="background-color: #f8d7da;">&quot;4735MiB&quot;</span></td><td><span style="background-color: #d4edda;">&quot;41231686041B&quot;</span></td><td><em>N/A</em></td><td class="info">info</td><td>Parameter raftstore-proxy.memory-usage-limit in tiflash has been modified by user (differs from source version default)</td><td>Source Default: "4735MiB" → Target Default: "41231686041B"
+Current: "2069189973B"</td></tr>
+<tr class="info"><td><code>raftstore-proxy.raft-engine.memory-limit</code><br/><small>✏️ Modified</small></td><td>config</td><td>"2457945KiB"</td><td>"7730941132B"</td><td>"7730941132B"</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter raftstore-proxy.raft-engine.memory-limit in tiflash has been modified by user (differs from source version default)</td><td>Current: "2457945KiB" | Source Default: "7730941132B" | Target Default: "7730941132B"</td></tr>
+<tr class="info"><td><code>raftstore-proxy.raftdb.max-background-jobs</code><br/><small>✏️ Modified</small></td><td>config</td><td>3</td><td>4</td><td>4</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter raftstore-proxy.raftdb.max-background-jobs in tiflash has been modified by user (differs from source version default)</td><td>Current: 3 | Source Default: 4 | Target Default: 4</td></tr>
+<tr class="info"><td><code>raftstore-proxy.raftdb.max-sub-compactions</code><br/><small>✏️ Modified</small></td><td>config</td><td>1</td><td>2</td><td>2</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter raftstore-proxy.raftdb.max-sub-compactions in tiflash has been modified by user (differs from source version default)</td><td>Current: 1 | Source Default: 2 | Target Default: 2</td></tr>
+<tr class="info"><td><code>raftstore-proxy.raftstore.apply-low-priority-pool-size</code><br/><small>✏️ Modified</small></td><td>config</td><td>4</td><td>12</td><td>12</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter raftstore-proxy.raftstore.apply-low-priority-pool-size in tiflash has been modified by user (differs from source version default)</td><td>Current: 4 | Source Default: 12 | Target Default: 12</td></tr>
+<tr class="info"><td><code>raftstore-proxy.raftstore.apply-pool-size</code><br/><small>✏️ Modified</small></td><td>config</td><td>4</td><td>2</td><td>2</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter raftstore-proxy.raftstore.apply-pool-size in tiflash has been modified by user (differs from source version default)</td><td>Current: 4 | Source Default: 2 | Target Default: 2</td></tr>
+<tr class="info"><td><code>raftstore-proxy.raftstore.store-pool-size</code><br/><small>✏️ Modified</small></td><td>config</td><td>4</td><td>2</td><td>2</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter raftstore-proxy.raftstore.store-pool-size in tiflash has been modified by user (differs from source version default)</td><td>Current: 4 | Source Default: 2 | Target Default: 2</td></tr>
+<tr class="info"><td><code>raftstore-proxy.rocksdb.max-background-flushes</code><br/><small>✏️ Modified</small></td><td>config</td><td>1</td><td>3</td><td>3</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter raftstore-proxy.rocksdb.max-background-flushes in tiflash has been modified by user (differs from source version default)</td><td>Current: 1 | Source Default: 3 | Target Default: 3</td></tr>
+<tr class="info"><td><code>raftstore-proxy.rocksdb.max-background-jobs</code><br/><small>✏️ Modified</small></td><td>config</td><td>3</td><td>9</td><td>9</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter raftstore-proxy.rocksdb.max-background-jobs in tiflash has been modified by user (differs from source version default)</td><td>Current: 3 | Source Default: 9 | Target Default: 9</td></tr>
+<tr class="info"><td><code>raftstore-proxy.rocksdb.max-sub-compactions</code><br/><small>✏️ Modified</small></td><td>config</td><td>1</td><td>3</td><td>3</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter raftstore-proxy.rocksdb.max-sub-compactions in tiflash has been modified by user (differs from source version default)</td><td>Current: 1 | Source Default: 3 | Target Default: 3</td></tr>
+<tr class="info"><td><code>raftstore-proxy.server.status-addr</code><br/><small>✏️ Modified</small></td><td>config</td><td>"0.0.0.0:20292"</td><td>"127.0.0.1:20292"</td><td>"127.0.0.1:20292"</td><td><em>N/A</em></td><td class="info">info</td><td>Parameter raftstore-proxy.server.status-addr in tiflash has been modified by user (differs from source version default)</td><td>Current: "0.0.0.0:20292" | Source Default: "127.0.0.1:20292" | Target Default: "127.0.0.1:20292"</td></tr>
+</table>
+</div>
+
+<script>
+function toggleDeprecated() {
+    var section = document.getElementById('deprecated-section');
+    var button = document.getElementById('deprecated-toggle');
+    if (section.style.display === 'none') {
+        section.style.display = 'block';
+        button.textContent = '▼ Hide Deprecated Parameters';
+    } else {
+        section.style.display = 'none';
+        button.textContent = '▶ Show Deprecated Parameters';
+    }
+}
+</script>
+
+<h2>🗑️ Deprecated Parameters</h2>
+<p><strong>Note:</strong> The following parameters exist in the source version but will be removed in the target version. These are typically low-priority informational items.</p>
+<button id="deprecated-toggle" onclick="toggleDeprecated()" style="padding: 8px 16px; margin: 10px 0; cursor: pointer; background-color: #f0f0f0; border: 1px solid #ccc; border-radius: 4px;">
+▶ Show Deprecated Parameters (35)
+</button>
+<div id="deprecated-section" style="display: none;">
+<h3>TIDB Component</h3>
+<table>
+<tr><th>Parameter</th><th>Type</th><th>Current Value</th><th>Source Default</th><th>Severity</th><th>Message</th><th>Details</th></tr>
+<tr class="info"><td><code>enable-global-index</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td>false</td><td>false</td><td class="info">info</td><td>Parameter enable-global-index in tidb is deprecated (exists in source version but removed in target version)</td><td>Current cluster value: false, Source default: false. This parameter will be removed in target version.</td></tr>
+</table>
+<h3>PD Component</h3>
+<table>
+<tr><th>Parameter</th><th>Type</th><th>Current Value</th><th>Source Default</th><th>Severity</th><th>Message</th><th>Details</th></tr>
+<tr class="info"><td><code>ElectionInterval</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td>"3s"</td><td>"3s"</td><td class="info">info</td><td>Parameter ElectionInterval in pd is deprecated (exists in source version but removed in target version)</td><td>Current cluster value: 3s, Source default: 3s. This parameter will be removed in target version.</td></tr>
+<tr class="info"><td><code>HeartbeatStreamBindInterval</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td>"1m0s"</td><td>"1m0s"</td><td class="info">info</td><td>Parameter HeartbeatStreamBindInterval in pd is deprecated (exists in source version but removed in target version)</td><td>Current cluster value: 1m0s, Source default: 1m0s. This parameter will be removed in target version.</td></tr>
+<tr class="info"><td><code>LeaderPriorityCheckInterval</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td>"1m0s"</td><td>"1m0s"</td><td class="info">info</td><td>Parameter LeaderPriorityCheckInterval in pd is deprecated (exists in source version but removed in target version)</td><td>Current cluster value: 1m0s, Source default: 1m0s. This parameter will be removed in target version.</td></tr>
+<tr class="info"><td><code>PreVote</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td>true</td><td>true</td><td class="info">info</td><td>Parameter PreVote in pd is deprecated (exists in source version but removed in target version)</td><td>Current cluster value: true, Source default: true. This parameter will be removed in target version.</td></tr>
+<tr class="info"><td><code>TickInterval</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td>"500ms"</td><td>"500ms"</td><td class="info">info</td><td>Parameter TickInterval in pd is deprecated (exists in source version but removed in target version)</td><td>Current cluster value: 500ms, Source default: 500ms. This parameter will be removed in target version.</td></tr>
+</table>
+<h3>TIKV Component</h3>
+<table>
+<tr><th>Parameter</th><th>Type</th><th>Current Value</th><th>Source Default</th><th>Severity</th><th>Message</th><th>Details</th></tr>
+<tr class="warning"><td><code>gc.auto-compaction</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>{
+  "bottommost-level-force": false,
+  "check-interval": "5m",
+  "redundant-rows-percent-threshold": 20,
+  "redundant-rows-threshold": 50000,
+  "tombstones-num-threshold": 10000,
+  "tombstones-percent-threshold": 30
+}</td><td class="warning">warning</td><td>Parameter gc.auto-compaction in tikv: default value changed (target default differs from current)</td><td>Current Value:
+<not set>
+
+Source Default:
+{
+  "bottommost-level-force": false,
+  "check-interval": "5m",
+  "redundant-rows-percent-threshold": 20,
+  "redundant-rows-threshold": 50000,
+  "tombstones-num-threshold": 10000,
+  "tombstones-percent-threshold": 30
+} → <nil></td></tr>
+<tr class="warning"><td><code>memory.enable-thread-exclusive-arena</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>true</td><td class="warning">warning</td><td>Parameter memory.enable-thread-exclusive-arena in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: true → <nil></td></tr>
+<tr class="warning"><td><code>pessimistic-txn.in-memory-instance-size-limit</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>"100MiB"</td><td class="warning">warning</td><td>Parameter pessimistic-txn.in-memory-instance-size-limit in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: "100MiB" → <nil></td></tr>
+<tr class="warning"><td><code>pessimistic-txn.in-memory-peer-size-limit</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>"512KiB"</td><td class="warning">warning</td><td>Parameter pessimistic-txn.in-memory-peer-size-limit in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: "512KiB" → <nil></td></tr>
+<tr class="warning"><td><code>raftdb.defaultcf.titan.zstd-dict-size</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>"0KiB"</td><td class="warning">warning</td><td>Parameter raftdb.defaultcf.titan.zstd-dict-size in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: "0KiB" → <nil></td></tr>
+<tr class="info"><td><code>raftstore.inspect-cpu-util-thd</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td>0.400000000</td><td>0.400000000</td><td class="info">info</td><td>Parameter raftstore.inspect-cpu-util-thd in tikv is deprecated (exists in source version but removed in target version)</td><td>Current cluster value: 0.4, Source default: 0.4. This parameter will be removed in target version.</td></tr>
+<tr class="info"><td><code>raftstore.inspect-interval</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td>"100ms"</td><td>"100ms"</td><td class="info">info</td><td>Parameter raftstore.inspect-interval in tikv is deprecated (exists in source version but removed in target version)</td><td>Current cluster value: 100ms, Source default: 100ms. This parameter will be removed in target version.</td></tr>
+<tr class="warning"><td><code>raftstore.inspect-kvdb-interval</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>"100ms"</td><td class="warning">warning</td><td>Parameter raftstore.inspect-kvdb-interval in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: "100ms" → <nil></td></tr>
+<tr class="warning"><td><code>raftstore.min-pending-apply-region-count</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>10</td><td class="warning">warning</td><td>Parameter raftstore.min-pending-apply-region-count in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: 10 → <nil></td></tr>
+<tr class="warning"><td><code>raftstore.pd-report-min-resolved-ts-interval</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>"1s"</td><td class="warning">warning</td><td>Parameter raftstore.pd-report-min-resolved-ts-interval in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: "1s" → <nil></td></tr>
+<tr class="warning"><td><code>raftstore.periodic-full-compact-start-max-cpu</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>0.100000000</td><td class="warning">warning</td><td>Parameter raftstore.periodic-full-compact-start-max-cpu in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: 0.100000000 → <nil></td></tr>
+<tr class="warning"><td><code>raftstore.periodic-full-compact-start-times</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>[]</td><td class="warning">warning</td><td>Parameter raftstore.periodic-full-compact-start-times in tikv: default value changed (target default differs from current)</td><td>Current Value:
+<not set>
+
+Source Default:
+[] → <nil></td></tr>
+<tr class="warning"><td><code>raftstore.raft-read-index-retry-interval-ticks</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>4</td><td class="warning">warning</td><td>Parameter raftstore.raft-read-index-retry-interval-ticks in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: 4 → <nil></td></tr>
+<tr class="warning"><td><code>raftstore.raft-write-batch-size-hint</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>"8KiB"</td><td class="warning">warning</td><td>Parameter raftstore.raft-write-batch-size-hint in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: "8KiB" → <nil></td></tr>
+<tr class="warning"><td><code>raftstore.raft-write-wait-duration</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>"20us"</td><td class="warning">warning</td><td>Parameter raftstore.raft-write-wait-duration in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: "20us" → <nil></td></tr>
+<tr class="warning"><td><code>raftstore.slow-trend-network-io-factor</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>0</td><td class="warning">warning</td><td>Parameter raftstore.slow-trend-network-io-factor in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: 0 → <nil></td></tr>
+<tr class="info"><td><code>raftstore.slow-trend-unsensitive-cause</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td>10</td><td>10</td><td class="info">info</td><td>Parameter raftstore.slow-trend-unsensitive-cause in tikv is deprecated (exists in source version but removed in target version)</td><td>Current cluster value: 10, Source default: 10. This parameter will be removed in target version.</td></tr>
+<tr class="info"><td><code>raftstore.slow-trend-unsensitive-result</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td>0.500000000</td><td>0.500000000</td><td class="info">info</td><td>Parameter raftstore.slow-trend-unsensitive-result in tikv is deprecated (exists in source version but removed in target version)</td><td>Current cluster value: 0.5, Source default: 0.5. This parameter will be removed in target version.</td></tr>
+<tr class="warning"><td><code>resource-control.priority-ctl-strategy</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>"moderate"</td><td class="warning">warning</td><td>Parameter resource-control.priority-ctl-strategy in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: "moderate" → <nil></td></tr>
+<tr class="warning"><td><code>rocksdb.defaultcf.titan.zstd-dict-size</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>"0KiB"</td><td class="warning">warning</td><td>Parameter rocksdb.defaultcf.titan.zstd-dict-size in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: "0KiB" → <nil></td></tr>
+<tr class="warning"><td><code>rocksdb.lockcf.titan.zstd-dict-size</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>"0KiB"</td><td class="warning">warning</td><td>Parameter rocksdb.lockcf.titan.zstd-dict-size in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: "0KiB" → <nil></td></tr>
+<tr class="warning"><td><code>rocksdb.raftcf.titan.zstd-dict-size</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>"0KiB"</td><td class="warning">warning</td><td>Parameter rocksdb.raftcf.titan.zstd-dict-size in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: "0KiB" → <nil></td></tr>
+<tr class="warning"><td><code>rocksdb.track-and-verify-wals-in-manifest</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>true</td><td class="warning">warning</td><td>Parameter rocksdb.track-and-verify-wals-in-manifest in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: true → <nil></td></tr>
+<tr class="warning"><td><code>rocksdb.writecf.titan.zstd-dict-size</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>"0KiB"</td><td class="warning">warning</td><td>Parameter rocksdb.writecf.titan.zstd-dict-size in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: "0KiB" → <nil></td></tr>
+<tr class="warning"><td><code>security.redact-info-log</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>false</td><td class="warning">warning</td><td>Parameter security.redact-info-log in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: false → <nil></td></tr>
+<tr class="warning"><td><code>server.end-point-memory-quota</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>"6GiB"</td><td class="warning">warning</td><td>Parameter server.end-point-memory-quota in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: "6GiB" → <nil></td></tr>
+<tr class="warning"><td><code>server.health-feedback-interval</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>"1s"</td><td class="warning">warning</td><td>Parameter server.health-feedback-interval in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: "1s" → <nil></td></tr>
+<tr class="warning"><td><code>server.snap-min-ingest-size</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td><em>N/A</em></td><td>"2MiB"</td><td class="warning">warning</td><td>Parameter server.snap-min-ingest-size in tikv: default value changed (target default differs from current)</td><td>Current: <not set> | Source Default: "2MiB" → <nil></td></tr>
+</table>
+<h3>TIFLASH Component</h3>
+<table>
+<tr><th>Parameter</th><th>Type</th><th>Current Value</th><th>Source Default</th><th>Severity</th><th>Message</th><th>Details</th></tr>
+<tr class="info"><td><code>raftstore-proxy.raftstore.report-min-resolved-ts-interval</code><br/><small>🗑️ Deprecated</small></td><td>config</td><td>"1s"</td><td>"1s"</td><td class="info">info</td><td>Parameter raftstore-proxy.raftstore.report-min-resolved-ts-interval in tiflash is deprecated (exists in source version but removed in target version)</td><td>Current cluster value: 1s, Source default: 1s. This parameter will be removed in target version.</td></tr>
+</table>
+</div>
+</body>
+</html>
