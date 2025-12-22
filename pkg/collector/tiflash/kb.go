@@ -8,7 +8,6 @@
 package tiflash
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -16,9 +15,8 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/pelletier/go-toml/v2"
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector/tidb"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector/common"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/types"
 )
 
@@ -42,10 +40,11 @@ func Collect(tiflashRoot, version string, tidbPort int, tag string) (*types.KBSn
 		fmt.Printf("Collected %d parameters from tiflash.toml\n", len(fileConfig))
 	}
 
-	// Step 2: Collect runtime values via SHOW CONFIG WHERE type='tiflash'
+	// Step 2: Collect runtime values via SHOW CONFIG WHERE type='tiflash' AND instance='ip:port'
+	// Use runtime collector's method for consistency
 	// Wait for TiFlash to be registered in the cluster before collecting
 	fmt.Printf("Collecting TiFlash runtime configuration via SHOW CONFIG...\n")
-	runtimeConfig, err := collectTiFlashConfigViaSHOWCONFIGWithRetry(tidbPort)
+	runtimeConfig, err := collectTiFlashConfigViaSHOWCONFIGWithRetry(tidbPort, tag)
 	if err != nil {
 		fmt.Printf("Warning: failed to collect via SHOW CONFIG: %v\n", err)
 		runtimeConfig = make(types.ConfigDefaults)
@@ -153,16 +152,17 @@ const (
 	tiflashRegistrationRetryInterval = 5 * time.Second
 )
 
-// collectTiFlashConfigViaSHOWCONFIGWithRetry collects TiFlash config via SHOW CONFIG WHERE type='tiflash'
+// collectTiFlashConfigViaSHOWCONFIGWithRetry collects TiFlash config via SHOW CONFIG WHERE type='tiflash' AND instance='ip:port'
 // with retry mechanism to wait for TiFlash to be registered in the cluster.
+// Uses runtime collector's method for consistency.
 // This function retries until TiFlash is registered (returns non-zero rows) or timeout.
-func collectTiFlashConfigViaSHOWCONFIGWithRetry(tidbPort int) (types.ConfigDefaults, error) {
+func collectTiFlashConfigViaSHOWCONFIGWithRetry(tidbPort int, tag string) (types.ConfigDefaults, error) {
 	deadline := time.Now().Add(tiflashRegistrationTimeout)
 	attempt := 0
 
 	for time.Now().Before(deadline) {
 		attempt++
-		config, err := collectTiFlashConfigViaSHOWCONFIG(tidbPort)
+		config, err := collectTiFlashConfigViaSHOWCONFIG(tidbPort, tag)
 		if err == nil && len(config) > 0 {
 			// Successfully collected non-zero config, TiFlash is registered
 			if attempt > 1 {
@@ -192,7 +192,7 @@ func collectTiFlashConfigViaSHOWCONFIGWithRetry(tidbPort int) (types.ConfigDefau
 	}
 
 	// Timeout reached, try one last time to get the error message
-	config, err := collectTiFlashConfigViaSHOWCONFIG(tidbPort)
+	config, err := collectTiFlashConfigViaSHOWCONFIG(tidbPort, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get TiFlash config after %d attempts (timeout: %v): %w", attempt, tiflashRegistrationTimeout, err)
 	}
@@ -202,24 +202,33 @@ func collectTiFlashConfigViaSHOWCONFIGWithRetry(tidbPort int) (types.ConfigDefau
 	return config, nil
 }
 
-// collectTiFlashConfigViaSHOWCONFIG collects TiFlash config via SHOW CONFIG WHERE type='tiflash'
-// Uses runtime collector's GetConfigByType method for consistency
-func collectTiFlashConfigViaSHOWCONFIG(tidbPort int) (types.ConfigDefaults, error) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/", "root", "", "127.0.0.1", tidbPort)
-	db, err := sql.Open("mysql", dsn)
+// collectTiFlashConfigViaSHOWCONFIG collects TiFlash config via SHOW CONFIG WHERE type='tiflash' AND instance='ip:port'
+// Uses runtime collector's method for consistency
+func collectTiFlashConfigViaSHOWCONFIG(tidbPort int, tag string) (types.ConfigDefaults, error) {
+	// Find TiFlash instance address from playground directory
+	tiflashAddr, err := common.FindPlaygroundInstanceAddr("tiflash", tag)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database connection: %w", err)
+		return nil, fmt.Errorf("failed to find TiFlash instance address: %w", err)
 	}
-	defer db.Close()
-	db.SetConnMaxLifetime(10 * time.Second)
 
-	collector := tidb.NewTiDBCollector()
-	config, err := collector.GetConfigByType(db, "tiflash")
+	// Use runtime collector's method for consistency
+	tiflashCollector := NewTiFlashCollector()
+	tidbAddr := fmt.Sprintf("127.0.0.1:%d", tidbPort)
+
+	// Use the runtime collector's method to get config for specific instance
+	// This matches the approach used in runtime collection
+	states, err := tiflashCollector.CollectWithTiDB(
+		[]string{tiflashAddr},
+		tidbAddr, "root", "")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get TiFlash config via SHOW CONFIG: %w", err)
+		return nil, fmt.Errorf("failed to collect TiFlash config via SHOW CONFIG: %w", err)
 	}
-	// Convert map[string]interface{} to types.ConfigDefaults
-	return types.ConvertConfigToDefaults(config), nil
+	if len(states) == 0 {
+		return nil, fmt.Errorf("no TiFlash state collected")
+	}
+
+	// Return the config from the collected state
+	return states[0].Config, nil
 }
 
 // mergeConfigsWithPriority merges file config and runtime config with priority
@@ -271,12 +280,6 @@ func flattenConfig(config map[string]interface{}, prefix string) map[string]inte
 
 	return result
 }
-
-// Note: Code extraction, merging, and system variable collection functions have been removed.
-// TiFlash playground cluster provides complete default configuration via tiflash.toml file,
-// so we no longer need to extract from source code or merge with code definitions.
-// System variables are collected by TiDB collector and do not need to be collected separately here.
-// This simplifies the collection process significantly, similar to PD and TiDB's approach.
 
 // determineValueType determines the type of a value
 func determineValueType(v interface{}) string {

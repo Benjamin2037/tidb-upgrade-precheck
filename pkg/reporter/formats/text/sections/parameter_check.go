@@ -7,6 +7,7 @@ import (
 
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer/rules"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/reporter"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/reporter/formats"
 )
 
@@ -51,6 +52,56 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 		if check.ParameterName == "__statistics__" {
 			continue
 		}
+
+		// Filter path-related parameters at report generation time
+		// This ensures all parameters are properly categorized before filtering
+		if reporter.IsPathParameter(check.ParameterName) {
+			continue
+		}
+
+		// Filter deployment-specific parameters (pd.endpoints, etc.)
+		// These parameters vary by deployment environment and should not be reported
+		// Check if parameter name matches any ignored parameter pattern
+		if check.ParameterName == "pd.endpoints" || strings.HasSuffix(check.ParameterName, ".pd.endpoints") {
+			continue
+		}
+
+		// Filter resource-dependent parameters at report generation time
+		// These parameters are automatically adjusted by TiKV/TiFlash based on system resources
+		// (CPU cores, memory, etc.) and should not be reported if source default == target default
+		// but current differs (difference is due to deployment environment, not user modification)
+		if reporter.IsResourceDependentParameter(check.ParameterName) {
+			if check.SourceDefault != nil && check.TargetDefault != nil {
+				sourceEqualsTarget := rules.CompareValues(check.SourceDefault, check.TargetDefault)
+				if sourceEqualsTarget {
+					// Source default == target default, but current differs
+					// This is likely auto-tuned by TiKV/TiFlash based on system resources
+					// Skip reporting as the difference is due to deployment environment
+					continue
+				}
+			}
+		}
+
+		// Filter: If current value, source default, and target default are all the same, skip
+		// No action is needed after upgrade, so no need to report
+		if check.CurrentValue != nil && check.SourceDefault != nil && check.TargetDefault != nil {
+			if rules.CompareValues(check.CurrentValue, check.SourceDefault) &&
+				rules.CompareValues(check.CurrentValue, check.TargetDefault) {
+				// All three values are the same, skip reporting
+				continue
+			}
+		}
+
+		// Filter: If source default is nil (N/A) but current value equals target default, skip
+		// This is not a true "New" parameter that needs user action
+		// The parameter already exists in cluster and matches target default, so no action needed
+		if check.SourceDefault == nil && check.CurrentValue != nil && check.TargetDefault != nil {
+			if rules.CompareValues(check.CurrentValue, check.TargetDefault) {
+				// Current value equals target default, no action needed after upgrade
+				continue
+			}
+		}
+
 		riskLevel := check.RiskLevel
 		if riskLevel == "" {
 			// Fallback: determine from severity if risk level not set

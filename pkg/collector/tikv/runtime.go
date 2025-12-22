@@ -17,10 +17,10 @@ import (
 
 // TiKVCollector handles collection of TiKV configuration
 type TiKVCollector interface {
-	Collect(addrs []string, dataDirs map[string]string) ([]types.ComponentState, error)
 	// CollectWithTiDB collects TiKV configuration with optional TiDB connection
-	// This allows supplementing last_tikv.toml with SHOW CONFIG data for consistency
-	// with knowledge base generation approach
+	// In upgrade precheck scenario, TiDB connection is always available
+	// This collects from both last_tikv.toml and SHOW CONFIG, then merges them for the most complete configuration
+	// If tidbAddr is empty, only collects from last_tikv.toml (for knowledge base generation)
 	CollectWithTiDB(addrs []string, dataDirs map[string]string, tidbAddr, tidbUser, tidbPassword string) ([]types.ComponentState, error)
 }
 
@@ -37,40 +37,18 @@ func NewTiKVCollector() TiKVCollector {
 	}
 }
 
-// Collect gathers configuration from TiKV instances
-// dataDirs maps TiKV address to its data_dir path (from topology file)
-// This method only collects from last_tikv.toml (for backward compatibility)
-func (c *tikvCollector) Collect(addrs []string, dataDirs map[string]string) ([]types.ComponentState, error) {
-	return c.CollectWithTiDB(addrs, dataDirs, "", "", "")
-}
-
 // CollectWithTiDB gathers configuration from TiKV instances with optional TiDB connection
 // This matches the knowledge base generation approach:
 // 1. Collects user-set configuration from last_tikv.toml
-// 2. Collects runtime configuration via SHOW CONFIG WHERE type='tikv' (if TiDB connection available)
+// 2. Collects runtime configuration via SHOW CONFIG WHERE type='tikv' AND instance='ip:port' for each instance (if TiDB connection available)
 // 3. Merges them with priority: runtime values > user-set values
 // dataDirs maps TiKV address to its data_dir path (from topology file)
 func (c *tikvCollector) CollectWithTiDB(addrs []string, dataDirs map[string]string, tidbAddr, tidbUser, tidbPassword string) ([]types.ComponentState, error) {
 	var states []types.ComponentState
 
-	// Collect TiKV config via SHOW CONFIG if TiDB connection is available
-	// This ensures we get all parameters (including optional ones like backup.*)
-	var tikvConfigFromSHOW types.ConfigDefaults
-	if tidbAddr != "" {
-		var err error
-		tikvConfigFromSHOW, err = c.collectTiKVConfigViaSHOWCONFIG(tidbAddr, tidbUser, tidbPassword)
-		if err != nil {
-			fmt.Printf("Warning: failed to collect TiKV config via SHOW CONFIG: %v\n", err)
-			// Continue without SHOW CONFIG data
-			tikvConfigFromSHOW = make(types.ConfigDefaults)
-		} else {
-			fmt.Printf("Collected %d runtime parameters via SHOW CONFIG\n", len(tikvConfigFromSHOW))
-		}
-	}
-
 	for _, addr := range addrs {
 		dataDir := dataDirs[addr]
-		state, err := c.collectFromInstance(addr, dataDir, tikvConfigFromSHOW)
+		state, err := c.collectFromInstance(addr, dataDir, tidbAddr, tidbUser, tidbPassword)
 		if err != nil {
 			// Log error but continue with other instances
 			fmt.Printf("Warning: failed to collect from TiKV instance %s: %v\n", addr, err)
@@ -82,7 +60,7 @@ func (c *tikvCollector) CollectWithTiDB(addrs []string, dataDirs map[string]stri
 	return states, nil
 }
 
-func (c *tikvCollector) collectFromInstance(addr string, dataDir string, tikvConfigFromSHOW types.ConfigDefaults) (*types.ComponentState, error) {
+func (c *tikvCollector) collectFromInstance(addr string, dataDir string, tidbAddr, tidbUser, tidbPassword string) (*types.ComponentState, error) {
 	state := &types.ComponentState{
 		Type:      types.ComponentTiKV,
 		Config:    make(types.ConfigDefaults),
@@ -114,7 +92,22 @@ func (c *tikvCollector) collectFromInstance(addr string, dataDir string, tikvCon
 		}
 	}
 
-	// Step 2: Merge with SHOW CONFIG data (if available)
+	// Step 2: Collect runtime configuration via SHOW CONFIG WHERE type='tikv' AND instance='ip:port' for this specific instance
+	// This ensures we get all parameters (including optional ones like backup.*) for each instance
+	var tikvConfigFromSHOW types.ConfigDefaults
+	if tidbAddr != "" {
+		var err error
+		tikvConfigFromSHOW, err = c.collectTiKVConfigViaSHOWCONFIGForInstance(tidbAddr, tidbUser, tidbPassword, addr)
+		if err != nil {
+			fmt.Printf("Warning: failed to collect TiKV config via SHOW CONFIG for instance %s: %v\n", addr, err)
+			// Continue without SHOW CONFIG data for this instance
+			tikvConfigFromSHOW = make(types.ConfigDefaults)
+		} else {
+			fmt.Printf("Collected %d runtime parameters via SHOW CONFIG for instance %s\n", len(tikvConfigFromSHOW), addr)
+		}
+	}
+
+	// Step 3: Merge with SHOW CONFIG data (if available)
 	// Priority: SHOW CONFIG values > last_tikv.toml values
 	// This matches the knowledge base generation approach
 	state.Config = c.mergeConfigsWithPriority(userConfig, tikvConfigFromSHOW)
@@ -171,9 +164,10 @@ func (c *tikvCollector) getConfigFromFile(dataDir string) (map[string]interface{
 	return config, nil
 }
 
-// collectTiKVConfigViaSHOWCONFIG collects TiKV config via SHOW CONFIG WHERE type='tikv'
-// This matches the knowledge base generation approach for consistency
-func (c *tikvCollector) collectTiKVConfigViaSHOWCONFIG(tidbAddr, tidbUser, tidbPassword string) (types.ConfigDefaults, error) {
+// collectTiKVConfigViaSHOWCONFIGForInstance collects TiKV config via SHOW CONFIG WHERE type='tikv' AND instance='ip:port'
+// This gets the full parameter set for a specific TiKV instance
+// instance should be in format "IP:port" (e.g., "192.168.1.101:20160")
+func (c *tikvCollector) collectTiKVConfigViaSHOWCONFIGForInstance(tidbAddr, tidbUser, tidbPassword, instance string) (types.ConfigDefaults, error) {
 	// Build DSN for TiDB connection
 	dsn := fmt.Sprintf("%s:%s@tcp(%s)/", tidbUser, tidbPassword, tidbAddr)
 	if tidbUser == "" {
@@ -187,11 +181,11 @@ func (c *tikvCollector) collectTiKVConfigViaSHOWCONFIG(tidbAddr, tidbUser, tidbP
 	defer db.Close()
 	db.SetConnMaxLifetime(10 * time.Second)
 
-	// Use TiDB collector's GetConfigByType method to get TiKV config
+	// Use TiDB collector's GetConfigByTypeAndInstance method to get TiKV config for specific instance
 	collector := tidb.NewTiDBCollector()
-	config, err := collector.GetConfigByType(db, "tikv")
+	config, err := collector.GetConfigByTypeAndInstance(db, "tikv", instance)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get TiKV config via SHOW CONFIG: %w", err)
+		return nil, fmt.Errorf("failed to get TiKV config via SHOW CONFIG for instance %s: %w", instance, err)
 	}
 
 	// Convert map[string]interface{} to types.ConfigDefaults

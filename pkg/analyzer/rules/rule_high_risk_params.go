@@ -3,7 +3,6 @@ package rules
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -68,9 +67,10 @@ type HighRiskParamsRule struct {
 }
 
 // NewHighRiskParamsRule creates a new high-risk parameters rule
-// If configPath is provided, it will load the configuration from the file
-// If configPath is empty, it will use an empty configuration (no high-risk params)
-func NewHighRiskParamsRule(configPath string) (Rule, error) {
+// If config is provided, it will use the provided configuration
+// If config is nil, it will use an empty configuration (no high-risk params)
+// The caller should use high_risk_params.Manager to load and merge config before calling this function
+func NewHighRiskParamsRule(config *HighRiskParamsConfig) (Rule, error) {
 	rule := &HighRiskParamsRule{
 		BaseRule: NewBaseRule(
 			"HIGH_RISK_PARAMS",
@@ -80,28 +80,12 @@ func NewHighRiskParamsRule(configPath string) (Rule, error) {
 		config: &HighRiskParamsConfig{},
 	}
 
-	// Load configuration from file if provided
-	if configPath != "" {
-		if err := rule.loadConfig(configPath); err != nil {
-			return nil, fmt.Errorf("failed to load high-risk params config: %w", err)
-		}
+	// Use provided config or empty config
+	if config != nil {
+		rule.config = config
 	}
 
 	return rule, nil
-}
-
-// loadConfig loads high-risk parameters configuration from a JSON file
-func (r *HighRiskParamsRule) loadConfig(configPath string) error {
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		return fmt.Errorf("failed to read config file: %w", err)
-	}
-
-	if err := json.Unmarshal(data, r.config); err != nil {
-		return fmt.Errorf("failed to parse config file: %w", err)
-	}
-
-	return nil
 }
 
 // DataRequirements returns the data requirements for this rule
@@ -253,6 +237,8 @@ func (r *HighRiskParamsRule) checkComponent(
 				"type":  paramValue.Type,
 			}
 		}
+		fmt.Fprintf(os.Stderr, "[DEBUG HighRiskParamsRule] Checking parameter %s/%s/%s (exists in config: %v, configMap has %d keys)\n",
+			compType, "config", paramName, component.Config[paramName].Value != nil, len(configMap))
 		result := r.checkParameter(
 			ruleCtx,
 			component,
@@ -263,6 +249,8 @@ func (r *HighRiskParamsRule) checkComponent(
 			configMap,
 		)
 		if result != nil {
+			fmt.Fprintf(os.Stderr, "[DEBUG HighRiskParamsRule] Parameter %s/%s/%s matched! Reporting as high-risk.\n",
+				compType, "config", paramName)
 			results = append(results, *result)
 		}
 	}
@@ -309,6 +297,8 @@ func (r *HighRiskParamsRule) checkParameter(
 	// overlaps with the configured version range (fromVersion -> toVersion)
 	if !r.isVersionApplicableForUpgrade(ruleCtx.SourceVersion, ruleCtx.TargetVersion, paramConfig.FromVersion, paramConfig.ToVersion) {
 		// This parameter is not applicable for the upgrade path, skip
+		fmt.Fprintf(os.Stderr, "[DEBUG HighRiskParamsRule] Parameter %s/%s/%s skipped: version range not applicable (source=%s, target=%s, from=%s, to=%s)\n",
+			compType, paramType, paramName, ruleCtx.SourceVersion, ruleCtx.TargetVersion, paramConfig.FromVersion, paramConfig.ToVersion)
 		return nil
 	}
 
@@ -316,6 +306,8 @@ func (r *HighRiskParamsRule) checkParameter(
 	pv, exists := paramMap[paramName]
 	if !exists {
 		// Parameter not found, skip (might be optional or removed)
+		fmt.Fprintf(os.Stderr, "[DEBUG HighRiskParamsRule] Parameter %s/%s/%s not found in cluster (paramMap has %d keys)\n",
+			compType, paramType, paramName, len(paramMap))
 		return nil
 	}
 
@@ -342,11 +334,15 @@ func (r *HighRiskParamsRule) checkParameter(
 		sourceDefault := ruleCtx.GetSourceDefault(compType, lookupName)
 		if sourceDefault == nil {
 			// No default found, skip
+			fmt.Fprintf(os.Stderr, "[DEBUG HighRiskParamsRule] Parameter %s/%s/%s skipped: no source default found (lookupName=%s)\n",
+				compType, paramType, paramName, lookupName)
 			return nil
 		}
 		// Compare values using proper comparison to avoid scientific notation issues
 		if CompareValues(currentValue, sourceDefault) {
 			// Value matches default, skip
+			fmt.Fprintf(os.Stderr, "[DEBUG HighRiskParamsRule] Parameter %s/%s/%s skipped: value matches default (current=%v, default=%v)\n",
+				compType, paramType, paramName, currentValue, sourceDefault)
 			return nil
 		}
 	}
@@ -362,6 +358,8 @@ func (r *HighRiskParamsRule) checkParameter(
 		}
 		if valueAllowed {
 			// Value is allowed, skip
+			fmt.Fprintf(os.Stderr, "[DEBUG HighRiskParamsRule] Parameter %s/%s/%s skipped: value is in allowed list (current=%v)\n",
+				compType, paramType, paramName, currentValue)
 			return nil
 		}
 	}

@@ -255,7 +255,15 @@
       "type": "system_variable",
       "func_name": "upgradeToVer216",
       "method": "mustExecute",
-      "severity": "medium"
+      "severity": "medium",
+      "report_severity": "warning",
+      "details_note": "Note: This parameter supports values 'table' (recommended) or 'global'. For detailed parameter description, please refer to the TiDB documentation center.",
+      "suggestions": [
+        "This parameter will be forcibly changed during upgrade",
+        "Recommended values: 'table' (recommended) or 'global'",
+        "For detailed parameter description, please refer to the TiDB documentation center",
+        "Test the new value in a staging environment before upgrading"
+      ]
     },
     {
       "version": "216",
@@ -267,7 +275,15 @@
       "type": "system_variable",
       "func_name": "upgradeToVer216",
       "method": "mustExecute",
-      "severity": "medium"
+      "severity": "medium",
+      "report_severity": "warning",
+      "details_note": "Note: This parameter supports values 'table' (recommended) or 'global'. For detailed parameter description, please refer to the TiDB documentation center.",
+      "suggestions": [
+        "This parameter will be forcibly changed during upgrade",
+        "Recommended values: 'table' (recommended) or 'global'",
+        "For detailed parameter description, please refer to the TiDB documentation center",
+        "Test the new value in a staging environment before upgrading"
+      ]
     },
     {
       "version": "217",

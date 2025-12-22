@@ -1,0 +1,45 @@
+{
+    "tidb": {
+        "config": {},
+        "system_variables": {
+            "tidb_distsql_scan_concurrency": {
+                "severity": "warning",
+                "description": "In v8.5+, ANALYZE operations use a separate parameter 'tidb_analyze_distsql_scan_concurrency'. The current parameter 'tidb_distsql_scan_concurrency' now only controls concurrency for non-ANALYZE scenarios. If you have customized this parameter for ANALYZE operations, you may need to set 'tidb_analyze_distsql_scan_concurrency' separately.",
+                "check_modified": true,
+                "from_version": "v8.5.0",
+                "to_version": ""
+            }
+        }
+    },
+    "pd": {
+        "config": {}
+    },
+    "tikv": {
+        "config": {
+            "grpc-raft-conn-num": {
+                "severity": "warning",
+                "description": "Default value change for this parameter may cause performance regression in environments with 16 cores or less. Please review the new default value and consider adjusting if your TiKV nodes have ≤16 CPU cores.",
+                "check_modified": true,
+                "from_version": "v8.5.0",
+                "to_version": ""
+            },
+            "grpc-concurrency": {
+                "severity": "warning",
+                "description": "Default value change for this parameter may cause performance regression in environments with 16 cores or less. Please review the new default value and consider adjusting if your TiKV nodes have ≤16 CPU cores.",
+                "check_modified": true,
+                "from_version": "v8.5.0",
+                "to_version": ""
+            },
+            "coprocessor.region-split-size": {
+                "severity": "warning",
+                "description": "The default value has changed from 96MB to 256MB in the target version. However, since this parameter was not explicitly set in your current cluster (using default 96MB), it will continue to use 96MB after upgrade, NOT the new default 256MB. If you want to use the new default (256MB), you need to explicitly set it after upgrade.",
+                "check_modified": false,
+                "from_version": "v8.5.0",
+                "to_version": ""
+            }
+        }
+    },
+    "tiflash": {
+        "config": {}
+    }
+}

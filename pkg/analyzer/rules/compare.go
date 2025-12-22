@@ -18,8 +18,6 @@ type MapDiff struct {
 
 // CompareOptions provides options for map comparison
 type CompareOptions struct {
-	// IgnoredParams is a map of parameter names to ignore (top-level only)
-	IgnoredParams map[string]bool
 	// BasePath is used for nested map field paths
 	BasePath string
 }
@@ -97,11 +95,6 @@ func CompareMapsDeep(current, source interface{}, opts CompareOptions) map[strin
 	// Check all fields in current map
 	for key, currentVal := range currentMap {
 		sourceVal, exists := sourceMap[key]
-		// Only check top-level parameter name for ignore list (not nested map fields)
-		// For nested maps, we want to show all differences
-		if opts.BasePath == "" && opts.IgnoredParams != nil && opts.IgnoredParams[key] {
-			continue
-		}
 
 		// Build field path for recursive calls
 		fieldPath := key
@@ -109,17 +102,7 @@ func CompareMapsDeep(current, source interface{}, opts CompareOptions) map[strin
 			fieldPath = fmt.Sprintf("%s.%s", opts.BasePath, key)
 		}
 
-		// Check if this field path (including nested paths) should be ignored
-		if opts.IgnoredParams != nil {
-			// Check full path (e.g., "log.file.filename")
-			if opts.IgnoredParams[fieldPath] {
-				continue
-			}
-			// Also check just the key for top-level parameters
-			if opts.BasePath == "" && opts.IgnoredParams[key] {
-				continue
-			}
-		}
+		// Note: Parameter filtering is done at report generation time, not during comparison
 
 		if !exists {
 			// Field exists in current but not in source
@@ -127,8 +110,7 @@ func CompareMapsDeep(current, source interface{}, opts CompareOptions) map[strin
 		} else if IsMapType(currentVal) && IsMapType(sourceVal) {
 			// Recursively compare nested maps
 			nestedOpts := CompareOptions{
-				IgnoredParams: opts.IgnoredParams,
-				BasePath:      fieldPath,
+				BasePath: fieldPath,
 			}
 			nestedDiffs := CompareMapsDeep(currentVal, sourceVal, nestedOpts)
 			for nestedKey, nestedDiff := range nestedDiffs {
@@ -147,10 +129,7 @@ func CompareMapsDeep(current, source interface{}, opts CompareOptions) map[strin
 	// Check fields in source map that don't exist in current
 	for key, sourceVal := range sourceMap {
 		if _, exists := currentMap[key]; !exists {
-			// Only check top-level parameter name for ignore list (not nested map fields)
-			if opts.BasePath == "" && opts.IgnoredParams != nil && opts.IgnoredParams[key] {
-				continue
-			}
+			// Note: Parameter filtering is done at report generation time, not during comparison
 			result[key] = MapDiff{Current: nil, Source: sourceVal}
 		}
 	}
@@ -165,8 +144,7 @@ func CompareMapsThreeWay(current, source, target interface{}, opts CompareOption
 
 	// First, compare source and target to find default value changes
 	sourceTargetDiffs := CompareMapsDeep(source, target, CompareOptions{
-		IgnoredParams: opts.IgnoredParams,
-		BasePath:      opts.BasePath,
+		BasePath: opts.BasePath,
 	})
 
 	// Then, compare current with source and target
@@ -365,8 +343,7 @@ func FormatDefaultChangeDiff(current, source, target interface{}, ignoredParams 
 	if IsMapType(source) && IsMapType(target) {
 		// Compare source and target to find differences
 		opts := CompareOptions{
-			IgnoredParams: ignoredParams,
-			BasePath:      "",
+			BasePath: "",
 		}
 		sourceTargetDiffs := CompareMapsDeep(source, target, opts)
 
@@ -493,89 +470,6 @@ func CompareFileNames(path1, path2 interface{}) bool {
 	return filename1 == filename2 && filename1 != ""
 }
 
-// IsPathParameter checks if a parameter name indicates a path-related parameter
-// Returns true if the parameter name contains path-related keywords
-func IsPathParameter(paramName string) bool {
-	paramNameLower := strings.ToLower(paramName)
-
-	// Exceptions: These parameters contain "log" but are NOT path parameters
-	// They are configuration parameters that should be reported
-	// Path parameters (like *-log-dir, *-log-file) should still be filtered
-	exceptions := []string{
-		// RaftDB info-log configuration parameters
-		"raftdb.info-log-keep-log-file-num",
-		"raftdb.info-log-level",
-		"raftdb.info-log-max-size",
-		"raftdb.info-log-roll-time",
-		// RocksDB info-log configuration parameters
-		"rocksdb.info-log-keep-log-file-num",
-		"rocksdb.info-log-level",
-		"rocksdb.info-log-max-size",
-		"rocksdb.info-log-roll-time",
-		// Raft log GC configuration parameters
-		"raftstore.raft-log-gc-count-limit",
-		"raftstore.raft-log-gc-size-limit",
-		"raftstore.raft-log-gc-threshold",
-		"raftstore.raft-log-gc-tick-interval",
-		"raftstore.raft-log-compact-sync-interval",
-		// General log configuration parameters
-		"log.level",
-		"log.format",
-		"log.enable-timestamp",
-		"log.file.max-backups",
-		"log.file.max-days",
-		"log.file.max-size",
-		// Log backup configuration parameters (not paths)
-		"log-backup.enable",
-		"log-backup.file-size-limit",
-		"log-backup.initial-scan-concurrency",
-		"log-backup.initial-scan-pending-memory-quota",
-		"log-backup.initial-scan-rate-limit",
-		"log-backup.max-flush-interval",
-		"log-backup.min-ts-interval",
-		"log-backup.num-threads",
-		// Other log-related configuration parameters
-		"raftstore.follower-read-max-log-gap",
-		"raft-engine.enable-log-recycle",
-		"server.end-point-slow-log-threshold",
-		"slow-log-threshold",
-		"pd.retry-log-every",
-		"security.redact-info-log",
-	}
-	for _, exc := range exceptions {
-		if paramName == exc {
-			return false // These are config parameters, not path parameters
-		}
-	}
-
-	// Host/network-related keywords
-	hostKeywords := []string{
-		"host", "hostname", "addr", "address", "port",
-	}
-	for _, keyword := range hostKeywords {
-		if paramNameLower == keyword || strings.HasSuffix(paramNameLower, "."+keyword) || strings.HasPrefix(paramNameLower, keyword+".") {
-			return true
-		}
-	}
-
-	// Path/directory/file-related keywords
-	pathKeywords := []string{
-		"path", "dir", "file", "log", "data", "deploy", "temp", "tmp",
-		"storage", "socket", "home", "root", "cache", "config",
-		"filename", "file-name", "file_name", // File name related
-		"log-file", "log-dir", "log_file", "log_dir", // Log file/dir
-		"data-dir", "data_dir", "deploy-dir", "deploy_dir", // Data/deploy dir
-		"temp-path", "temp_path", "tmp-path", "tmp_path", // Temp path
-	}
-	for _, keyword := range pathKeywords {
-		if strings.Contains(paramNameLower, keyword) {
-			return true
-		}
-	}
-
-	return false
-}
-
 // CompareValues compares two values properly, handling numeric types to avoid scientific notation issues
 // Returns true if values are equal, false otherwise
 func CompareValues(v1, v2 interface{}) bool {
@@ -653,65 +547,47 @@ func toFloat64(v reflect.Value) float64 {
 	}
 }
 
-// IsResourceDependentParameter checks if a parameter name indicates a resource-dependent parameter
-// Resource-dependent parameters are automatically adjusted by TiKV/TiFlash based on system resources
-// (CPU cores, memory, etc.) and should not be reported as "user modified" if source == target default
-// Returns true if the parameter name contains resource-related keywords
-func IsResourceDependentParameter(paramName string) bool {
-	paramNameLower := strings.ToLower(paramName)
-
-	// Auto-tune parameters
-	if strings.Contains(paramNameLower, "auto-tune") || strings.Contains(paramNameLower, "auto_tune") {
-		return true
+// ToNumeric converts an interface{} value to a numeric value (float64)
+// Returns the numeric value and true if conversion was successful
+// This function handles various numeric types and string representations
+func ToNumeric(v interface{}) (float64, bool) {
+	if v == nil {
+		return 0, false
 	}
 
-	// Thread-related parameters that are adjusted based on CPU cores
-	// These include: num-threads, thread-count, threads, concurrency
-	threadKeywords := []string{
-		"num-threads",  // backup.num-threads, import.num-threads
-		"num_threads",  // Alternative naming
-		"thread-count", // Alternative naming
-		"thread_count", // Alternative naming
-		"threads",      // Generic threads parameter
-		"concurrency",  // Concurrency parameters (may be CPU-dependent)
-	}
-	for _, keyword := range threadKeywords {
-		if strings.Contains(paramNameLower, keyword) {
-			return true
+	// Try to parse as float64
+	switch val := v.(type) {
+	case int:
+		return float64(val), true
+	case int8:
+		return float64(val), true
+	case int16:
+		return float64(val), true
+	case int32:
+		return float64(val), true
+	case int64:
+		return float64(val), true
+	case uint:
+		return float64(val), true
+	case uint8:
+		return float64(val), true
+	case uint16:
+		return float64(val), true
+	case uint32:
+		return float64(val), true
+	case uint64:
+		return float64(val), true
+	case float32:
+		return float64(val), true
+	case float64:
+		return val, true
+	case string:
+		// Try parsing string as float
+		if f, err := strconv.ParseFloat(val, 64); err == nil {
+			return f, true
 		}
+		return 0, false
+	default:
+		return 0, false
 	}
-
-	// Region-related parameters that may vary based on deployment environment
-	// These include: region-max-size, region-max-keys, region-split-size, region-split-keys
-	regionKeywords := []string{
-		"region-max-size",   // coprocessor.region-max-size
-		"region-max-keys",   // coprocessor.region-max-keys
-		"region-split-size", // coprocessor.region-split-size
-		"region-split-keys", // coprocessor.region-split-keys
-	}
-	for _, keyword := range regionKeywords {
-		if strings.Contains(paramNameLower, keyword) {
-			return true
-		}
-	}
-
-	// SST-related parameters that may vary based on deployment environment
-	// These include: sst-max-size
-	if strings.Contains(paramNameLower, "sst-max-size") {
-		return true
-	}
-
-	// Compression-related parameters that may vary based on deployment environment
-	// These include: batch-compression-threshold, blob-file-compression
-	compressionKeywords := []string{
-		"batch-compression-threshold", // raft-engine.batch-compression-threshold
-		"blob-file-compression",       // raftdb.defaultcf.titan.blob-file-compression
-	}
-	for _, keyword := range compressionKeywords {
-		if strings.Contains(paramNameLower, keyword) {
-			return true
-		}
-	}
-
-	return false
 }

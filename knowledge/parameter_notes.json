@@ -1,0 +1,31 @@
+{
+  "tidb": {
+    "config": {
+      "performance.stats-load-concurrency": {
+        "condition": {
+          "target_default_value": 0
+        },
+        "details_note": "Note: Target default value 0 means 'auto mode'. The concurrency will be automatically calculated based on CPU cores (range: 2-16)."
+      }
+    },
+    "system_variables": {
+      "tidb_distsql_scan_concurrency": {
+        "condition": {
+          "target_version_min": "v8.5.0"
+        },
+        "details_note": "⚠️ Important: In v8.5+, ANALYZE operations use a separate parameter 'tidb_analyze_distsql_scan_concurrency'.\nThe current parameter 'tidb_distsql_scan_concurrency' now only controls concurrency for non-ANALYZE scenarios.\nIf you have customized this parameter for ANALYZE operations, you may need to set 'tidb_analyze_distsql_scan_concurrency' separately.\nReference: Incompatible analyze variable change"
+      }
+    }
+  },
+  "tikv": {
+    "config": {
+      "grpc-raft-conn-num": {
+        "details_note": "⚠️ Performance Warning: Default value change for this parameter may cause performance regression in environments with 16 cores or less.\nPlease review the new default value and consider adjusting if your TiKV nodes have ≤16 CPU cores.\nReference: By-Design Performance Regression Report For TiKV#18735"
+      },
+      "grpc-concurrency": {
+        "details_note": "⚠️ Performance Warning: Default value change for this parameter may cause performance regression in environments with 16 cores or less.\nPlease review the new default value and consider adjusting if your TiKV nodes have ≤16 CPU cores.\nReference: By-Design Performance Regression Report For TiKV#18735"
+      }
+    }
+  }
+}
+

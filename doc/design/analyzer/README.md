@@ -104,10 +104,52 @@ The analyzer follows this workflow:
 
 1. **Collect Data Requirements**: Merge requirements from all rules
 2. **Load Knowledge Base**: Load only necessary data based on merged requirements
-3. **Build Component Mapping**: Map KB components to runtime components
-4. **Create Rule Context**: Create shared context with loaded data
-5. **Execute Rules**: Run all rules with the shared context
-6. **Organize Results**: Group results by category and severity
+3. **Preprocess Parameters**: Filter deployment-specific, resource-dependent, and identical parameters
+4. **Build Component Mapping**: Map KB components to runtime components
+5. **Create Rule Context**: Create shared context with cleaned data (filtered parameters removed)
+6. **Execute Rules**: Run all rules with the shared context (rules receive only necessary parameters)
+7. **Organize Results**: Group results by category and severity
+
+## Preprocessing Stage
+
+Before rules are evaluated, the analyzer runs a preprocessing stage (`pkg/analyzer/preprocessor.go`) that:
+
+1. **Filters Deployment-Specific Parameters**: 
+   - Path parameters (data-dir, log-dir, etc.)
+   - Host/network parameters (host, port, etc.)
+   - Platform information (version_compile_machine, etc.)
+   - Timezone parameters (system_time_zone, etc.)
+
+2. **Filters Resource-Dependent Parameters**:
+   - Parameters auto-tuned by system (num-threads, concurrency, etc.)
+   - Only filtered if source default == target default (difference is due to deployment environment)
+
+3. **Filters Identical Parameters**:
+   - Parameters where current == source == target (no difference to report)
+
+4. **Removes Filtered Parameters**: 
+   - Removes filtered parameters from `sourceDefaults` and `targetDefaults` maps
+   - Rules receive cleaned defaults (only parameters that need comparison)
+
+5. **Generates CheckResults**: 
+   - Creates `CheckResult` entries for filtered parameters (for reporting)
+   - These results are included in the final report but don't go through rule evaluation
+
+### Filter Configuration
+
+Filtering logic is centralized in `pkg/analyzer/filters.go`:
+
+- **FilterConfig**: Single source of truth for all filtering rules
+- **ShouldFilterParameter()**: Unified function to check if a parameter should be filtered
+- **IsResourceDependentParameter()**: Checks if parameter is resource-dependent
+- **IsFilenameOnlyParameter()**: Checks if parameter needs special comparison (filename only)
+
+### Benefits
+
+- **Reduced Overhead**: Rules only process parameters that need actual comparison
+- **Centralized Logic**: All filtering in one place, easy to maintain
+- **Simplified Rules**: Rules don't need to check for path parameters, deployment-specific parameters, etc.
+- **Better Performance**: Fewer parameters to compare in rules
 
 ## Adding New Rules
 
@@ -146,12 +188,16 @@ The analyzer follows this workflow:
 
 ### Best Practices
 
-- Keep rules focused on a single responsibility
-- Declare accurate data requirements to optimize loading
-- Use the `RuleContext` helper methods for accessing data
-- Provide clear error messages in `CheckResult`
-- Write comprehensive tests
-- Document rule behavior and configuration options
+- **Keep rules focused on a single responsibility**
+- **Declare accurate data requirements** to optimize loading
+- **Don't filter parameters** - filtering is done in preprocessing stage
+- **Use cleaned defaults** - rules receive defaults with filtered parameters already removed
+- **Use the `RuleContext` helper methods** for accessing data
+- **Check for nil values** - always validate targetDefault and currentValue
+- **Use helper methods** - `GetForcedChangeMetadata()` and `GetParameterNote()` for special handling
+- **Provide clear error messages** in `CheckResult`
+- **Write comprehensive tests** - test with cleaned defaults
+- **Document rule behavior** and configuration options
 
 ## Implementation Plan
 

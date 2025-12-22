@@ -9,6 +9,7 @@ import (
 
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer/rules"
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer/rules/high_risk_params"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/reporter"
 	"github.com/spf13/cobra"
@@ -202,41 +203,25 @@ func runPrecheck(sourceVersion, targetVersion, outputFormat, outputDir,
 	rulesList = append(rulesList,
 		rules.NewUserModifiedParamsRule(),
 		rules.NewUpgradeDifferencesRule(),
-		rules.NewTikvConsistencyRule(),
 	)
 
-	// Add high-risk parameters rule if config is provided
-	if highRiskParamsConfig != "" {
-		fmt.Printf("Loading high-risk parameters from: %s\n", highRiskParamsConfig)
-		highRiskRule, err := rules.NewHighRiskParamsRule(highRiskParamsConfig)
+	// Add high-risk parameters rule (loads from knowledge base)
+	// Knowledge base only maintains a single file: knowledge/high_risk_params/high_risk_params.json
+	// The highRiskParamsConfig parameter is kept for backward compatibility but not used
+	manager := high_risk_params.NewManager(highRiskParamsConfig)
+	highRiskConfig, err := manager.LoadConfig()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to load high-risk params config: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Continuing without high-risk parameters check...\n")
+	} else {
+		// Create rule with loaded config
+		highRiskRule, err := rules.NewHighRiskParamsRule(highRiskConfig)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to load high-risk params rule: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Warning: failed to create high-risk params rule: %v\n", err)
 			fmt.Fprintf(os.Stderr, "Continuing without high-risk parameters check...\n")
 		} else {
 			rulesList = append(rulesList, highRiskRule)
 			fmt.Printf("High-risk parameters rule loaded successfully\n")
-		}
-	} else {
-		// Try default locations
-		homeDir, err := os.UserHomeDir()
-		if err == nil {
-			defaultPaths := []string{
-				filepath.Join(homeDir, ".tiup", "high_risk_params.json"),
-				filepath.Join(homeDir, ".tidb-upgrade-precheck", "high_risk_params.json"),
-			}
-			for _, defaultPath := range defaultPaths {
-				if _, err := os.Stat(defaultPath); err == nil {
-					fmt.Printf("Loading high-risk parameters from default location: %s\n", defaultPath)
-					highRiskRule, err := rules.NewHighRiskParamsRule(defaultPath)
-					if err != nil {
-						fmt.Fprintf(os.Stderr, "Warning: failed to load high-risk params rule from %s: %v\n", defaultPath, err)
-						continue
-					}
-					rulesList = append(rulesList, highRiskRule)
-					fmt.Printf("High-risk parameters rule loaded successfully\n")
-					break
-				}
-			}
 		}
 	}
 

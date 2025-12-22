@@ -52,18 +52,21 @@ type KBSnapshot struct {
 // This unified structure is used for both config parameters and system variables
 // across all components (TiDB, PD, TiKV, TiFlash)
 type UpgradeParamChange struct {
-	Version     string      `json:"version"`               // Version when this change was introduced (e.g., "v7.5.0")
-	Name        string      `json:"name"`                  // Parameter name (config key or system variable name)
-	VarName     string      `json:"var_name,omitempty"`    // Alias for Name (TiDB compatibility)
-	Value       interface{} `json:"value"`                 // New value that will be forced
-	FromValue   interface{} `json:"from_value,omitempty"`  // Old value that will be mapped to new value (for value migration)
-	Description string      `json:"description,omitempty"` // Description of the change
-	Comment     string      `json:"comment,omitempty"`     // Alias for Description (TiDB compatibility)
-	Force       bool        `json:"force"`                 // Always true for upgrade logic changes
-	Type        string      `json:"type,omitempty"`        // "config" or "system_variable"
-	FuncName    string      `json:"func_name,omitempty"`   // Function name where change occurs (TiDB-specific)
-	Method      string      `json:"method,omitempty"`      // Method used to apply change (TiDB-specific)
-	Severity    string      `json:"severity,omitempty"`    // Risk severity: "medium" (UPDATE/REPLACE - default value behavior changed), "low-medium" (DELETE - deprecated)
+	Version       string      `json:"version"`                 // Version when this change was introduced (e.g., "v7.5.0")
+	Name          string      `json:"name"`                    // Parameter name (config key or system variable name)
+	VarName       string      `json:"var_name,omitempty"`      // Alias for Name (TiDB compatibility)
+	Value         interface{} `json:"value"`                   // New value that will be forced
+	FromValue     interface{} `json:"from_value,omitempty"`    // Old value that will be mapped to new value (for value migration)
+	Description   string      `json:"description,omitempty"`   // Description of the change
+	Comment       string      `json:"comment,omitempty"`       // Alias for Description (TiDB compatibility)
+	Force         bool        `json:"force"`                   // Always true for upgrade logic changes
+	Type          string      `json:"type,omitempty"`          // "config" or "system_variable"
+	FuncName      string      `json:"func_name,omitempty"`     // Function name where change occurs (TiDB-specific)
+	Method        string      `json:"method,omitempty"`        // Method used to apply change (TiDB-specific)
+	Severity      string      `json:"severity,omitempty"`      // Risk severity: "medium" (UPDATE/REPLACE - default value behavior changed), "low-medium" (DELETE - deprecated)
+	DetailsNote   string      `json:"details_note,omitempty"`  // Additional note to append to details message
+	Suggestions   []string    `json:"suggestions,omitempty"`   // Custom suggestions for this parameter (overrides default)
+	ReportSeverity string     `json:"report_severity,omitempty"` // Override default report severity: "error", "warning", "info"
 }
 
 // UpgradeLogicSnapshot represents upgrade logic for a component

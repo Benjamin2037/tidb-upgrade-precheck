@@ -129,7 +129,24 @@ func (a *Analyzer) Analyze(
 	}
 	fmt.Printf("[DEBUG Analyzer] Loaded upgrade_logic for components: %v\n", upgradeLogicKeys)
 
-	// Step 3: Create shared rule context with loaded data
+	// Load parameter notes (global, version-agnostic)
+	parameterNotes := a.loadParameterNotes(sourceKB, targetKB)
+
+	// Step 2.5: Preprocess parameters - filter deployment-specific parameters and extract special handling
+	// This reduces the number of parameters that rules need to process
+	preprocessedResults, cleanedSourceDefaults, cleanedTargetDefaults := a.preprocessParameters(
+		snapshot,
+		sourceVersion,
+		targetVersion,
+		sourceDefaults,
+		targetDefaults,
+		upgradeLogic,
+		parameterNotes,
+		sourceBootstrapVersions["tidb"],
+		targetBootstrapVersions["tidb"],
+	)
+
+	// Step 3: Create shared rule context with cleaned data
 	// All rules share the same context, but each rule only accesses data it needs
 	// Extract bootstrap versions for TiDB (most important for upgrade logic filtering)
 	sourceBootstrapVersion := sourceBootstrapVersions["tidb"]
@@ -140,11 +157,12 @@ func (a *Analyzer) Analyze(
 		snapshot,
 		sourceVersion,
 		targetVersion,
-		sourceDefaults,
-		targetDefaults,
+		cleanedSourceDefaults, // Use cleaned defaults (filtered parameters removed)
+		cleanedTargetDefaults, // Use cleaned defaults (filtered parameters removed)
 		upgradeLogic,
 		sourceBootstrapVersion,
 		targetBootstrapVersion,
+		parameterNotes,
 	)
 
 	// Step 4: Execute all rules with the shared context
@@ -154,8 +172,9 @@ func (a *Analyzer) Analyze(
 		return nil, fmt.Errorf("failed to run rules: %w", err)
 	}
 
-	// Step 5: Merge mismatch results with rule results
-	allCheckResults := append(checkResults, mismatchResults...)
+	// Step 5: Merge all results (preprocessed + mismatch + rule results)
+	allCheckResults := append(preprocessedResults, mismatchResults...)
+	allCheckResults = append(allCheckResults, checkResults...)
 
 	// Step 6: Organize results by category
 	result := a.organizeResults(allCheckResults, sourceVersion, targetVersion)
@@ -299,20 +318,26 @@ func (a *Analyzer) loadKBFromRequirements(
 				"raftdb.info-log-keep-log-file-num",
 				"raftdb.info-log-level",
 				"raftdb.info-log-max-size",
+				"raftstore.region-compact-check-interval",
+				"raftstore.region-compact-check-step",
+				"raftstore.region-compact-min-redundant-rows",
+				"raftstore.region-compact-min-tombstones",
+				"raftstore.region-compact-redundant-rows-percent",
+				"raftstore.region-compact-tombstones-percent",
 			}
 			for _, param := range criticalParams {
 				if _, exists := configDefaultsMap[param]; exists {
 					fmt.Printf("[DEBUG loadKBFromRequirements] Parameter '%s' exists in configDefaultsMap for component %s before loading loop\n", param, comp)
 				}
 			}
-			
+
 			for k, v := range configDefaultsMap {
 				defaults[comp][k] = v
 				paramCount++
 			}
 			fmt.Printf("[DEBUG loadKBFromRequirements] Loaded %d config defaults for component %s\n", paramCount, comp)
 
-			// Verify specific raftdb parameters are loaded
+			// Verify specific critical parameters are loaded
 			for _, param := range criticalParams {
 				if _, exists := defaults[comp][param]; !exists {
 					fmt.Printf("[WARNING loadKBFromRequirements] Critical parameter '%s' not found in loaded defaults for component %s\n", param, comp)
@@ -561,6 +586,25 @@ func (a *Analyzer) loadUpgradeLogic(sourceKB, targetKB map[string]interface{}, r
 	return upgradeLogic
 }
 
+// loadParameterNotes loads parameter notes from knowledge base
+// Parameter notes are global and version-agnostic
+func (a *Analyzer) loadParameterNotes(sourceKB, targetKB map[string]interface{}) map[string]interface{} {
+	parameterNotes := make(map[string]interface{})
+
+	// Try to load from target KB first, fallback to source KB
+	if notes, ok := targetKB["parameter_notes"].(map[string]interface{}); ok {
+		parameterNotes = notes
+		fmt.Printf("[DEBUG loadParameterNotes] ✅ Loaded parameter_notes from target KB\n")
+	} else if notes, ok := sourceKB["parameter_notes"].(map[string]interface{}); ok {
+		parameterNotes = notes
+		fmt.Printf("[DEBUG loadParameterNotes] ✅ Loaded parameter_notes from source KB\n")
+	} else {
+		fmt.Printf("[DEBUG loadParameterNotes] No parameter_notes found in KB\n")
+	}
+
+	return parameterNotes
+}
+
 // organizeResults organizes check results by category for reporter
 func (a *Analyzer) organizeResults(checkResults []rules.CheckResult, sourceVersion, targetVersion string) *AnalysisResult {
 	result := &AnalysisResult{
@@ -734,35 +778,147 @@ func deduplicateCheckResults(results []rules.CheckResult) []rules.CheckResult {
 	}
 
 	// Process all results
+	// First pass: collect all results for each parameter
+	resultsByKey := make(map[string][]rules.CheckResult)
 	for _, check := range results {
 		// Create unique key: Component + ParameterName + ParamType
 		key := fmt.Sprintf("%s:%s:%s", check.Component, check.ParameterName, check.ParamType)
+		resultsByKey[key] = append(resultsByKey[key], check)
+	}
 
-		// If this is the first result for this parameter, or this result has higher priority
-		if existing, exists := bestResults[key]; !exists {
-			bestResults[key] = check
-		} else {
-			existingPriority := getPriority(existing)
-			currentPriority := getPriority(check)
+	// Second pass: merge results for each parameter
+	// Rules and their data sources:
+	// - UserModifiedParamsRule: currentValue vs sourceDefault (no targetDefault)
+	// - UpgradeDifferencesRule: currentValue vs sourceDefault vs targetDefault (all three)
+	// - TikvConsistencyRule: currentValue from multiple nodes (may have sourceDefault/targetDefault as reference)
+	for key, checks := range resultsByKey {
+		if len(checks) == 1 {
+			bestResults[key] = checks[0]
+			continue
+		}
 
-			// If current result has higher priority, replace
-			if currentPriority > existingPriority {
-				bestResults[key] = check
-			} else if currentPriority == existingPriority {
-				// If same priority, prefer higher severity
-				severityOrder := map[string]int{
-					"critical": 4,
-					"error":    3,
-					"warning":  2,
-					"info":     1,
-				}
-				existingSeverity := severityOrder[existing.Severity]
-				currentSeverity := severityOrder[check.Severity]
-				if currentSeverity > existingSeverity {
-					bestResults[key] = check
+		// Find the result with highest priority as base
+		// Special handling: if multiple results have same priority, prefer Deprecated over Default Changed
+		// Deprecated means parameter is removed in target version, which is more important than default value change
+		var baseResult rules.CheckResult
+		basePriority := -1
+		for _, check := range checks {
+			priority := getPriority(check)
+			if priority > basePriority {
+				basePriority = priority
+				baseResult = check
+			} else if priority == basePriority {
+				// Same priority, check if one is Deprecated and the other is Default Changed
+				baseIsDeprecated := strings.Contains(baseResult.Message, "deprecated") || strings.Contains(baseResult.Message, "removed")
+				currentIsDeprecated := strings.Contains(check.Message, "deprecated") || strings.Contains(check.Message, "removed")
+
+				if currentIsDeprecated && !baseIsDeprecated {
+					// Current is Deprecated, base is not - prefer Deprecated
+					baseResult = check
+				} else if !currentIsDeprecated && baseIsDeprecated {
+					// Base is Deprecated, current is not - keep base
+					// baseResult = baseResult (no change)
+				} else {
+					// Both or neither are Deprecated, prefer higher severity
+					severityOrder := map[string]int{
+						"critical": 4,
+						"error":    3,
+						"warning":  2,
+						"info":     1,
+					}
+					baseSeverity := severityOrder[baseResult.Severity]
+					currentSeverity := severityOrder[check.Severity]
+					if currentSeverity > baseSeverity {
+						baseResult = check
+					}
 				}
 			}
 		}
+
+		// Merge field values from all results
+		merged := baseResult
+
+		// Merge CurrentValue: prefer non-nil value (all rules have this)
+		for _, check := range checks {
+			if merged.CurrentValue == nil && check.CurrentValue != nil {
+				merged.CurrentValue = check.CurrentValue
+				break
+			}
+		}
+
+		// Merge SourceDefault: prefer from UpgradeDifferencesRule or UserModifiedParamsRule
+		// These rules explicitly compare with source defaults
+		// IMPORTANT: Always try to get SourceDefault from any result, not just from base result
+		// This prevents parameters from being incorrectly marked as "New" when they have a source default
+		for _, check := range checks {
+			if check.SourceDefault != nil {
+				// Prefer from upgrade_difference or user_modified category
+				if check.Category == "upgrade_difference" || check.Category == "user_modified" {
+					merged.SourceDefault = check.SourceDefault
+					break
+				}
+			}
+		}
+		// If still nil, get from any result
+		if merged.SourceDefault == nil {
+			for _, check := range checks {
+				if check.SourceDefault != nil {
+					merged.SourceDefault = check.SourceDefault
+					break
+				}
+			}
+		}
+
+		// Merge TargetDefault: prefer from UpgradeDifferencesRule (only rule that uses TargetDefaults)
+		for _, check := range checks {
+			if merged.TargetDefault == nil && check.TargetDefault != nil {
+				// Prefer from upgrade_difference category (only rule that compares with target defaults)
+				if check.Category == "upgrade_difference" {
+					merged.TargetDefault = check.TargetDefault
+					break
+				}
+			}
+		}
+		// If still nil, get from any result
+		if merged.TargetDefault == nil {
+			for _, check := range checks {
+				if check.TargetDefault != nil {
+					merged.TargetDefault = check.TargetDefault
+					break
+				}
+			}
+		}
+
+		// Merge ForcedValue: prefer non-nil value
+		for _, check := range checks {
+			if merged.ForcedValue == nil && check.ForcedValue != nil {
+				merged.ForcedValue = check.ForcedValue
+				break
+			}
+		}
+
+		// Merge Details: prefer longer/more detailed message
+		for _, check := range checks {
+			if len(merged.Details) < len(check.Details) {
+				merged.Details = check.Details
+			}
+		}
+
+		// Merge Suggestions: combine unique suggestions
+		suggestionMap := make(map[string]bool)
+		for _, s := range merged.Suggestions {
+			suggestionMap[s] = true
+		}
+		for _, check := range checks {
+			for _, s := range check.Suggestions {
+				if !suggestionMap[s] {
+					merged.Suggestions = append(merged.Suggestions, s)
+					suggestionMap[s] = true
+				}
+			}
+		}
+
+		bestResults[key] = merged
 	}
 
 	// Convert map back to slice

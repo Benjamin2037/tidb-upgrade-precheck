@@ -47,6 +47,11 @@ type RuleContext struct {
 	// Only loaded if rules require it
 	// Changes are filtered by version range (sourceVersion, targetVersion] during evaluation
 	UpgradeLogic map[string]interface{}
+
+	// ParameterNotes contains special notes/descriptions for parameters
+	// Structure: map[component]map[param_type]map[param_name]note_info
+	// Only loaded if needed
+	ParameterNotes map[string]interface{}
 }
 
 // NewRuleContext creates a new rule context
@@ -56,6 +61,7 @@ func NewRuleContext(
 	sourceDefaults, targetDefaults map[string]map[string]interface{},
 	upgradeLogic map[string]interface{},
 	sourceBootstrapVersion, targetBootstrapVersion int64,
+	parameterNotes map[string]interface{},
 ) *RuleContext {
 	return &RuleContext{
 		SourceClusterSnapshot:  sourceSnapshot,
@@ -66,46 +72,8 @@ func NewRuleContext(
 		UpgradeLogic:           upgradeLogic,
 		SourceBootstrapVersion: sourceBootstrapVersion,
 		TargetBootstrapVersion: targetBootstrapVersion,
+		ParameterNotes:         parameterNotes,
 	}
-}
-
-// GetSampledValue gets a value from the actual sampled cluster data (current runtime value)
-// component: "tidb", "pd", "tikv", "tiflash" or component name with address (e.g., "tikv-192-168-1-100-20160")
-// paramName: parameter name or config key
-// Returns the actual value currently configured in the cluster
-func (ctx *RuleContext) GetSampledValue(component, paramName string) interface{} {
-	if ctx.SourceClusterSnapshot == nil {
-		return nil
-	}
-
-	// Try exact match first
-	if comp, ok := ctx.SourceClusterSnapshot.Components[component]; ok {
-		// Check in config (Config is ConfigDefaults, need to extract Value from ParameterValue)
-		if paramValue, ok := comp.Config[paramName]; ok {
-			return paramValue.Value
-		}
-		// Check in variables (for TiDB system variables, Variables is SystemVariables, need to extract Value)
-		if paramValue, ok := comp.Variables[paramName]; ok {
-			return paramValue.Value
-		}
-	}
-
-	// Try to find by component type prefix (for TiKV nodes with address-based keys)
-	for compName, comp := range ctx.SourceClusterSnapshot.Components {
-		// Check if this component matches the requested component type
-		if string(comp.Type) == component ||
-			(component == "tikv" && (comp.Type == collector.TiKVComponent ||
-				(len(compName) > 4 && compName[:4] == "tikv"))) {
-			if paramValue, ok := comp.Config[paramName]; ok {
-				return paramValue.Value
-			}
-			if paramValue, ok := comp.Variables[paramName]; ok {
-				return paramValue.Value
-			}
-		}
-	}
-
-	return nil
 }
 
 // GetSourceDefault gets the default value for a parameter in source version
@@ -113,55 +81,10 @@ func (ctx *RuleContext) GetSampledValue(component, paramName string) interface{}
 // paramName: parameter name (for system variables, use "sysvar:variable_name")
 // Returns the default value from source version knowledge base
 func (ctx *RuleContext) GetSourceDefault(component, paramName string) interface{} {
-	// Debug: For specific raftdb parameters, log all calls
-	if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.defaultcf.titan.min-blob-size" || paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
-		fmt.Printf("[DEBUG GetSourceDefault] Called for component='%s', paramName='%s'\n", component, paramName)
-	}
-	
 	if comp, ok := ctx.SourceDefaults[component]; ok {
 		if val, ok := comp[paramName]; ok {
-			result := extractValueFromDefault(val)
-			// Debug: For specific raftdb parameters, log successful lookup
-			if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.defaultcf.titan.min-blob-size" || paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
-				fmt.Printf("[DEBUG GetSourceDefault] Found parameter '%s' in component '%s', returning: %v\n", paramName, component, result)
-			}
-			return result
+			return extractValueFromDefault(val)
 		}
-		// Debug: For specific raftdb parameters that should exist, log detailed info
-		if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.defaultcf.titan.min-blob-size" || paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
-			fmt.Printf("[DEBUG GetSourceDefault] Parameter '%s' not found in component '%s'\n", paramName, component)
-			fmt.Printf("[DEBUG GetSourceDefault] Component '%s' has %d parameters\n", component, len(comp))
-			// Check if parameter exists with different case or similar name
-			paramLower := strings.ToLower(paramName)
-			similar := []string{}
-			for k := range comp {
-				if strings.ToLower(k) == paramLower {
-					similar = append(similar, k)
-				}
-			}
-			if len(similar) > 0 {
-				fmt.Printf("[DEBUG GetSourceDefault] Found similar parameter names: %v\n", similar)
-			} else {
-				// List first 10 raftdb parameters to see what's actually loaded
-				raftdbParams := []string{}
-				for k := range comp {
-					if strings.HasPrefix(k, "raftdb.") {
-						raftdbParams = append(raftdbParams, k)
-						if len(raftdbParams) >= 10 {
-							break
-						}
-					}
-				}
-				fmt.Printf("[DEBUG GetSourceDefault] Sample raftdb parameters in component '%s': %v\n", component, raftdbParams)
-			}
-		}
-	} else {
-		// Get available component keys
-		availableComponents := make([]string, 0, len(ctx.SourceDefaults))
-		for k := range ctx.SourceDefaults {
-			availableComponents = append(availableComponents, k)
-		}
-		fmt.Printf("[DEBUG GetSourceDefault] Component '%s' not found in SourceDefaults (available components: %v)\n", component, availableComponents)
 	}
 	return nil
 }
@@ -179,39 +102,6 @@ func (ctx *RuleContext) GetTargetDefault(component, paramName string) interface{
 	return nil
 }
 
-// IsUserModified checks if a parameter has been modified by the user
-// Returns true if the sampled value differs from the source default
-func (ctx *RuleContext) IsUserModified(component, paramName string) bool {
-	sampled := ctx.GetSampledValue(component, paramName)
-	sourceDefault := ctx.GetSourceDefault(component, paramName)
-
-	if sampled == nil && sourceDefault == nil {
-		return false
-	}
-	if sampled == nil || sourceDefault == nil {
-		return true
-	}
-
-	// Simple comparison - in production, might need type-aware comparison
-	return fmt.Sprintf("%v", sampled) != fmt.Sprintf("%v", sourceDefault)
-}
-
-// WillDefaultChange checks if the default value will change between source and target versions
-// Returns true if source default != target default
-func (ctx *RuleContext) WillDefaultChange(component, paramName string) bool {
-	sourceDefault := ctx.GetSourceDefault(component, paramName)
-	targetDefault := ctx.GetTargetDefault(component, paramName)
-
-	if sourceDefault == nil && targetDefault == nil {
-		return false
-	}
-	if sourceDefault == nil || targetDefault == nil {
-		return true
-	}
-
-	return fmt.Sprintf("%v", sourceDefault) != fmt.Sprintf("%v", targetDefault)
-}
-
 // GetForcedChanges extracts forced changes from upgrade logic
 // Filters changes by bootstrap version range: (sourceBootstrapVersion, targetBootstrapVersion]
 // The upgrade_logic.json contains changes with bootstrap version numbers (e.g., "68", "71")
@@ -220,14 +110,11 @@ func (ctx *RuleContext) WillDefaultChange(component, paramName string) bool {
 func (ctx *RuleContext) GetForcedChanges(component string) map[string]interface{} {
 	result := make(map[string]interface{})
 
-	// Debug: Check if upgrade_logic is loaded
 	if len(ctx.UpgradeLogic) == 0 {
-		fmt.Printf("[DEBUG GetForcedChanges] No upgrade_logic loaded for any component\n")
 		return result
 	}
 
 	if logic, ok := ctx.UpgradeLogic[component]; ok {
-		fmt.Printf("[DEBUG GetForcedChanges] Found upgrade_logic for component %s, SourceBootstrap=%d, TargetBootstrap=%d\n", component, ctx.SourceBootstrapVersion, ctx.TargetBootstrapVersion)
 		// Parse upgrade logic structure
 		// Expected structure: UpgradeLogicSnapshot with Changes array
 		// Each change has a Version field that contains bootstrap version number (e.g., "68", "71")
@@ -256,9 +143,7 @@ func (ctx *RuleContext) GetForcedChanges(component string) map[string]interface{
 						// Check if bootstrap version is in range (sourceBootstrapVersion, targetBootstrapVersion]
 						// This means: sourceBootstrapVersion < changeBootstrapVersion <= targetBootstrapVersion
 						if ctx.SourceBootstrapVersion > 0 && ctx.TargetBootstrapVersion > 0 {
-							// Debug: Check if version is in range
 							if changeBootstrapVersion > ctx.SourceBootstrapVersion && changeBootstrapVersion <= ctx.TargetBootstrapVersion {
-								fmt.Printf("[DEBUG GetForcedChanges] Change version %d is in range (%d, %d]\n", changeBootstrapVersion, ctx.SourceBootstrapVersion, ctx.TargetBootstrapVersion)
 								// Extract parameter name and value
 								var paramName string
 								var forcedValue interface{}
@@ -284,12 +169,8 @@ func (ctx *RuleContext) GetForcedChanges(component string) map[string]interface{
 								}
 
 								result[paramName] = forcedValue
-								fmt.Printf("[DEBUG GetForcedChanges] Added forced change: %s = %v (version: %d)\n", paramName, forcedValue, changeBootstrapVersion)
-							} else {
-								fmt.Printf("[DEBUG GetForcedChanges] Change version %d is NOT in range (%d, %d]\n", changeBootstrapVersion, ctx.SourceBootstrapVersion, ctx.TargetBootstrapVersion)
 							}
 						} else {
-							fmt.Printf("[DEBUG GetForcedChanges] Bootstrap versions not set (Source=%d, Target=%d), using fallback\n", ctx.SourceBootstrapVersion, ctx.TargetBootstrapVersion)
 							// Fallback to release version comparison if bootstrap versions are not available
 							// This maintains backward compatibility
 							changeVersion := fmt.Sprintf("%d", changeBootstrapVersion)
@@ -317,14 +198,9 @@ func (ctx *RuleContext) GetForcedChanges(component string) map[string]interface{
 					}
 				}
 			}
-		} else {
-			fmt.Printf("[DEBUG GetForcedChanges] upgrade_logic for component %s is not a map[string]interface{}\n", component)
 		}
-	} else {
-		fmt.Printf("[DEBUG GetForcedChanges] No upgrade_logic found for component %s (available components: %v)\n", component, getMapKeys(ctx.UpgradeLogic))
 	}
 
-	fmt.Printf("[DEBUG GetForcedChanges] Returning %d forced changes for component %s\n", len(result), component)
 	return result
 }
 
@@ -409,13 +285,187 @@ func (ctx *RuleContext) GetForcedChangeForValue(component, paramName string, cur
 	return nil
 }
 
-// Helper function to get map keys for debugging
-func getMapKeys(m map[string]interface{}) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
+// ForcedChangeMetadata contains special handling metadata for a forced change
+type ForcedChangeMetadata struct {
+	DetailsNote    string   // Additional note to append to details message
+	Suggestions    []string // Custom suggestions (if nil, use default)
+	ReportSeverity string   // Override report severity: "error", "warning", "info" (if empty, use default)
+}
+
+// GetForcedChangeMetadata gets special handling metadata for a forced change
+// Returns metadata if found, nil otherwise
+func (ctx *RuleContext) GetForcedChangeMetadata(component, paramName string, currentValue interface{}) *ForcedChangeMetadata {
+	if len(ctx.UpgradeLogic) == 0 {
+		return nil
 	}
-	return keys
+
+	if logic, ok := ctx.UpgradeLogic[component]; ok {
+		if logicMap, ok := logic.(map[string]interface{}); ok {
+			if changes, ok := logicMap["changes"].([]interface{}); ok {
+				currentValueStr := fmt.Sprintf("%v", currentValue)
+
+				for _, change := range changes {
+					if changeMap, ok := change.(map[string]interface{}); ok {
+						// Get bootstrap version from change
+						var changeBootstrapVersion int64
+						if versionStr, ok := changeMap["version"].(string); ok {
+							if versionNum, err := strconv.ParseInt(versionStr, 10, 64); err == nil {
+								changeBootstrapVersion = versionNum
+							} else {
+								continue
+							}
+						} else if versionNum, ok := changeMap["version"].(float64); ok {
+							changeBootstrapVersion = int64(versionNum)
+						} else {
+							continue
+						}
+
+						// Check if bootstrap version is in range
+						var versionInRange bool
+						if ctx.SourceBootstrapVersion > 0 && ctx.TargetBootstrapVersion > 0 {
+							versionInRange = changeBootstrapVersion > ctx.SourceBootstrapVersion && changeBootstrapVersion <= ctx.TargetBootstrapVersion
+						} else {
+							// Fallback to release version comparison
+							changeVersion := fmt.Sprintf("%d", changeBootstrapVersion)
+							versionInRange = isVersionInRange(changeVersion, ctx.SourceVersion, ctx.TargetVersion)
+						}
+
+						if !versionInRange {
+							continue
+						}
+
+						// Check if parameter name matches
+						var changeParamName string
+						if name, ok := changeMap["name"].(string); ok {
+							changeParamName = name
+						} else if varName, ok := changeMap["var_name"].(string); ok {
+							changeParamName = varName
+						} else {
+							continue
+						}
+
+						if changeParamName != paramName {
+							continue
+						}
+
+						// Check if from_value matches current value (if specified)
+						if fromValue, ok := changeMap["from_value"]; ok {
+							fromValueStr := fmt.Sprintf("%v", fromValue)
+							if fromValueStr != currentValueStr {
+								// from_value doesn't match current value, skip this entry
+								continue
+							}
+						}
+
+						// Extract metadata
+						metadata := &ForcedChangeMetadata{}
+						hasMetadata := false
+
+						// Extract details_note
+						if detailsNote, ok := changeMap["details_note"].(string); ok && detailsNote != "" {
+							metadata.DetailsNote = detailsNote
+							hasMetadata = true
+						}
+
+						// Extract suggestions
+						if suggestions, ok := changeMap["suggestions"].([]interface{}); ok && len(suggestions) > 0 {
+							metadata.Suggestions = make([]string, 0, len(suggestions))
+							for _, s := range suggestions {
+								if str, ok := s.(string); ok {
+									metadata.Suggestions = append(metadata.Suggestions, str)
+								}
+							}
+							if len(metadata.Suggestions) > 0 {
+								hasMetadata = true
+							}
+						}
+
+						// Extract report_severity
+						if reportSeverity, ok := changeMap["report_severity"].(string); ok && reportSeverity != "" {
+							metadata.ReportSeverity = reportSeverity
+							hasMetadata = true
+						}
+
+						// Return metadata if any field is set
+						if hasMetadata {
+							return metadata
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// GetParameterNote gets special note/description for a parameter from knowledge base
+// Returns the note if found and conditions match, empty string otherwise
+func (ctx *RuleContext) GetParameterNote(component, paramName, paramType string, targetDefault interface{}) string {
+	if len(ctx.ParameterNotes) == 0 {
+		return ""
+	}
+
+	compNotes, ok := ctx.ParameterNotes[component]
+	if !ok {
+		return ""
+	}
+
+	compNotesMap, ok := compNotes.(map[string]interface{})
+	if !ok {
+		return ""
+	}
+
+	// Get param type map (config or system_variables)
+	var typeMap map[string]interface{}
+	if paramType == "config" {
+		if configMap, ok := compNotesMap["config"].(map[string]interface{}); ok {
+			typeMap = configMap
+		}
+	} else if paramType == "system_variable" {
+		if sysVarMap, ok := compNotesMap["system_variables"].(map[string]interface{}); ok {
+			typeMap = sysVarMap
+		}
+	}
+
+	if typeMap == nil {
+		return ""
+	}
+
+	// Get parameter note info
+	paramNoteInfo, ok := typeMap[paramName]
+	if !ok {
+		return ""
+	}
+
+	noteInfoMap, ok := paramNoteInfo.(map[string]interface{})
+	if !ok {
+		return ""
+	}
+
+	// Check conditions if specified
+	if condition, ok := noteInfoMap["condition"].(map[string]interface{}); ok {
+		// Check target_default_value condition
+		if targetDefaultValue, ok := condition["target_default_value"]; ok {
+			if !CompareValues(targetDefault, targetDefaultValue) {
+				return "" // Condition not met
+			}
+		}
+
+		// Check target_version_min condition
+		if targetVersionMin, ok := condition["target_version_min"].(string); ok {
+			if compareVersions(ctx.TargetVersion, targetVersionMin) < 0 {
+				return "" // Target version is before minimum
+			}
+		}
+	}
+
+	// Extract details_note
+	if detailsNote, ok := noteInfoMap["details_note"].(string); ok && detailsNote != "" {
+		return detailsNote
+	}
+
+	return ""
 }
 
 // isVersionInRange checks if a version is in the range (sourceVersion, targetVersion]

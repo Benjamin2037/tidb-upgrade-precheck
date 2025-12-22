@@ -462,101 +462,8 @@ echo "Max concurrent: $MAX_CONCURRENT"
 echo "Components: $COMPONENTS"
 echo ""
 
-# Generate upgrade_logic.json globally (once for all versions)
-# This file contains all historical upgrade logic and is version-agnostic
-# IMPORTANT: Must be extracted from master branch to get all historical upgradeToVerXX functions
-# In --force mode, always regenerate upgrade_logic.json to ensure it's up-to-date
-if [[ "$COMPONENTS" == *"tidb"* ]] && [ -n "$TIDB_REPO" ] && [ -d "$TIDB_REPO" ]; then
-    UPGRADE_LOGIC_PATH="${PROJECT_ROOT}/knowledge/tidb/upgrade_logic.json"
-    # In force mode, always regenerate; otherwise only generate if missing
-    # Debug: Log the decision
-    if [ "$FORCE_REGENERATE" = true ]; then
-        echo "[DEBUG] Force mode: will regenerate upgrade_logic.json"
-    elif [ ! -f "$UPGRADE_LOGIC_PATH" ]; then
-        echo "[DEBUG] File missing: will generate upgrade_logic.json"
-    else
-        echo "[DEBUG] File exists and not in force mode: will skip generation"
-    fi
-    
-    if [ "$FORCE_REGENERATE" = true ] || [ ! -f "$UPGRADE_LOGIC_PATH" ]; then
-        echo "=========================================="
-        echo "Generating global upgrade_logic.json (TiDB)"
-        echo "=========================================="
-        echo "This file contains all historical upgrade logic and is generated once for all versions."
-        echo "IMPORTANT: Extracting from master branch to get all historical upgradeToVerXX functions."
-        echo ""
-        
-        # Create knowledge/tidb directory if it doesn't exist
-        mkdir -p "${PROJECT_ROOT}/knowledge/tidb"
-        
-        # Save current branch and switch to master for upgrade_logic extraction
-        # upgrade_logic.json must be extracted from master branch because all historical
-        # upgradeToVerXX functions are preserved in the latest codebase
-        ORIGINAL_BRANCH=""
-        if [ -d "$TIDB_REPO/.git" ]; then
-            ORIGINAL_BRANCH=$(cd "$TIDB_REPO" && git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
-            echo "Current TiDB repository branch: ${ORIGINAL_BRANCH:-'(detached HEAD)'}"
-            echo "Switching to master branch for upgrade_logic extraction..."
-            
-            # Try to checkout master branch
-            if ! (cd "$TIDB_REPO" && git checkout master 2>/dev/null); then
-                # If master doesn't exist, try main
-                if ! (cd "$TIDB_REPO" && git checkout main 2>/dev/null); then
-                    echo "Warning: Failed to checkout master/main branch, using current branch"
-                    echo "  Note: upgrade_logic.json may be incomplete if not on master/main branch"
-                else
-                    echo "✓ Switched to main branch"
-                fi
-            else
-                echo "✓ Switched to master branch"
-            fi
-        else
-            echo "Warning: TiDB repository is not a git repository, using current code"
-            echo "  Note: upgrade_logic.json may be incomplete if not on master branch"
-        fi
-        
-        # Generate upgrade_logic.json using cmd/generate_upgrade_logic tool
-        echo "Running: go run cmd/generate_upgrade_logic/main.go --tidb-repo=\"$TIDB_REPO\" --output=\"$UPGRADE_LOGIC_PATH\""
-        if (cd "$PROJECT_ROOT" && GOWORK=off go run cmd/generate_upgrade_logic/main.go \
-            --tidb-repo="$TIDB_REPO" \
-            --output="$UPGRADE_LOGIC_PATH" 2>&1); then
-            # Verify file was actually created
-            if [ -f "$UPGRADE_LOGIC_PATH" ]; then
-                echo "✓ Successfully generated upgrade_logic.json"
-                echo "  File: $UPGRADE_LOGIC_PATH"
-                echo "  Size: $(ls -lh "$UPGRADE_LOGIC_PATH" | awk '{print $5}')"
-            else
-                echo "✗ Generation command succeeded but file not found at: $UPGRADE_LOGIC_PATH"
-                echo "  This indicates a problem with the generation tool or file path"
-            fi
-        else
-            echo "✗ Failed to generate upgrade_logic.json (continuing with version generation)"
-            echo "  Note: upgrade_logic.json will not be available, but version-specific knowledge bases will still be generated"
-            echo "  Check the error messages above for details"
-        fi
-        
-        # Restore original branch if we switched
-        if [ -n "$ORIGINAL_BRANCH" ] && [ -d "$TIDB_REPO/.git" ]; then
-            echo "Restoring original branch: $ORIGINAL_BRANCH"
-            if (cd "$TIDB_REPO" && git checkout "$ORIGINAL_BRANCH" 2>/dev/null); then
-                echo "✓ Restored to branch: $ORIGINAL_BRANCH"
-            else
-                echo "Warning: Failed to restore original branch, repository is on master/main"
-            fi
-        fi
-        
-        echo ""
-    else
-        if [ "$FORCE_REGENERATE" = false ]; then
-            echo "=========================================="
-            echo "upgrade_logic.json already exists, skipping generation"
-            echo "=========================================="
-            echo "File: $UPGRADE_LOGIC_PATH"
-            echo "To regenerate, delete this file and run the script again, or use --force flag."
-            echo ""
-        fi
-    fi
-fi
+# Note: upgrade_logic.json is now automatically generated by kb_generator
+# when TiDB component is included. No need to generate it separately here.
 
 # Function to count running processes
 count_running() {
@@ -807,5 +714,33 @@ if [ ${#FAILED_VERSIONS[@]} -gt 0 ]; then
     exit 1
 fi
 
+# Generate high-risk parameters default config
+# Copy from pkg/analyzer/rules/high_risk_params/default.json to knowledge/high_risk_params/high_risk_params.json
+echo ""
+echo "Generating high-risk parameters default config..."
+SOURCE_FILE="${PROJECT_ROOT}/pkg/analyzer/rules/high_risk_params/default.json"
+OUTPUT_FILE="${PROJECT_ROOT}/knowledge/high_risk_params/high_risk_params.json"
+OUTPUT_DIR=$(dirname "$OUTPUT_FILE")
+
+if [ ! -f "$SOURCE_FILE" ]; then
+    echo "⚠ Warning: Source file not found: $SOURCE_FILE"
+    echo "  Skipping high-risk parameters default config generation"
+else
+    # Create output directory if it doesn't exist
+    mkdir -p "$OUTPUT_DIR"
+    
+    # Copy file
+    if cp "$SOURCE_FILE" "$OUTPUT_FILE"; then
+        echo "✓ High-risk parameters default config generated successfully"
+        echo "  Source: $SOURCE_FILE"
+        echo "  Output: $OUTPUT_FILE"
+        echo "  Note: Technical support can manually edit knowledge/high_risk_params/high_risk_params.json to add custom parameters"
+    else
+        echo "⚠ Warning: Failed to copy high-risk parameters default config"
+    fi
+fi
+
+echo ""
 echo "All knowledge bases generated successfully!"
+
 exit 0

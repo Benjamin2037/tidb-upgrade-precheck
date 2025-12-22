@@ -4,76 +4,10 @@ package rules
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
+
+	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer"
 )
-
-// ignoredParamsForUpgradeDifferences contains parameters that should be ignored
-// when reporting default value changes. These are typically deployment-specific
-// parameters (paths, hostnames, etc.) that differ between environments but don't
-// represent actual configuration changes that users need to be aware of.
-var ignoredParamsForUpgradeDifferences = map[string]bool{
-	// Deployment-specific host/network parameters
-	"host":     true, // Host binding address (deployment-specific)
-	"hostname": true, // Hostname (deployment-specific)
-	"port":     true, // Port (deployment-specific, may vary by deployment)
-	"addr":     true, // Address (deployment-specific)
-	"address":  true, // Address (deployment-specific)
-
-	// Deployment-specific path parameters (TiDB)
-	"path":                 true, // TiDB storage path (deployment-specific)
-	"socket":               true, // Socket file path (deployment-specific)
-	"temp-dir":             true, // Temporary directory (deployment-specific)
-	"tmp-storage-path":     true, // Temporary storage path (deployment-specific)
-	"log.file.filename":    true, // Log file path (deployment-specific)
-	"log.slow-query-file":  true, // Slow query log file path (deployment-specific)
-	"log.file.max-size":    true, // Log file max size (deployment-specific, may vary)
-	"log.file.max-days":    true, // Log file max days (deployment-specific, may vary)
-	"log.file.max-backups": true, // Log file max backups (deployment-specific, may vary)
-	"log-file":             true, // Log file path (deployment-specific, alternative naming)
-	"log-dir":              true, // Log directory (deployment-specific)
-	"log_dir":              true, // Log directory (deployment-specific, alternative naming)
-
-	// Deployment-specific path parameters (TiKV)
-	"data-dir":             true, // Data directory (deployment-specific)
-	"data_dir":             true, // Data directory (deployment-specific, alternative naming)
-	"deploy-dir":           true, // Deploy directory (deployment-specific)
-	"deploy_dir":           true, // Deploy directory (deployment-specific, alternative naming)
-	"log-backup.temp-path": true, // Log backup temporary path (deployment-specific)
-	"backup.temp-path":     true, // Backup temporary path (deployment-specific)
-	"temp-path":            true, // Temporary path (deployment-specific)
-	"temp_path":            true, // Temporary path (deployment-specific, alternative naming)
-
-	// Deployment-specific path parameters (PD)
-	// data-dir, log-file, deploy-dir, log-dir are already covered above
-
-	// Deployment-specific path parameters (TiFlash)
-	"tmp_path":           true, // Temporary path (deployment-specific)
-	"storage.main.dir":   true, // Storage main directory (deployment-specific)
-	"storage.latest.dir": true, // Storage latest directory (deployment-specific)
-	"storage.raft.dir":   true, // Storage raft directory (deployment-specific)
-
-	// Other parameters to ignore
-	"deprecate-integer-display-length": true, // Deprecated parameter, no need to report
-
-	// Compile-time platform information (not user-configurable)
-	"version_compile_machine": true, // Compilation machine architecture (e.g., amd64, arm64)
-	"version_compile_os":      true, // Compilation OS (e.g., linux, darwin)
-}
-
-// isPathParameter is a wrapper for the shared IsPathParameter function
-// Kept for backward compatibility with existing code
-func isPathParameter(paramName string) bool {
-	return IsPathParameter(paramName)
-}
-
-// filenameOnlyParams contains parameters that should be compared by filename only (ignoring path)
-// For these parameters, only the filename part is compared, not the full path
-var filenameOnlyParams = map[string]bool{
-	"log.file.filename":   true, // Log file - compare filename only
-	"log-file":            true, // Log file - compare filename only
-	"log.slow-query-file": true, // Slow query log file - compare filename only
-}
 
 // UpgradeDifferencesRule detects parameters that will differ after upgrade
 // Rule 2.2: Compare current cluster values with target version defaults
@@ -118,17 +52,6 @@ func (r *UpgradeDifferencesRule) DataRequirements() DataSourceRequirement {
 			NeedSystemVariables: true,
 			NeedUpgradeLogic:    true, // Need upgrade logic for forced changes
 		},
-		SourceKBRequirements: struct {
-			Components          []string `json:"components"`
-			NeedConfigDefaults  bool     `json:"need_config_defaults"`
-			NeedSystemVariables bool     `json:"need_system_variables"`
-			NeedUpgradeLogic    bool     `json:"need_upgrade_logic"`
-		}{
-			Components:          []string{"tidb", "pd", "tikv", "tiflash"},
-			NeedConfigDefaults:  true,
-			NeedSystemVariables: true,
-			NeedUpgradeLogic:    true, // Need upgrade logic for forced changes
-		},
 	}
 }
 
@@ -141,16 +64,12 @@ func (r *UpgradeDifferencesRule) DataRequirements() DataSourceRequirement {
 //   - If not in upgrade_logic.json:
 //   - If target default != current value: info (default value changed)
 //
-// 2. Source version has, target version doesn't: info (deprecated)
-// 3. Source version doesn't have, target version has: info (new parameter)
-// 4. Target default != source default: info (default value changed)
-// 5. If source default == target default: skip (no difference, don't show)
-// 6. Otherwise (consistent): skip (don't show)
+// 2. If parameter exists in target version but not in current cluster: info (new parameter)
+// Note: Source version comparison is handled by USER_MODIFIED_PARAMS rule, not here
 func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleContext) ([]CheckResult, error) {
 	var results []CheckResult
-	// Track statistics: total parameters compared, skipped, and filtered
+	// Track statistics: total parameters compared
 	totalCompared := 0
-	totalSkipped := 0
 	totalFiltered := 0
 
 	if ruleCtx.SourceClusterSnapshot == nil {
@@ -191,34 +110,12 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 
 		// Get all parameters from target version knowledge base
 		targetDefaults := ruleCtx.TargetDefaults[compType]
-		sourceDefaults := ruleCtx.SourceDefaults[compType]
-
-		// Debug: Check if sourceDefaults is nil or empty
-		if sourceDefaults == nil || len(sourceDefaults) == 0 {
-			fmt.Printf("[ERROR rule_upgrade_differences] sourceDefaults[%s] is nil or empty! This means source KB was not loaded correctly.\n", compType)
-			// Get available component keys
-			availableComponents := make([]string, 0, len(ruleCtx.SourceDefaults))
-			for k := range ruleCtx.SourceDefaults {
-				availableComponents = append(availableComponents, k)
-			}
-			fmt.Printf("[ERROR rule_upgrade_differences] Available components in SourceDefaults: %v\n", availableComponents)
-			if targetDefaults != nil {
-				fmt.Printf("[ERROR rule_upgrade_differences] targetDefaults[%s] has %d parameters\n", compType, len(targetDefaults))
-			} else {
-				fmt.Printf("[ERROR rule_upgrade_differences] targetDefaults[%s] is also nil\n", compType)
-			}
-		} else {
-			fmt.Printf("[DEBUG rule_upgrade_differences] sourceDefaults[%s] has %d parameters\n", compType, len(sourceDefaults))
+		if targetDefaults == nil {
+			return nil, fmt.Errorf("targetDefaults for component %s is nil - this indicates a knowledge base loading issue. Please check if the target version knowledge base was loaded correctly. Component: %s, SourceVersion: %s, TargetVersion: %s", compType, compType, ruleCtx.SourceVersion, ruleCtx.TargetVersion)
 		}
 
 		// Track which parameters we've processed
 		processedParams := make(map[string]bool)
-
-		// Check if targetDefaults is nil (should not happen, but handle gracefully)
-		if targetDefaults == nil {
-			fmt.Printf("[ERROR rule_upgrade_differences] targetDefaults[%s] is nil! Cannot process parameters.\n", compType)
-			continue
-		}
 
 		// 1. Check parameters that exist in target version (compare with current cluster)
 		for paramName, targetDefaultValue := range targetDefaults {
@@ -227,16 +124,11 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 
 			// Extract actual value from ParameterValue structure
 			targetDefault := extractValueFromDefault(targetDefaultValue)
-			sourceDefault := ruleCtx.GetSourceDefault(compType, paramName)
 
-			// Filter: If source default == target default, skip (no difference)
-			if sourceDefault != nil && targetDefault != nil {
-				sourceDefaultStr := fmt.Sprintf("%v", sourceDefault)
-				targetDefaultStr := fmt.Sprintf("%v", targetDefault)
-				if sourceDefaultStr == targetDefaultStr {
-					// Source and target defaults are the same, skip unless it's a forced change or current differs
-					// We'll check forced changes and current value differences below, but if all are same, skip
-				}
+			// If targetDefault is nil/None, this indicates a knowledge base loading issue
+			// targetDefault must have a value - forced changes are upgrade compatibility matters and don't affect this requirement
+			if targetDefault == nil {
+				return nil, fmt.Errorf("targetDefault for parameter %s in component %s is nil - this indicates a knowledge base loading issue. Component: %s, Parameter: %s, SourceVersion: %s, TargetVersion: %s. Please check if the target version knowledge base was loaded correctly", paramName, compType, compType, paramName, ruleCtx.SourceVersion, ruleCtx.TargetVersion)
 			}
 
 			// Get current cluster value
@@ -252,8 +144,12 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				paramType = "system_variable"
 				if varValue, ok := component.Variables[varName]; ok {
 					currentValue = varValue.Value
+					if currentValue == nil {
+						return nil, fmt.Errorf("system variable %s in component %s has nil value - this indicates a data collection issue. Component: %s, Parameter: %s, SourceVersion: %s, TargetVersion: %s", varName, compType, compType, varName, ruleCtx.SourceVersion, ruleCtx.TargetVersion)
+					}
 				} else {
-					// System variable not in current cluster, skip
+					// System variable not in current cluster - this is a new parameter, will be handled in Step 2
+					// Skip here to avoid duplicate reporting
 					continue
 				}
 			} else {
@@ -261,96 +157,26 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				paramType = "config"
 				if paramValue, ok := component.Config[paramName]; ok {
 					currentValue = paramValue.Value
+					if currentValue == nil {
+						return nil, fmt.Errorf("config parameter %s in component %s has nil value - this indicates a data collection issue. Component: %s, Parameter: %s, SourceVersion: %s, TargetVersion: %s", paramName, compType, compType, paramName, ruleCtx.SourceVersion, ruleCtx.TargetVersion)
+					}
 				} else {
-					// Config parameter not in current cluster, skip
+					// Config parameter not in current cluster - this is a new parameter, will be handled in Step 2
+					// Skip here to avoid duplicate reporting
 					continue
 				}
-			}
-
-			// PD Component: All current values will be kept during upgrade (compatible)
-			// If current value exists and parameter exists in source version (not a new parameter), filter it
-			// New parameters in PD should still be reported
-			if compType == "pd" && paramType == "config" && currentValue != nil && sourceDefault != nil {
-				// PD maintains existing configuration for parameters that exist in source version
-				// Skip reporting as current value will be kept
-				totalFiltered++
-				continue
-			}
-
-			// Skip ignored parameters (deployment-specific paths, etc.)
-			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] || isPathParameter(displayName) || isPathParameter(paramName) {
-				totalFiltered++
-				continue
-			}
-
-			// Skip all path-related parameters (check by parameter name)
-			if IsPathParameter(displayName) || IsPathParameter(paramName) {
-				totalFiltered++
-				continue
 			}
 
 			// Compare target default with current cluster value
 			// For filename-only parameters, compare by filename only (ignore path)
 			var targetDiffersFromCurrent bool
 
-			if filenameOnlyParams[displayName] || filenameOnlyParams[paramName] {
+			if analyzer.IsFilenameOnlyParameter(displayName) || analyzer.IsFilenameOnlyParameter(paramName) {
 				// Compare by filename only
 				targetDiffersFromCurrent = !CompareFileNames(targetDefault, currentValue)
 			} else {
 				// Compare full values using proper comparison to avoid scientific notation issues
 				targetDiffersFromCurrent = !CompareValues(targetDefault, currentValue)
-			}
-
-			// Filter: If source default == target default and current == target, skip (no difference)
-			// Exception: forced changes should always be reported
-			if sourceDefault != nil && targetDefault != nil && CompareValues(sourceDefault, targetDefault) {
-				// Check if current value equals target default
-				if CompareValues(currentValue, targetDefault) {
-					// All values are the same: source == target == current
-					// Check if it's a forced change - if not, skip
-					if _, isForced := forcedChanges[displayName]; !isForced {
-						totalSkipped++
-						continue // Skip: no difference between source and target
-					}
-				} else {
-					// Source default == target default, but current != target
-					// If this is a resource-dependent parameter, filter it (difference is due to deployment environment)
-					if IsResourceDependentParameter(displayName) || IsResourceDependentParameter(paramName) {
-						// Resource-dependent parameters may differ due to deployment environment (e.g., CPU cores)
-						// Since source == target, the difference is not due to version change
-						if _, isForced := forcedChanges[displayName]; !isForced {
-							totalFiltered++
-							continue // Skip: difference is due to deployment environment, not version change
-						}
-					}
-				}
-			}
-
-			// Filter: If current == target default but source != target, skip (no action needed after upgrade)
-			// This means the current value already matches the target default, so no change will occur
-			// Exception: forced changes should always be reported
-			// If sourceDefault == nil, it means the parameter doesn't exist in source KB (true "New" parameter)
-			// If current == target, filter it (no action needed after upgrade)
-			// If current != target, let step 3 handle it (true "New" parameter that needs attention)
-			if !targetDiffersFromCurrent && targetDefault != nil {
-				// Current value equals target default
-				if sourceDefault == nil {
-					// Source default is nil: parameter doesn't exist in source KB (true "New" parameter)
-					// If current == target, no action needed after upgrade (filter it)
-					// Check if it's a forced change - if not, skip
-					if _, isForced := forcedChanges[displayName]; !isForced {
-						totalFiltered++
-						continue // Skip: current already matches target, no action needed
-					}
-				} else if !CompareValues(sourceDefault, targetDefault) {
-					// Source default exists and differs from target default, but current equals target
-					// This means upgrade will not change the value (already at target default)
-					// Check if it's a forced change - if not, skip
-					if _, isForced := forcedChanges[displayName]; !isForced {
-						totalFiltered++
-						continue // Skip: current already matches target, no action needed
-					}
-				}
 			}
 
 			// Check if this parameter is in upgrade_logic.json (forced change)
@@ -369,40 +195,53 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				// This parameter is in upgrade_logic.json and we found a matching entry
 				// Use proper value comparison to avoid scientific notation issues
 				if !CompareValues(forcedValue, currentValue) {
-					// Forced value differs from current value: warning severity (error for critical TiDB params, but tidb_scatter_region is warning)
+					// Get special handling metadata from knowledge base
+					metadata := ruleCtx.GetForcedChangeMetadata(compType, displayName, currentValue)
+
+					// Determine severity: use metadata override if available, otherwise use default logic
 					severity := "warning"
 					riskLevel := RiskLevelMedium
-					if compType == "tidb" && displayName != "tidb_scatter_region" {
-						// Most TiDB forced changes are error, but tidb_scatter_region is warning
+					if metadata != nil && metadata.ReportSeverity != "" {
+						// Use severity from knowledge base
+						severity = metadata.ReportSeverity
+						switch severity {
+						case "error":
+							riskLevel = RiskLevelHigh
+						case "warning":
+							riskLevel = RiskLevelMedium
+						case "info":
+							riskLevel = RiskLevelLow
+						default:
+							riskLevel = RiskLevelMedium
+						}
+					} else if compType == "tidb" {
+						// Default: Most TiDB forced changes are error
 						severity = "error"
 						riskLevel = RiskLevelHigh
 					}
-					details := FormatDefaultChangeDiff(currentValue, sourceDefault, targetDefault, nil)
-					// Add forced value information
+
+					// Build details for forced change
 					forcedStr := FormatValue(forcedValue)
-					if !strings.Contains(details, "Will be forced to") {
-						details = fmt.Sprintf("Will be forced to: %s\n\n%s", forcedStr, details)
+					currentStr := FormatValue(currentValue)
+					targetStr := FormatValue(targetDefault)
+					details := fmt.Sprintf("Will be forced to: %s\n\nCurrent: %s\nTarget Default: %s", forcedStr, currentStr, targetStr)
+
+					// Add details note from knowledge base if available
+					if metadata != nil && metadata.DetailsNote != "" {
+						details += "\n\n" + metadata.DetailsNote
 					}
 
-					// Add specific information for tidb_scatter_region
-					if displayName == "tidb_scatter_region" {
-						details += "\n\nNote: This parameter supports values 'table' (recommended) or 'global'. For detailed parameter description, please refer to the TiDB documentation center."
-					}
-					// Build suggestions based on parameter
-					suggestions := []string{
-						"This parameter will be forcibly changed during upgrade",
-						"Review the forced change and its impact",
-						"Test the new value in a staging environment",
-						"Plan for the change before upgrading",
-					}
-
-					// Add specific suggestions for tidb_scatter_region
-					if displayName == "tidb_scatter_region" {
+					// Get suggestions: use metadata if available, otherwise use default
+					var suggestions []string
+					if metadata != nil && len(metadata.Suggestions) > 0 {
+						suggestions = metadata.Suggestions
+					} else {
+						// Default suggestions for forced changes
 						suggestions = []string{
 							"This parameter will be forcibly changed during upgrade",
-							"Recommended values: 'table' (recommended) or 'global'",
-							"For detailed parameter description, please refer to the TiDB documentation center",
-							"Test the new value in a staging environment before upgrading",
+							"Review the forced change and its impact",
+							"Test the new value in a staging environment",
+							"Plan for the change before upgrading",
 						}
 					}
 
@@ -418,16 +257,14 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 						Details:       details,
 						CurrentValue:  currentValue,
 						TargetDefault: targetDefault,
-						SourceDefault: sourceDefault,
 						ForcedValue:   forcedValue,
 						Suggestions:   suggestions,
 					})
 				} else {
 					// Forced value equals current value: info (default value changed)
-					details := FormatDefaultChangeDiff(currentValue, sourceDefault, targetDefault, nil)
-					if !strings.Contains(details, "matches forced value") {
-						details = "Current value matches forced value.\n\n" + details
-					}
+					currentStr := FormatValue(currentValue)
+					targetStr := FormatValue(targetDefault)
+					details := fmt.Sprintf("Current value matches forced value.\n\nCurrent: %s\nTarget Default: %s", currentStr, targetStr)
 					results = append(results, CheckResult{
 						RuleID:        r.Name(),
 						Category:      r.Category(),
@@ -440,7 +277,6 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 						Details:       details,
 						CurrentValue:  currentValue,
 						TargetDefault: targetDefault,
-						SourceDefault: sourceDefault,
 						ForcedValue:   forcedValue,
 						Suggestions: []string{
 							"Default value has changed in target version",
@@ -450,18 +286,9 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				}
 			} else if targetDiffersFromCurrent {
 				// Not in upgrade_logic.json, but target default differs from current
-				// If sourceDefault == nil, this is a "New" parameter (exists in target but not in source)
-				// Let step 3 handle it to avoid duplicates
-				if sourceDefault == nil {
-					// This is a new parameter, step 3 will handle it
-					// Skip here to avoid duplicates
-					continue
-				}
-
-				// PD Component: Filter all existing parameters (not new parameters)
-				// PD maintains existing configuration, so no need to report
-				if compType == "pd" && paramType == "config" && sourceDefault != nil {
-					// PD maintains existing configuration for parameters that exist in source version
+				// PD Component: PD maintains existing configuration, so no need to report
+				if compType == "pd" && paramType == "config" {
+					// PD maintains existing configuration
 					// Skip reporting as current value will be kept
 					totalFiltered++
 					continue
@@ -487,17 +314,17 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				}
 
 				// For map types, create separate CheckResult for each differing field
-				if IsMapType(sourceDefault) && IsMapType(targetDefault) {
+				if IsMapType(currentValue) && IsMapType(targetDefault) {
 					opts := CompareOptions{
-						IgnoredParams: ignoredParamsForUpgradeDifferences, // Use ignore list for nested fields
-						BasePath:      displayName,
+						BasePath: displayName,
 					}
-					sourceTargetDiffs := CompareMapsDeep(sourceDefault, targetDefault, opts)
+					currentTargetDiffs := CompareMapsDeep(currentValue, targetDefault, opts)
 
 					// Convert currentValue to map for field extraction
 					currentMap := ConvertToMapStringInterface(currentValue)
+					targetMap := ConvertToMapStringInterface(targetDefault)
 
-					for fieldPath, diff := range sourceTargetDiffs {
+					for fieldPath, diff := range currentTargetDiffs {
 						// Extract current value for this specific field from the map
 						var currentFieldValue interface{}
 						if currentMap != nil {
@@ -507,36 +334,18 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 							currentFieldValue = currentValue // Fallback to full value if not a map
 						}
 
+						// Extract target default value for this field
+						var targetFieldValue interface{}
+						if targetMap != nil {
+							fieldKeys := strings.Split(fieldPath, ".")
+							targetFieldValue = getNestedMapValue(targetMap, fieldKeys)
+						} else {
+							targetFieldValue = targetDefault
+						}
+
 						fieldMessage := fmt.Sprintf("Parameter %s.%s in %s: %s", displayName, fieldPath, compType, baseMessage)
-						// Format details with current field value
-						fieldDetails := FormatValueDiff(currentFieldValue, diff.Source) + " → " + FormatValue(diff.Current)
-
-						// Check if user has modified this parameter
-						// Only mark as "User Modified" if current differs from BOTH source and target
-						// If current == target, it means the user hasn't modified it, just the default changed
-						currentEqualsSource := CompareValues(currentFieldValue, diff.Source)
-						currentEqualsTarget := CompareValues(currentFieldValue, diff.Current)
-
-						// Skip reporting if current == target but != source, and this is a resource-dependent parameter
-						// This indicates the difference is due to deployment environment, not user modification
-						// The current value already matches the target default, so no action is needed
-						fullParamName := fmt.Sprintf("%s.%s", displayName, fieldPath)
-						if currentEqualsTarget && !currentEqualsSource {
-							if IsResourceDependentParameter(fieldPath) || IsResourceDependentParameter(fullParamName) {
-								// Current value matches target default, but differs from source default
-								// This is likely due to deployment environment differences (e.g., different hardware)
-								// Skip reporting as the current value is already correct for target version
-								totalFiltered++
-								continue
-							}
-						}
-
-						// Only mark as user modified if current differs from both source and target
-						if !currentEqualsSource && !currentEqualsTarget {
-							fieldDetails += fmt.Sprintf("\n\n⚠️ User Modified: Current value (%v) differs from both source default (%v) and target default (%v)",
-								FormatValue(currentFieldValue), FormatValue(diff.Source), FormatValue(diff.Current))
-						}
-						// If current == target but != source, it's just a default change, not user modification
+						// Format details: Current vs Target
+						fieldDetails := fmt.Sprintf("Current: %s\nTarget Default: %s", FormatValue(currentFieldValue), FormatValue(targetFieldValue))
 
 						// Add component-specific note
 						if compType == "pd" && paramType == "config" {
@@ -545,13 +354,16 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 							fieldDetails += "\n\nCurrent value will be kept.\n\nTiDB system variables keep old values"
 						}
 
-						// Special handling for stats-load-concurrency: 0 means auto mode
-						// fullParamName is already defined above
-						if fullParamName == "performance.stats-load-concurrency" && compType == "tidb" && paramType == "config" {
-							targetDefaultNum, ok := toNumeric(diff.Current)
-							if ok && targetDefaultNum == 0 {
-								fieldDetails += "\n\nNote: Target default value 0 means 'auto mode'. The concurrency will be automatically calculated based on CPU cores (range: 2-16)."
-							}
+						// Get special note from knowledge base for this field (if it's a top-level parameter, use displayName; if nested, use fieldPath)
+						// For map types, check if fieldPath matches a parameter note
+						paramNote := ruleCtx.GetParameterNote(compType, fieldPath, paramType, targetFieldValue)
+						if paramNote == "" {
+							// Try with full parameter path (displayName.fieldPath)
+							fullParamPath := fmt.Sprintf("%s.%s", displayName, fieldPath)
+							paramNote = ruleCtx.GetParameterNote(compType, fullParamPath, paramType, targetFieldValue)
+						}
+						if paramNote != "" {
+							fieldDetails += "\n\n" + paramNote
 						}
 
 						results = append(results, CheckResult{
@@ -564,9 +376,8 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 							RiskLevel:     riskLevel,
 							Message:       fieldMessage,
 							Details:       fieldDetails,
-							CurrentValue:  currentFieldValue, // Extract field value from current map
-							TargetDefault: diff.Current,      // Target value for this field
-							SourceDefault: diff.Source,       // Source value for this field
+							CurrentValue:  currentFieldValue,
+							TargetDefault: targetFieldValue,
 							Suggestions: []string{
 								"Default value has changed in target version",
 								"Review if the new default is acceptable",
@@ -574,38 +385,20 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 						})
 					}
 				} else {
-					// For non-map types, check if current == target but != source
-					// If this is a resource-dependent parameter, skip reporting
-					currentEqualsSource := CompareValues(currentValue, sourceDefault)
-					currentEqualsTarget := CompareValues(currentValue, targetDefault)
-
-					// Skip reporting if current == target but != source, and this is a resource-dependent parameter
-					// This indicates the difference is due to deployment environment, not user modification
-					// The current value already matches the target default, so no action is needed
-					if currentEqualsTarget && !currentEqualsSource {
-						if IsResourceDependentParameter(displayName) {
-							// Current value matches target default, but differs from source default
-							// This is likely due to deployment environment differences (e.g., different hardware)
-							// Skip reporting as the current value is already correct for target version
-							totalFiltered++
-							continue
-						}
-					}
-
 					// For non-map types, use simple format
-					details := FormatDefaultChangeDiff(currentValue, sourceDefault, targetDefault, nil)
+					currentStr := FormatValue(currentValue)
+					targetStr := FormatValue(targetDefault)
+					details := fmt.Sprintf("Current: %s\nTarget Default: %s", currentStr, targetStr)
 					if compType == "pd" && paramType == "config" {
 						details += "\n\nCurrent value will be kept.\n\nPD maintains existing configuration"
 					} else if compType == "tidb" && paramType == "system_variable" {
 						details += "\n\nCurrent value will be kept.\n\nTiDB system variables keep old values"
 					}
 
-					// Special handling for stats-load-concurrency: 0 means auto mode
-					if displayName == "performance.stats-load-concurrency" && compType == "tidb" && paramType == "config" {
-						targetDefaultNum, ok := toNumeric(targetDefault)
-						if ok && targetDefaultNum == 0 {
-							details += "\n\nNote: Target default value 0 means 'auto mode'. The concurrency will be automatically calculated based on CPU cores (range: 2-16)."
-						}
+					// Get special note from knowledge base
+					paramNote := ruleCtx.GetParameterNote(compType, displayName, paramType, targetDefault)
+					if paramNote != "" {
+						details += "\n\n" + paramNote
 					}
 
 					results = append(results, CheckResult{
@@ -620,225 +413,30 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 						Details:       details,
 						CurrentValue:  currentValue,
 						TargetDefault: targetDefault,
-						SourceDefault: sourceDefault,
 						Suggestions: []string{
 							"Default value has changed in target version",
 							"Review if the new default is acceptable",
 						},
 					})
 				}
-			} else if sourceDefault != nil && targetDefault != nil {
-				// Target default == current value, but source default != target default: info (default value changed)
-				// Note: We already checked sourceDefaultStr == targetDefaultStr above and skipped, so this case is source != target
-				sourceDefaultStr := fmt.Sprintf("%v", sourceDefault)
-				targetDefaultStr := fmt.Sprintf("%v", targetDefault)
-				if sourceDefaultStr != targetDefaultStr {
-					// For map types, create separate CheckResult for each differing field
-					if IsMapType(sourceDefault) && IsMapType(targetDefault) {
-						opts := CompareOptions{
-							IgnoredParams: ignoredParamsForUpgradeDifferences, // Use ignore list for nested fields
-							BasePath:      displayName,
-						}
-						sourceTargetDiffs := CompareMapsDeep(sourceDefault, targetDefault, opts)
-
-						// Convert currentValue to map for field extraction
-						currentMap := ConvertToMapStringInterface(currentValue)
-
-						for fieldPath, diff := range sourceTargetDiffs {
-							// Extract current value for this specific field from the map
-							var currentFieldValue interface{}
-							if currentMap != nil {
-								fieldKeys := strings.Split(fieldPath, ".")
-								currentFieldValue = getNestedMapValue(currentMap, fieldKeys)
-							} else {
-								currentFieldValue = currentValue // Fallback to full value if not a map
-							}
-
-							fieldDetails := FormatValueDiff(diff.Source, diff.Current) // Source -> Target
-							fieldDetails = fmt.Sprintf("Current: %s (matches target default)\n\n", FormatValue(currentFieldValue)) + fieldDetails
-
-							results = append(results, CheckResult{
-								RuleID:        r.Name(),
-								Category:      r.Category(),
-								Component:     compType,
-								ParameterName: fmt.Sprintf("%s.%s", displayName, fieldPath),
-								ParamType:     paramType,
-								Severity:      "info",
-								RiskLevel:     RiskLevelLow,
-								Message:       fmt.Sprintf("Parameter %s.%s in %s: default value changed between source and target versions", displayName, fieldPath, compType),
-								Details:       fieldDetails,
-								CurrentValue:  currentFieldValue, // Extract field value from current map
-								TargetDefault: diff.Current,
-								SourceDefault: diff.Source,
-								Suggestions: []string{
-									"Default value has changed between source and target versions",
-									"Your current value matches the new target default",
-								},
-							})
-						}
-					} else {
-						// For non-map types
-						details := FormatDefaultChangeDiff(currentValue, sourceDefault, targetDefault, nil)
-						if !strings.Contains(details, "matches target default") {
-							details = "Current value matches target default.\n\n" + details
-						}
-						results = append(results, CheckResult{
-							RuleID:        r.Name(),
-							Category:      r.Category(),
-							Component:     compType,
-							ParameterName: displayName,
-							ParamType:     paramType,
-							Severity:      "info",
-							RiskLevel:     RiskLevelLow,
-							Message:       fmt.Sprintf("Parameter %s in %s: default value changed between source and target versions", displayName, compType),
-							Details:       details,
-							CurrentValue:  currentValue,
-							TargetDefault: targetDefault,
-							SourceDefault: sourceDefault,
-							Suggestions: []string{
-								"Default value has changed between source and target versions",
-								"Your current value matches the new target default",
-							},
-						})
-					}
-				}
-				// Otherwise: target default == current value == source default, skip (consistent)
 			}
-			// Note: If sourceDefault == nil and currentValue != targetDefault, let step 3 handle it
-			// Step 3 processes all "New" parameters (parameters that exist in target but not in source)
+			// Otherwise: target default == current value, skip (no difference)
 		}
 
-		// 2. Check parameters that exist in source version but not in target version (deprecated)
-		// Debug: Check if sourceDefaults is nil or empty
-		if sourceDefaults == nil || len(sourceDefaults) == 0 {
-			fmt.Printf("[DEBUG rule_upgrade_differences] sourceDefaults is nil or empty for component %s, skipping step 2\n", compType)
-		} else {
-			fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Checking %d parameters in sourceDefaults for component %s\n", len(sourceDefaults), compType)
-		}
-
-		for paramName, sourceDefaultValue := range sourceDefaults {
-			if processedParams[paramName] {
-				continue // Already processed
-			}
-
-			// Debug: For specific raftdb parameters, log processing
-			if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
-				fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Processing parameter '%s' for component %s\n", paramName, compType)
-			}
-
-			// Source has, target doesn't: deprecated
-			sourceDefault := extractValueFromDefault(sourceDefaultValue)
-
-			// Get current cluster value
-			var currentValue interface{}
-			var paramType string
-			var displayName string
-
-			isSystemVar := strings.HasPrefix(paramName, "sysvar:")
-			if isSystemVar {
-				varName := strings.TrimPrefix(paramName, "sysvar:")
-				displayName = varName
-				paramType = "system_variable"
-				if varValue, ok := component.Variables[varName]; ok {
-					currentValue = varValue.Value
-				} else {
-					continue // Not in current cluster
-				}
-			} else {
-				displayName = paramName
-				paramType = "config"
-				if paramValue, ok := component.Config[paramName]; ok {
-					currentValue = paramValue.Value
-					// Debug: For specific raftdb parameters, log that they exist in current cluster
-					if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
-						fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Parameter '%s' exists in current cluster for component %s, value: %v\n", paramName, compType, currentValue)
-					}
-				} else {
-					// Parameter not in current cluster - skip (already deprecated/removed)
-					// Debug: For specific raftdb parameters, log that they don't exist in current cluster
-					if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
-						fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Parameter '%s' NOT in current cluster for component %s, skipping\n", paramName, compType)
-					}
-					continue
-				}
-			}
-
-			// Skip ignored parameters (deployment-specific paths, etc.)
-			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] || isPathParameter(displayName) || isPathParameter(paramName) {
-				// Debug: For specific raftdb parameters, log why they are skipped
-				if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
-					fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Parameter '%s' skipped (ignored or path parameter)\n", paramName)
-				}
-				continue
-			}
-
-			// Check if current value is empty/nil (parameter not actually used or already deprecated)
-			currentValueStr := fmt.Sprintf("%v", currentValue)
-			isEmpty := currentValue == nil || currentValueStr == "" || currentValueStr == "<nil>" || currentValueStr == "N/A"
-
-			// If parameter is not present in current cluster (empty value), skip
-			// This means the parameter was already deprecated/removed in source version
-			if isEmpty {
-				// Debug: For specific raftdb parameters, log why they are skipped
-				if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
-					fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Parameter '%s' skipped (empty value)\n", paramName)
-				}
-				continue
-			}
-
-			// Build details message
-			details := fmt.Sprintf("Current cluster value: %v, Source default: %v. This parameter will be removed in target version.", currentValue, sourceDefault)
-
-			// Debug: For specific raftdb parameters, log that they are being added as deprecated
-			if strings.HasPrefix(paramName, "raftdb.") && (paramName == "raftdb.info-log-keep-log-file-num" || paramName == "raftdb.info-log-level" || paramName == "raftdb.info-log-max-size") {
-				fmt.Printf("[DEBUG rule_upgrade_differences] Step 2: Adding parameter '%s' as deprecated for component %s\n", paramName, compType)
-			}
-
-			// Parameter deprecated: low risk (info)
-			results = append(results, CheckResult{
-				RuleID:        r.Name(),
-				Category:      r.Category(),
-				Component:     compType,
-				ParameterName: displayName,
-				ParamType:     paramType,
-				Severity:      "info",
-				RiskLevel:     RiskLevelLow,
-				Message:       fmt.Sprintf("Parameter %s in %s is deprecated (exists in source version but removed in target version)", displayName, compType),
-				Details:       details,
-				CurrentValue:  currentValue,
-				SourceDefault: sourceDefault,
-				Suggestions: []string{
-					"This parameter is deprecated and will be removed in target version",
-					"Review if this parameter is still needed",
-					"Plan for migration if necessary",
-				},
-			})
-		}
-
-		// 3. Check parameters that exist in target version but not in source version (new parameter)
-		// Note: targetDefaults should not be nil here (checked above), but add safety check
-		if targetDefaults == nil {
-			continue
-		}
-
+		// 2. Check parameters that exist in target version but not in current cluster (new parameter)
+		// Note: Deprecated parameters (exist in source but not in target) are not checked here
+		// as source version comparison is handled by USER_MODIFIED_PARAMS rule
 		for paramName, targetDefaultValue := range targetDefaults {
 			// Skip if already processed in step 1 (exists in current cluster)
 			if processedParams[paramName] {
 				continue
 			}
 
-			// Check if this parameter exists in source version
-			sourceDefault := ruleCtx.GetSourceDefault(compType, paramName)
-			if sourceDefault != nil {
-				// Parameter exists in source version, but was not processed in step 1
-				// This means it doesn't exist in current cluster, so it was skipped in step 1
-				// We should still report it if there's a difference between source and target defaults
-				// But for now, skip it to avoid duplicates
-				continue // Exists in source version, already processed or skipped
-			}
-
-			// Source doesn't have, target has: new parameter
+			// Extract target default value
 			targetDefault := extractValueFromDefault(targetDefaultValue)
+			if targetDefault == nil {
+				return nil, fmt.Errorf("targetDefault for parameter %s in component %s is nil - this indicates a knowledge base loading issue. Component: %s, Parameter: %s, SourceVersion: %s, TargetVersion: %s. Please check if the target version knowledge base was loaded correctly", paramName, compType, compType, paramName, ruleCtx.SourceVersion, ruleCtx.TargetVersion)
+			}
 
 			var paramType string
 			var displayName string
@@ -852,11 +450,8 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				paramType = "config"
 			}
 
-			// Skip ignored parameters (deployment-specific paths, etc.)
-			if ignoredParamsForUpgradeDifferences[displayName] || ignoredParamsForUpgradeDifferences[paramName] || IsPathParameter(displayName) || IsPathParameter(paramName) {
-				totalFiltered++
-				continue
-			}
+			// Note: Deployment-specific parameters have already been filtered in preprocessor
+			// This rule only processes parameters that passed the preprocessor filter
 
 			// Check if this new parameter exists in current cluster
 			var currentValue interface{}
@@ -871,12 +466,9 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			}
 
 			// Filter: If current value equals target default, skip (no action needed after upgrade)
-			// The parameter is new in target version, but current value already matches target default
-			// Exception: PD component's new parameters should still be reported even if current == target
 			if currentValue != nil && targetDefault != nil {
 				if CompareValues(currentValue, targetDefault) {
 					// For PD component, still report new parameters even if current == target
-					// (PD will keep current value, but user should be aware of the new parameter)
 					if compType == "pd" && paramType == "config" {
 						// Don't filter PD new parameters, let them be reported
 					} else {
@@ -924,55 +516,11 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			Category:      r.Category(),
 			Component:     "",
 			ParameterName: "__statistics__",
-			Description:   fmt.Sprintf("Compared %d parameters, skipped %d (source == target), filtered %d (deployment-specific)", totalCompared, totalSkipped, totalFiltered),
+			Description:   fmt.Sprintf("Compared %d parameters, filtered %d (deployment-specific)", totalCompared, totalFiltered),
 			Severity:      "info",
 			RiskLevel:     RiskLevelLow,
 		})
 	}
 
 	return results, nil
-}
-
-// toNumeric converts an interface{} value to a numeric value (float64)
-// Returns the numeric value and true if conversion was successful
-func toNumeric(v interface{}) (float64, bool) {
-	if v == nil {
-		return 0, false
-	}
-
-	// Try to parse as float64
-	switch val := v.(type) {
-	case int:
-		return float64(val), true
-	case int8:
-		return float64(val), true
-	case int16:
-		return float64(val), true
-	case int32:
-		return float64(val), true
-	case int64:
-		return float64(val), true
-	case uint:
-		return float64(val), true
-	case uint8:
-		return float64(val), true
-	case uint16:
-		return float64(val), true
-	case uint32:
-		return float64(val), true
-	case uint64:
-		return float64(val), true
-	case float32:
-		return float64(val), true
-	case float64:
-		return val, true
-	case string:
-		// Try parsing string as float
-		if f, err := strconv.ParseFloat(val, 64); err == nil {
-			return f, true
-		}
-		return 0, false
-	default:
-		return 0, false
-	}
 }
