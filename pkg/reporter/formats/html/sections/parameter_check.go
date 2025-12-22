@@ -7,7 +7,6 @@ import (
 
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer/rules"
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/reporter"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/reporter/formats"
 )
 
@@ -55,11 +54,8 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 			continue
 		}
 
-		// Filter path-related parameters at report generation time
-		// This ensures all parameters are properly categorized before filtering
-		if reporter.IsPathParameter(check.ParameterName) {
-			continue
-		}
+		// Path parameters are already filtered in preprocessing stage
+		// No need to filter again here
 
 		// Filter deployment-specific parameters (pd.endpoints, etc.)
 		// These parameters vary by deployment environment and should not be reported
@@ -68,21 +64,8 @@ func (s *ParameterCheckSection) Render(format formats.Format, result *analyzer.A
 			continue
 		}
 
-		// Filter resource-dependent parameters at report generation time
-		// These parameters are automatically adjusted by TiKV/TiFlash based on system resources
-		// (CPU cores, memory, etc.) and should not be reported if source default == target default
-		// but current differs (difference is due to deployment environment, not user modification)
-		if reporter.IsResourceDependentParameter(check.ParameterName) {
-			if check.SourceDefault != nil && check.TargetDefault != nil {
-				sourceEqualsTarget := rules.CompareValues(check.SourceDefault, check.TargetDefault)
-				if sourceEqualsTarget {
-					// Source default == target default, but current differs
-					// This is likely auto-tuned by TiKV/TiFlash based on system resources
-					// Skip reporting as the difference is due to deployment environment
-					continue
-				}
-			}
-		}
+		// Resource-dependent parameters are already filtered in preprocessing stage
+		// No need to filter again here
 
 		// Filter: If current value, source default, and target default are all the same, skip
 		// No action is needed after upgrade, so no need to report

@@ -21,6 +21,7 @@ func TestNewRuleContext(t *testing.T) {
 		make(map[string]interface{}),
 		140, // sourceBootstrapVersion
 		160, // targetBootstrapVersion
+		make(map[string]interface{}), // parameterNotes
 	)
 
 	assert.NotNil(t, ruleCtx)

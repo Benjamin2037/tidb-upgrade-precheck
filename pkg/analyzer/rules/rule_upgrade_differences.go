@@ -5,8 +5,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer"
 )
 
 // UpgradeDifferencesRule detects parameters that will differ after upgrade
@@ -171,7 +169,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			// For filename-only parameters, compare by filename only (ignore path)
 			var targetDiffersFromCurrent bool
 
-			if analyzer.IsFilenameOnlyParameter(displayName) || analyzer.IsFilenameOnlyParameter(paramName) {
+			if IsFilenameOnlyParameter(displayName) || IsFilenameOnlyParameter(paramName) {
 				// Compare by filename only
 				targetDiffersFromCurrent = !CompareFileNames(targetDefault, currentValue)
 			} else {
@@ -286,20 +284,12 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				}
 			} else if targetDiffersFromCurrent {
 				// Not in upgrade_logic.json, but target default differs from current
-				// PD Component: PD maintains existing configuration, so no need to report
-				if compType == "pd" && paramType == "config" {
-					// PD maintains existing configuration
-					// Skip reporting as current value will be kept
-					totalFiltered++
-					continue
-				}
-
 				// Special handling for PD and system variables
 				severity := "warning"
 				riskLevel := RiskLevelMedium
 				baseMessage := "default value changed (target default differs from current)"
 
-				// PD maintains existing configuration (for new parameters, this shouldn't be reached)
+				// PD maintains existing configuration
 				if compType == "pd" && paramType == "config" {
 					severity = "info"
 					riskLevel = RiskLevelLow
@@ -324,7 +314,7 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 					currentMap := ConvertToMapStringInterface(currentValue)
 					targetMap := ConvertToMapStringInterface(targetDefault)
 
-					for fieldPath, diff := range currentTargetDiffs {
+					for fieldPath := range currentTargetDiffs {
 						// Extract current value for this specific field from the map
 						var currentFieldValue interface{}
 						if currentMap != nil {

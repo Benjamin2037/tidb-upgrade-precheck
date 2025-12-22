@@ -9,7 +9,6 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector"
 	tidbCollector "github.com/pingcap/tidb-upgrade-precheck/pkg/collector/tidb"
 	defaultsTypes "github.com/pingcap/tidb-upgrade-precheck/pkg/types"
@@ -137,7 +136,7 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 
 	// Collect all TiKV nodes
 	for compName, component := range ruleCtx.SourceClusterSnapshot.Components {
-		if component.Type == collector.TiKVComponent || strings.HasPrefix(compName, "tikv") {
+		if component.Type == defaultsTypes.ComponentTiKV || strings.HasPrefix(compName, "tikv") {
 			// Get HTTP address from status or use component name
 			address := compName
 			if addr, ok := component.Status["address"].(string); ok {
@@ -283,7 +282,7 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 				// For non-map types, use simple comparison
 				// For filename-only parameters, compare by filename only (ignore path)
 				var differs bool
-				if analyzer.IsFilenameOnlyParameter(paramName) {
+				if IsFilenameOnlyParameter(paramName) {
 					differs = !CompareFileNames(nodeValue, baselineValue)
 				} else {
 					// Use proper value comparison to avoid scientific notation issues

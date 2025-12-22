@@ -591,3 +591,17 @@ func ToNumeric(v interface{}) (float64, bool) {
 		return 0, false
 	}
 }
+
+// filenameOnlyParams contains parameters that should be compared by filename only (ignoring path)
+// This is used for special comparison strategy during rule evaluation
+var filenameOnlyParams = map[string]bool{
+	"log.file.filename":    true,
+	"log.slow-query-file":  true,
+	"log-file":             true,
+}
+
+// IsFilenameOnlyParameter checks if a parameter should be compared by filename only (ignoring path)
+// This is used during rule evaluation for special comparison strategy, not for filtering
+func IsFilenameOnlyParameter(paramName string) bool {
+	return filenameOnlyParams[paramName]
+}

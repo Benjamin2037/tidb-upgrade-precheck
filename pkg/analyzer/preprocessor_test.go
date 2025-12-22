@@ -3,7 +3,6 @@ package analyzer
 import (
 	"testing"
 
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer/rules"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/types"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +15,7 @@ func TestPreprocessParameters_FilterPathParameters(t *testing.T) {
 		Components: map[string]collector.ComponentState{
 			"tidb": {
 				Config: types.ConfigDefaults{
-					"data-dir": types.ParameterValue{Value: "/data/tidb", Type: "string"},
+					"data-dir":        types.ParameterValue{Value: "/data/tidb", Type: "string"},
 					"max-connections": types.ParameterValue{Value: 1000, Type: "int"},
 				},
 			},
@@ -236,7 +235,7 @@ func TestPreprocessParameters_SystemVariables(t *testing.T) {
 		},
 	}
 
-	preprocessedResults, cleanedSourceDefaults, cleanedTargetDefaults := analyzer.preprocessParameters(
+	_, cleanedSourceDefaults, cleanedTargetDefaults := analyzer.preprocessParameters(
 		snapshot,
 		"v7.5.0", "v8.0.0",
 		sourceDefaults, targetDefaults,
@@ -276,7 +275,7 @@ func TestPreprocessParameters_NewParameters(t *testing.T) {
 		},
 	}
 
-	preprocessedResults, cleanedSourceDefaults, cleanedTargetDefaults := analyzer.preprocessParameters(
+	preprocessedResults, _, cleanedTargetDefaults := analyzer.preprocessParameters(
 		snapshot,
 		"v7.5.0", "v8.0.0",
 		sourceDefaults, targetDefaults,
@@ -345,4 +344,3 @@ func TestPreprocessParameters_ReturnsCheckResults(t *testing.T) {
 		assert.Contains(t, result.Metadata, "filter_reason")
 	}
 }
-

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pingcap/tidb-upgrade-precheck/pkg/analyzer"
 	"github.com/pingcap/tidb-upgrade-precheck/pkg/collector"
 )
 
@@ -122,14 +121,12 @@ func (r *UserModifiedParamsRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			// Determine if this is a system variable (prefixed with "sysvar:")
 			isSystemVar := strings.HasPrefix(paramName, "sysvar:")
 			var currentValue interface{}
-			var existsInRuntime bool
 
 			if isSystemVar {
 				// System variable: remove "sysvar:" prefix and check in Variables
 				varName := strings.TrimPrefix(paramName, "sysvar:")
 				if varValue, ok := component.Variables[varName]; ok {
 					currentValue = varValue.Value
-					existsInRuntime = true
 					// Mark as processed
 					delete(runtimeVarsMap, varName)
 				} else {
@@ -160,7 +157,6 @@ func (r *UserModifiedParamsRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				// Config parameter: check in Config
 				if paramValue, ok := component.Config[paramName]; ok {
 					currentValue = paramValue.Value
-					existsInRuntime = true
 					// Mark as processed
 					delete(runtimeConfigMap, paramName)
 				} else {
@@ -232,7 +228,7 @@ func (r *UserModifiedParamsRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				// For non-map types, do simple comparison
 				// For filename-only parameters, compare by filename only (ignore path)
 				var differs bool
-				if analyzer.IsFilenameOnlyParameter(displayName) || analyzer.IsFilenameOnlyParameter(paramName) {
+				if IsFilenameOnlyParameter(displayName) || IsFilenameOnlyParameter(paramName) {
 					differs = !CompareFileNames(currentValue, sourceDefault)
 				} else {
 					// Use proper value comparison to avoid scientific notation issues
