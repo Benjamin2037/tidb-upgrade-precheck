@@ -16,3 +16,5 @@ out/
 # 自动生成的 fallback 路径文件（从 const.go 生成）
 .fallback_paths.json
 run/
+~/Downloads/precheck-reports/
+~/Downloads/precheck-reports/
