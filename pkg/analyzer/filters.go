@@ -4,6 +4,10 @@ import (
 	"strings"
 )
 
+// FilenameOnlyParamsMap is the type for parameters that should be compared by filename only
+// This type is used in both FilterConfig and RuleContext to ensure type consistency
+type FilenameOnlyParamsMap map[string]bool
+
 // FilterConfig contains all parameters that should be filtered during preprocessing
 // This centralizes all filtering logic in one place
 type FilterConfig struct {
@@ -23,7 +27,7 @@ type FilterConfig struct {
 	Exceptions map[string]bool
 
 	// FilenameOnlyParams are parameters that should be compared by filename only (not filtered, but special comparison)
-	FilenameOnlyParams map[string]bool
+	FilenameOnlyParams FilenameOnlyParamsMap
 }
 
 // globalFilterConfig is the centralized filter configuration
@@ -38,16 +42,15 @@ var globalFilterConfig = &FilterConfig{
 		"address":  true,
 
 		// Deployment-specific path parameters (TiDB)
-		"path":                 true,
-		"socket":               true,
-		"temp-dir":             true,
-		"tmp-storage-path":     true,
-		"log.file.filename":    true,
-		"log.slow-query-file":  true,
+		"path":             true,
+		"socket":           true,
+		"temp-dir":         true,
+		"tmp-storage-path": true,
+		// Note: log.file.filename, log-file, log.slow-query-file are in FilenameOnlyParams
+		// They are filtered in preprocessor using CompareFileNames, not here
 		"log.file.max-size":    true,
 		"log.file.max-days":    true,
 		"log.file.max-backups": true,
-		"log-file":             true,
 		"log-dir":              true,
 		"log_dir":              true,
 

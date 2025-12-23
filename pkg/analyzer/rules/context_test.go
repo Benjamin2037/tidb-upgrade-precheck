@@ -19,8 +19,8 @@ func TestNewRuleContext(t *testing.T) {
 		make(map[string]map[string]interface{}),
 		make(map[string]map[string]interface{}),
 		make(map[string]interface{}),
-		140, // sourceBootstrapVersion
-		160, // targetBootstrapVersion
+		140,                          // sourceBootstrapVersion
+		160,                          // targetBootstrapVersion
 		make(map[string]interface{}), // parameterNotes
 	)
 
@@ -102,4 +102,3 @@ func TestRuleContext_GetForcedChanges(t *testing.T) {
 		})
 	}
 }
-

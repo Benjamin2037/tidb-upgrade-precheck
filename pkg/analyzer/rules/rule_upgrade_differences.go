@@ -166,16 +166,8 @@ func (r *UpgradeDifferencesRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 			}
 
 			// Compare target default with current cluster value
-			// For filename-only parameters, compare by filename only (ignore path)
-			var targetDiffersFromCurrent bool
-
-			if IsFilenameOnlyParameter(displayName) || IsFilenameOnlyParameter(paramName) {
-				// Compare by filename only
-				targetDiffersFromCurrent = !CompareFileNames(targetDefault, currentValue)
-			} else {
-				// Compare full values using proper comparison to avoid scientific notation issues
-				targetDiffersFromCurrent = !CompareValues(targetDefault, currentValue)
-			}
+			// Use proper value comparison to avoid scientific notation issues
+			targetDiffersFromCurrent := !CompareValues(targetDefault, currentValue)
 
 			// Check if this parameter is in upgrade_logic.json (forced change)
 			// First check if there's a forced change entry for this parameter

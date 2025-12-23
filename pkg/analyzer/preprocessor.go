@@ -106,13 +106,39 @@ func (a *Analyzer) preprocessParameters(
 						}
 					}
 
+					// Check if this is a filename-only parameter (should compare by filename only)
+					isFilenameOnly := IsFilenameOnlyParameter(displayName) || IsFilenameOnlyParameter(paramName)
+
 					// If all three values are the same, filter
 					if sourceDefault != nil && targetDefault != nil {
-						if rules.CompareValues(currentValue, sourceDefault) &&
-							rules.CompareValues(currentValue, targetDefault) &&
-							rules.CompareValues(sourceDefault, targetDefault) {
+						var allSame bool
+						if isFilenameOnly {
+							// For filename-only parameters, compare by filename only
+							allSame = rules.CompareFileNames(currentValue, sourceDefault) &&
+								rules.CompareFileNames(currentValue, targetDefault) &&
+								rules.CompareFileNames(sourceDefault, targetDefault)
+						} else {
+							// For normal parameters, use full value comparison
+							allSame = rules.CompareValues(currentValue, sourceDefault) &&
+								rules.CompareValues(currentValue, targetDefault) &&
+								rules.CompareValues(sourceDefault, targetDefault)
+						}
+						if allSame {
 							shouldFilter = true
 							filterReason = "all values identical (no difference)"
+						}
+					}
+
+					// Check filename-only parameters
+					// If all three values have the same filename, filter (deployment-specific path, but same file)
+					if !shouldFilter && isFilenameOnly {
+						if sourceDefault != nil && targetDefault != nil {
+							if rules.CompareFileNames(sourceDefault, targetDefault) &&
+								rules.CompareFileNames(currentValue, sourceDefault) {
+								// All three have the same filename, filter (deployment-specific path)
+								shouldFilter = true
+								filterReason = "filename-only parameter (same filename, different path)"
+							}
 						}
 					}
 
@@ -269,10 +295,24 @@ func (a *Analyzer) preprocessParameters(
 
 					if currentValue != nil {
 						targetDefault := extractValueFromDefault(targetDefaultValue)
-						if targetDefault != nil && rules.CompareValues(currentValue, targetDefault) {
-							// For PD, still report new parameters even if current == target
-							if compType != "pd" {
-								shouldFilter = true
+						if targetDefault != nil {
+							// Check if this is a filename-only parameter (should compare by filename only)
+							isFilenameOnly := IsFilenameOnlyParameter(displayName) || IsFilenameOnlyParameter(paramName)
+
+							var valuesEqual bool
+							if isFilenameOnly {
+								// For filename-only parameters, compare by filename only
+								valuesEqual = rules.CompareFileNames(currentValue, targetDefault)
+							} else {
+								// For normal parameters, use full value comparison
+								valuesEqual = rules.CompareValues(currentValue, targetDefault)
+							}
+
+							if valuesEqual {
+								// For PD, still report new parameters even if current == target
+								if compType != "pd" {
+									shouldFilter = true
+								}
 							}
 						}
 					}

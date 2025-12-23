@@ -226,14 +226,8 @@ func (r *UserModifiedParamsRule) Evaluate(ctx context.Context, ruleCtx *RuleCont
 				}
 			} else {
 				// For non-map types, do simple comparison
-				// For filename-only parameters, compare by filename only (ignore path)
-				var differs bool
-				if IsFilenameOnlyParameter(displayName) || IsFilenameOnlyParameter(paramName) {
-					differs = !CompareFileNames(currentValue, sourceDefault)
-				} else {
-					// Use proper value comparison to avoid scientific notation issues
-					differs = !CompareValues(currentValue, sourceDefault)
-				}
+				// Use proper value comparison to avoid scientific notation issues
+				differs := !CompareValues(currentValue, sourceDefault)
 
 				if differs {
 					paramType := "config"

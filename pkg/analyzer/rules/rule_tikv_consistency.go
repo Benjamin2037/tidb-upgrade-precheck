@@ -280,14 +280,8 @@ func (r *TikvConsistencyRule) Evaluate(ctx context.Context, ruleCtx *RuleContext
 				continue
 			} else {
 				// For non-map types, use simple comparison
-				// For filename-only parameters, compare by filename only (ignore path)
-				var differs bool
-				if IsFilenameOnlyParameter(paramName) {
-					differs = !CompareFileNames(nodeValue, baselineValue)
-				} else {
-					// Use proper value comparison to avoid scientific notation issues
-					differs = !CompareValues(nodeValue, baselineValue)
-				}
+				// Use proper value comparison to avoid scientific notation issues
+				differs := !CompareValues(nodeValue, baselineValue)
 
 				if differs {
 					// Difference found: medium risk (warning)
